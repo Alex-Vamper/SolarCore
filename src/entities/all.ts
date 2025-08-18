@@ -4,3 +4,4 @@ export { UserSettings } from './UserSettings';
 export { EnergySystem } from './EnergySystem';
 export { SafetySystem } from './SafetySystem';
 export { Room } from './Room';
+export { VoiceCommand } from './VoiceCommand';
