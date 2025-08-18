@@ -1,114 +1,72 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Shield, 
-  Flame, 
-  Droplets, 
-  CheckCircle, 
-  AlertTriangle,
-  Activity
-} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Shield, CheckCircle, AlertCircle, Camera, Flame } from "lucide-react";
 
-export default function SafetyStatus({ safetyData }) {
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "safe": return "bg-green-100 text-green-800 border-green-200";
-      case "alert": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "active": return "bg-red-100 text-red-800 border-red-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+interface SafetyStatusProps {
+  safetyData: any[];
+}
+
+export default function SafetyStatus({ safetyData }: SafetyStatusProps) {
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'smoke_detector': return Flame;
+      case 'security_camera': return Camera;
+      default: return Shield;
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case "safe": return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case "alert": return <AlertTriangle className="w-4 h-4 text-yellow-600" />;
-      case "active": return <Activity className="w-4 h-4 text-red-600" />;
-      default: return <Shield className="w-4 h-4 text-gray-600" />;
+      case 'online': return 'text-green-600';
+      case 'offline': return 'text-red-600';
+      case 'warning': return 'text-yellow-600';
+      default: return 'text-gray-600';
     }
   };
-
-  const fireSystems = safetyData.filter(system => system.system_type === "fire_detection");
-  const rainSystems = safetyData.filter(system => system.system_type === "window_rain");
 
   return (
     <div className="space-y-4">
-      {/* Fire Safety */}
-      <Card className="glass-card border-0 shadow-lg">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
-              <Flame className="w-4 h-4 text-white" />
-            </div>
-            Fire Safety
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {fireSystems.length > 0 ? (
-            fireSystems.map((system) => (
-              <div key={system.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(system.status)}
-                  <div>
-                    <div className="font-medium font-inter">{system.room_name}</div>
-                    <div className="text-sm text-gray-500 font-inter">
-                      Smoke: {system.sensor_readings?.smoke_level || 0}% | 
-                      Temp: {system.sensor_readings?.temperature || 25}°C
+      <h2 className="text-xl font-semibold text-gray-900 font-inter">Safety Status</h2>
+      
+      {safetyData.length === 0 ? (
+        <Card className="p-4 text-center">
+          <Shield className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+          <p className="text-gray-600 font-inter">No safety systems configured</p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {safetyData.map((system) => {
+            const IconComponent = getIcon(system.type);
+            return (
+              <Card key={system.id} className="p-4 glass-card">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <IconComponent className="w-5 h-5 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 font-inter capitalize">
+                        {system.type.replace('_', ' ')}
+                      </p>
+                      <p className="text-sm text-gray-600 font-inter">{system.location}</p>
                     </div>
                   </div>
-                </div>
-                <Badge className={getStatusColor(system.status)}>
-                  {system.status}
-                </Badge>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-6 text-gray-500">
-              <Shield className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-              <p className="font-inter">No fire detection systems configured</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Rain Detection */}
-      <Card className="glass-card border-0 shadow-lg">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-              <Droplets className="w-4 h-4 text-white" />
-            </div>
-            Rain Detection
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {rainSystems.length > 0 ? (
-            rainSystems.map((system) => (
-              <div key={system.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(system.status)}
-                  <div>
-                    <div className="font-medium font-inter">{system.room_name}</div>
-                    <div className="text-sm text-gray-500 font-inter">
-                      Window: {system.sensor_readings?.window_status || "closed"} | 
-                      Rain: {system.sensor_readings?.rain_detected ? "Yes" : "No"}
-                    </div>
+                  <div className="flex items-center gap-1">
+                    {system.status === 'online' ? (
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                    )}
+                    <span className={`text-sm font-medium font-inter ${getStatusColor(system.status)}`}>
+                      {system.status}
+                    </span>
                   </div>
                 </div>
-                <Badge className={getStatusColor(system.status)}>
-                  {system.status}
-                </Badge>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-6 text-gray-500">
-              <Droplets className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-              <p className="font-inter">No rain detection systems configured</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
