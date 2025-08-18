@@ -1,39 +1,111 @@
-// Mock UserSettings entity for SolarCore
-export class UserSettings {
-  id: string;
-  created_by: string;
-  setup_completed: boolean;
-  building_type: string;
-  building_name: string;
-  total_rooms: number;
-  energy_mode: string;
-
-  constructor(data: any) {
-    this.id = data.id;
-    this.created_by = data.created_by;
-    this.setup_completed = data.setup_completed;
-    this.building_type = data.building_type;
-    this.building_name = data.building_name;
-    this.total_rooms = data.total_rooms;
-    this.energy_mode = data.energy_mode;
-  }
-
-  static async filter(criteria: any): Promise<UserSettings[]> {
-    // Mock implementation - returns empty for first-time setup
-    const mockSettings = localStorage.getItem('solarcore_user_settings');
-    if (mockSettings) {
-      return [new UserSettings(JSON.parse(mockSettings))];
+{
+  "name": "UserSettings",
+  "type": "object",
+  "properties": {
+    "setup_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether initial setup is complete"
+    },
+    "building_type": {
+      "type": "string",
+      "enum": [
+        "home",
+        "school",
+        "office",
+        "hospital",
+        "other"
+      ],
+      "default": "home"
+    },
+    "building_name": {
+      "type": "string"
+    },
+    "total_rooms": {
+      "type": "number",
+      "default": 0,
+      "description": "Total number of rooms in the home"
+    },
+    "total_domes": {
+      "type": "number",
+      "default": 0,
+      "description": "Total number of solar domes"
+    },
+    "energy_mode": {
+      "type": "string",
+      "enum": [
+        "solar_only",
+        "grid_only",
+        "auto_switch"
+      ],
+      "default": "auto_switch",
+      "description": "Energy management mode"
+    },
+    "notifications_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether push notifications are enabled"
+    },
+    "voice_response_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether voice responses from Ander are enabled"
+    },
+    "ander_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the Ander AI assistant is enabled globally"
+    },
+    "preferred_email": {
+      "type": "string"
+    },
+    "preferred_email_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "preferred_whatsapp": {
+      "type": "string"
+    },
+    "preferred_whatsapp_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "emergency_contacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "security_settings": {
+      "type": "object",
+      "properties": {
+        "auto_shutdown_enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "shutdown_exceptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of appliance IDs to keep on"
+        }
+      }
     }
-    return [];
-  }
-
-  static async create(data: any): Promise<UserSettings> {
-    const settings = new UserSettings({
-      id: Date.now().toString(),
-      created_by: "user@solarcore.com",
-      ...data
-    });
-    localStorage.setItem('solarcore_user_settings', JSON.stringify(settings));
-    return settings;
-  }
+  },
+  "required": []
 }
