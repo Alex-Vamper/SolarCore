@@ -5,6 +5,7 @@ import { Home, Users, Lightbulb } from "lucide-react";
 
 interface RoomBoxProps {
   room: any;
+  dragHandleProps?: any;
 }
 
 export default function RoomBox({ room }: RoomBoxProps) {

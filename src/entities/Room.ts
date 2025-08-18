@@ -55,4 +55,15 @@ export class Room {
     
     return room;
   }
+
+  static async update(id: string, data: any): Promise<Room> {
+    const rooms = await this.filter({});
+    const index = rooms.findIndex(r => r.id === id);
+    if (index !== -1) {
+      rooms[index] = { ...rooms[index], ...data };
+      localStorage.setItem('solarcore_rooms', JSON.stringify(rooms));
+      return rooms[index];
+    }
+    throw new Error('Room not found');
+  }
 }
