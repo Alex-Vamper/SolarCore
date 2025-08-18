@@ -18,6 +18,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				inter: ['Inter', 'system-ui', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -61,6 +64,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				solarcore: {
+					yellow: 'hsl(var(--solarcore-yellow))',
+					orange: 'hsl(var(--solarcore-orange))',
+					blue: 'hsl(var(--solarcore-blue))',
+					gray: 'hsl(var(--solarcore-gray))',
+					success: 'hsl(var(--solarcore-success))',
+					warning: 'hsl(var(--solarcore-warning))',
+					danger: 'hsl(var(--solarcore-danger))'
 				}
 			},
 			borderRadius: {
