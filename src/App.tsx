@@ -1,36 +1,144 @@
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Layout from "./layouts/Layout";
-import Dashboard from "./pages/Dashboard";
-import Automation from "./pages/Automation";
-import Energy from "./pages/Energy";
-import Safety from "./pages/Safety";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
+import Layout from "@/layouts/Layout";
+import Dashboard from "@/pages/Dashboard";
+import Automation from "@/pages/Automation";
+import Energy from "@/pages/Energy";
+import Safety from "@/pages/Safety";
+import Settings from "@/pages/Settings";
+import Notifications from "@/pages/Notifications";
+import LandingPage from "@/pages/LandingPage";
+import Auth from "@/pages/Auth";
+import NotFound from "@/pages/NotFound";
+import RoomDetails from "@/pages/RoomDetails";
+import HelpCenter from "@/pages/HelpCenter";
+import FAQ from "@/pages/FAQ";
+import ContactSupport from "@/pages/ContactSupport";
+import Feedback from "@/pages/Feedback";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import Ander from "@/pages/Ander";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <div className="w-8 h-8 bg-white rounded-full"></div>
+          </div>
+          <p className="text-gray-600 font-inter">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Auth />;
+  }
+
+  return <>{children}</>;
+}
+
+const router = createBrowserRouter([
+  {
+    path: "/auth",
+    element: <Auth />
+  },
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <Layout children={undefined} />
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: <Dashboard />
+      },
+      {
+        path: "automation",
+        element: <Automation />
+      },
+      {
+        path: "energy",
+        element: <Energy />
+      },
+      {
+        path: "safety",
+        element: <Safety />
+      },
+      {
+        path: "settings",
+        element: <Settings />
+      },
+      {
+        path: "notifications",
+        element: <Notifications />
+      },
+      {
+        path: "room/:roomId",
+        element: <RoomDetails />
+      },
+      {
+        path: "help",
+        element: <HelpCenter />
+      },
+      {
+        path: "faq",
+        element: <FAQ />
+      },
+      {
+        path: "contact",
+        element: <ContactSupport />
+      },
+      {
+        path: "feedback",
+        element: <Feedback />
+      },
+      {
+        path: "privacy",
+        element: <PrivacyPolicy />
+      },
+      {
+        path: "ander",
+        element: <Ander />
+      }
+    ]
+  },
+  {
+    path: "/landing",
+    element: <LandingPage onGetStarted={() => {}} />
+  },
+  {
+    path: "*",
+    element: <NotFound />
+  }
+]);
+
+function AppContent() {
+  return (
     <TooltipProvider>
+      <RouterProvider router={router} />
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout><Dashboard /></Layout>} />
-          <Route path="/automation" element={<Layout><Automation /></Layout>} />
-          <Route path="/energy" element={<Layout><Energy /></Layout>} />
-          <Route path="/safety" element={<Layout><Safety /></Layout>} />
-          <Route path="/settings" element={<Layout><Settings /></Layout>} />
-          <Route path="/notifications" element={<Layout><div className="p-4">Notifications Page</div></Layout>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
     </TooltipProvider>
+  );
+}
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   </QueryClientProvider>
 );
 

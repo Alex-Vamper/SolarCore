@@ -1,109 +1,100 @@
-{
-  "name": "SafetySystem",
-  "type": "object",
-  "properties": {
-    "system_id": {
-      "type": "string",
-      "description": "Unique hardware identifier for the system"
-    },
-    "system_type": {
-      "type": "string",
-      "enum": [
-        "fire_detection",
-        "window_rain",
-        "gas_leak",
-        "water_overflow"
-      ],
-      "description": "Type of safety system"
-    },
-    "room_name": {
-      "type": "string",
-      "description": "Associated room name"
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "safe",
-        "alert",
-        "active",
-        "suppression_active"
-      ],
-      "default": "safe",
-      "description": "Current system status"
-    },
-    "sensor_readings": {
-      "type": "object",
-      "properties": {
-        "flame_detected": {
-          "type": "boolean",
-          "default": false
-        },
-        "smoke_level": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 100,
-          "default": 0
-        },
-        "temperature": {
-          "type": "number",
-          "default": 25
-        },
-        "rain_detected": {
-          "type": "boolean",
-          "default": false
-        },
-        "window_status": {
-          "type": "string",
-          "enum": [
-            "open",
-            "closed"
-          ],
-          "default": "closed"
-        },
-        "gas_level": {
-          "type": "number",
-          "default": 0,
-          "description": "Gas concentration in ppm"
-        },
-        "water_level": {
-          "type": "number",
-          "default": 0,
-          "description": "Water tank level percentage"
-        }
-      }
-    },
-    "last_triggered": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Last time the system was triggered"
-    },
-    "automation_settings": {
-      "type": "object",
-      "properties": {
-        "auto_response_enabled": {
-          "type": "boolean",
-          "default": true
-        },
-        "notification_level": {
-          "type": "string",
-          "enum": [
-            "all",
-            "critical_only",
-            "none"
-          ],
-          "default": "all"
-        },
-        "trigger_threshold": {
-          "type": "number",
-          "default": 75,
-          "description": "Sensor level to trigger alert (e.g., smoke %)"
-        }
-      }
-    }
-  },
-  "required": [
-    "system_id",
-    "system_type",
-    "room_name"
-  ]
+import { supabase } from '@/integrations/supabase/client';
+
+export interface SafetySystem {
+  id?: string;
+  user_id?: string;
+  system_id: string;
+  system_type: 'fire_detection' | 'window_rain' | 'gas_leak' | 'water_overflow';
+  room_name: string;
+  status?: 'safe' | 'alert' | 'active' | 'suppression_active';
+  sensor_readings?: {
+    flame_detected?: boolean;
+    smoke_level?: number;
+    temperature?: number;
+    rain_detected?: boolean;
+    window_status?: 'open' | 'closed';
+    gas_level?: number;
+    water_level?: number;
+  };
+  last_triggered?: string;
+  automation_settings?: {
+    auto_response_enabled?: boolean;
+    notification_level?: 'all' | 'critical_only' | 'none';
+    trigger_threshold?: number;
+  };
+  created_at?: string;
+  updated_at?: string;
 }
+
+export class SafetySystemService {
+  static async filter(params: { created_by?: string }): Promise<SafetySystem[]> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('safety_systems')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching safety systems:', error);
+      return [];
+    }
+  }
+
+  static async create(safetySystem: SafetySystem): Promise<SafetySystem> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('safety_systems')
+        .insert({ ...safetySystem, user_id: user.id })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating safety system:', error);
+      throw error;
+    }
+  }
+
+  static async update(id: string, safetySystem: Partial<SafetySystem>): Promise<SafetySystem> {
+    try {
+      const { data, error } = await supabase
+        .from('safety_systems')
+        .update(safetySystem)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating safety system:', error);
+      throw error;
+    }
+  }
+
+  static async delete(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('safety_systems')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting safety system:', error);
+      throw error;
+    }
+  }
+}
+
+// Keep backward compatibility
+export const SafetySystem = SafetySystemService;
