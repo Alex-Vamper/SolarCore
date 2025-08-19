@@ -14,7 +14,228 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      energy_systems: {
+        Row: {
+          battery_level: number | null
+          cost_savings: number | null
+          created_at: string | null
+          current_usage: number | null
+          daily_usage: number | null
+          energy_source: string | null
+          grid_percentage: number | null
+          id: string
+          solar_percentage: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          battery_level?: number | null
+          cost_savings?: number | null
+          created_at?: string | null
+          current_usage?: number | null
+          daily_usage?: number | null
+          energy_source?: string | null
+          grid_percentage?: number | null
+          id?: string
+          solar_percentage?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          battery_level?: number | null
+          cost_savings?: number | null
+          created_at?: string | null
+          current_usage?: number | null
+          daily_usage?: number | null
+          energy_source?: string | null
+          grid_percentage?: number | null
+          id?: string
+          solar_percentage?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      rooms: {
+        Row: {
+          appliances: Json | null
+          automation_settings: Json | null
+          created_at: string | null
+          dome_count: number | null
+          id: string
+          name: string
+          occupancy_status: boolean | null
+          order_index: number | null
+          pir_sensor_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          appliances?: Json | null
+          automation_settings?: Json | null
+          created_at?: string | null
+          dome_count?: number | null
+          id?: string
+          name: string
+          occupancy_status?: boolean | null
+          order_index?: number | null
+          pir_sensor_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          appliances?: Json | null
+          automation_settings?: Json | null
+          created_at?: string | null
+          dome_count?: number | null
+          id?: string
+          name?: string
+          occupancy_status?: boolean | null
+          order_index?: number | null
+          pir_sensor_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      safety_systems: {
+        Row: {
+          automation_settings: Json | null
+          created_at: string | null
+          id: string
+          last_triggered: string | null
+          room_name: string
+          sensor_readings: Json | null
+          status: string | null
+          system_id: string
+          system_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          automation_settings?: Json | null
+          created_at?: string | null
+          id?: string
+          last_triggered?: string | null
+          room_name: string
+          sensor_readings?: Json | null
+          status?: string | null
+          system_id: string
+          system_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          automation_settings?: Json | null
+          created_at?: string | null
+          id?: string
+          last_triggered?: string | null
+          room_name?: string
+          sensor_readings?: Json | null
+          status?: string | null
+          system_id?: string
+          system_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          address: string | null
+          ander_enabled: boolean | null
+          building_name: string | null
+          building_type: string | null
+          contact_phone: string | null
+          created_at: string | null
+          emergency_contacts: Json | null
+          energy_mode: string | null
+          id: string
+          notifications_enabled: boolean | null
+          preferred_email: string | null
+          preferred_email_enabled: boolean | null
+          preferred_whatsapp: string | null
+          preferred_whatsapp_enabled: boolean | null
+          security_settings: Json | null
+          setup_completed: boolean | null
+          total_domes: number | null
+          total_rooms: number | null
+          updated_at: string | null
+          user_id: string
+          voice_response_enabled: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          ander_enabled?: boolean | null
+          building_name?: string | null
+          building_type?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          emergency_contacts?: Json | null
+          energy_mode?: string | null
+          id?: string
+          notifications_enabled?: boolean | null
+          preferred_email?: string | null
+          preferred_email_enabled?: boolean | null
+          preferred_whatsapp?: string | null
+          preferred_whatsapp_enabled?: boolean | null
+          security_settings?: Json | null
+          setup_completed?: boolean | null
+          total_domes?: number | null
+          total_rooms?: number | null
+          updated_at?: string | null
+          user_id: string
+          voice_response_enabled?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          ander_enabled?: boolean | null
+          building_name?: string | null
+          building_type?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          emergency_contacts?: Json | null
+          energy_mode?: string | null
+          id?: string
+          notifications_enabled?: boolean | null
+          preferred_email?: string | null
+          preferred_email_enabled?: boolean | null
+          preferred_whatsapp?: string | null
+          preferred_whatsapp_enabled?: boolean | null
+          security_settings?: Json | null
+          setup_completed?: boolean | null
+          total_domes?: number | null
+          total_rooms?: number | null
+          updated_at?: string | null
+          user_id?: string
+          voice_response_enabled?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
