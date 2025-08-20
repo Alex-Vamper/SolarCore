@@ -297,7 +297,7 @@ export default function Ander() {
       }
     ];
 
-    await VoiceCommand.bulkCreate(initialCommands);
+    await VoiceCommand.bulkCreate(initialCommands as any);
   };
 
   const handleSettingUpdate = async (setting) => {

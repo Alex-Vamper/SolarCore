@@ -351,7 +351,7 @@ export default function RoomDetails() {
     setRoom(prev => ({ ...prev, appliances: items }));
 
     try {
-      await Room.update(room.id, { appliances: items });
+      await Room.update(room.id, { appliances: items as any });
     } catch (error) {
       console.error("Error saving appliance order:", error);
       // Revert on error
@@ -490,7 +490,7 @@ export default function RoomDetails() {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-4 mt-4">
-            <RoomSettingsTab room={room} onUpdate={handleRoomUpdate} onDelete={handleDeleteRoom} />
+            <RoomSettingsTab room={room} onRoomUpdate={handleRoomUpdate} onDeleteRoom={handleDeleteRoom} />
           </TabsContent>
         </Tabs>
 

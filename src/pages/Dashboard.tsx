@@ -46,7 +46,7 @@ export default function Dashboard() {
         const [energyResult, safetyResult, roomsResult] = await Promise.all([
             EnergySystem.filter({ created_by: currentUser.email }),
             SafetySystem.filter({ created_by: currentUser.email }),
-            Room.filter({ created_by: currentUser.email }, '-created_date', 3)
+            Room.filter({ created_by: currentUser.email }, 'created_at', 'desc')
         ]);
         
         setEnergyData(energyResult[0] || null);
@@ -185,7 +185,7 @@ export default function Dashboard() {
                 <h3 className="font-semibold text-gray-900 font-inter">Quick Access Rooms</h3>
                 <div className="space-y-3">
                   {quickAccessRooms.map((room: any) => (
-                      <RoomBox key={room.id} room={room} />
+                      <RoomBox key={room.id} room={room} dragHandleProps={null} />
                   ))}
                 </div>
             </div>
