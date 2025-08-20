@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { User, UserSettings } from "@/entities/all";
 import { Mic, MicOff } from "lucide-react";
