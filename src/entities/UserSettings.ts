@@ -1,34 +1,37 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface UserSettings {
   id?: string;
   user_id?: string;
-  setup_completed?: boolean;
-  building_type?: 'home' | 'school' | 'office' | 'hospital' | 'other';
   building_name?: string;
-  total_rooms?: number;
-  total_domes?: number;
-  energy_mode?: 'solar_only' | 'grid_only' | 'auto_switch';
-  notifications_enabled?: boolean;
-  voice_response_enabled?: boolean;
+  building_type?: 'home' | 'school' | 'office' | 'hospital' | 'other';
   ander_enabled?: boolean;
-  preferred_email?: string;
-  preferred_email_enabled?: boolean;
-  preferred_whatsapp?: string;
-  preferred_whatsapp_enabled?: boolean;
-  emergency_contacts?: Array<{ name: string; phone: string }>;
-  contact_phone?: string;
+  voice_response_enabled?: boolean;
+  energy_mode?: string;
+  security_level?: string;
+  notification_preferences?: any;
+  timezone?: string;
+  theme_preference?: string;
+  language?: string;
   address?: string;
-  security_settings?: {
-    auto_shutdown_enabled?: boolean;
-    shutdown_exceptions?: string[];
-  };
+  contact_phone?: string;
+  emergency_contacts?: any;
+  safety_notifications?: boolean;
+  energy_alerts?: boolean;
+  weekly_reports?: boolean;
+  setup_completed?: boolean;
+  total_rooms?: number;
   created_at?: string;
   updated_at?: string;
 }
 
 export class UserSettingsService {
-  static async filter(params: { created_by?: string }): Promise<UserSettings[]> {
+  static async filter(params?: any): Promise<UserSettings[]> {
+    return this.list();
+  }
+
+  static async list(): Promise<UserSettings[]> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
@@ -39,7 +42,12 @@ export class UserSettingsService {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        building_type: item.building_type as "home" | "school" | "office" | "hospital" | "other",
+        notification_preferences: typeof (item as any).notification_preferences === 'object' ? (item as any).notification_preferences : {},
+        emergency_contacts: typeof (item as any).emergency_contacts === 'object' ? (item as any).emergency_contacts : {}
+      }));
     } catch (error) {
       console.error('Error fetching user settings:', error);
       return [];
@@ -53,12 +61,22 @@ export class UserSettingsService {
 
       const { data, error } = await supabase
         .from('user_settings')
-        .insert({ ...settings, user_id: user.id })
+        .insert({
+          ...settings,
+          user_id: user.id,
+          notification_preferences: settings.notification_preferences as Json,
+          emergency_contacts: settings.emergency_contacts as Json
+        })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return {
+        ...data,
+        building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
+        notification_preferences: typeof (data as any).notification_preferences === 'object' ? (data as any).notification_preferences : {},
+        emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {}
+      };
     } catch (error) {
       console.error('Error creating user settings:', error);
       throw error;
@@ -67,17 +85,44 @@ export class UserSettingsService {
 
   static async update(id: string, settings: Partial<UserSettings>): Promise<UserSettings> {
     try {
+      const updateData: any = { ...settings };
+      if (settings.notification_preferences) {
+        updateData.notification_preferences = settings.notification_preferences as Json;
+      }
+      if (settings.emergency_contacts) {
+        updateData.emergency_contacts = settings.emergency_contacts as Json;
+      }
+
       const { data, error } = await supabase
         .from('user_settings')
-        .update(settings)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return {
+        ...data,
+        building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
+        notification_preferences: typeof (data as any).notification_preferences === 'object' ? (data as any).notification_preferences : {},
+        emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {}
+      };
     } catch (error) {
       console.error('Error updating user settings:', error);
+      throw error;
+    }
+  }
+
+  static async delete(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting user settings:', error);
       throw error;
     }
   }

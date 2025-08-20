@@ -95,7 +95,7 @@ export default function QuickActions({ onAction }) {
         
         const updatedAppliances = room.appliances.map(app => 
           app.series?.toLowerCase().includes('solardome')
-            ? { ...app, status: true, intensity: 20, color_tint: "warm" }
+            ? { ...app, status: true, intensity: 20, color_tint: "warm" as "white" | "warm" | "cool" }
             : app
         );
         

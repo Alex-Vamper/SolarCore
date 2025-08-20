@@ -26,7 +26,10 @@ export class EnergySystemService {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        energy_source: item.energy_source as "solar" | "grid" | "mixed"
+      }));
     } catch (error) {
       console.error('Error fetching energy systems:', error);
       return [];
@@ -45,7 +48,10 @@ export class EnergySystemService {
         .single();
 
       if (error) throw error;
-      return data;
+      return data ? {
+        ...data,
+        energy_source: data.energy_source as "solar" | "grid" | "mixed"
+      } : null;
     } catch (error) {
       console.error('Error creating energy system:', error);
       throw error;
@@ -62,7 +68,10 @@ export class EnergySystemService {
         .single();
 
       if (error) throw error;
-      return data;
+      return data ? {
+        ...data,
+        energy_source: data.energy_source as "solar" | "grid" | "mixed"
+      } : null;
     } catch (error) {
       console.error('Error updating energy system:', error);
       throw error;

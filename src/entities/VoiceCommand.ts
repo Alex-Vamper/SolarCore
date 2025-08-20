@@ -8,6 +8,15 @@ export interface VoiceCommand {
 }
 
 export class VoiceCommandService {
+  static async list(): Promise<VoiceCommand[]> {
+    return this.getDefaultCommands();
+  }
+
+  static async bulkCreate(commands: VoiceCommand[]): Promise<VoiceCommand[]> {
+    // For now, just return the commands as this is mock data
+    return commands;
+  }
+
   static getDefaultCommands(): VoiceCommand[] {
     return [
       {

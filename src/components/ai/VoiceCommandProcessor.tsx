@@ -1,6 +1,34 @@
 import { VoiceCommand, User, Room } from "@/entities/all";
 
+// Add TypeScript declarations for Speech APIs
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: (event: any) => void;
+  onerror: (event: any) => void;
+  onend: () => void;
+}
+
 export default class VoiceCommandProcessor {
+  private recognition: SpeechRecognition | null;
+  private synthesis: SpeechSynthesis;
+  private isListening: boolean;
+  private isAwaitingSecurityResponse: boolean;
+  private rooms: any[];
+  private roomNames: string[];
+  private allSocketNames: string[];
+
   constructor() {
     this.recognition = null;
     this.synthesis = window.speechSynthesis;
@@ -89,7 +117,7 @@ export default class VoiceCommandProcessor {
     await this.initialize();
     
     try {
-      const allCommands = await VoiceCommand.list();
+      const allCommands = VoiceCommand.getDefaultCommands();
       if (!allCommands.length) return { command: null, response: "I'm still learning." };
 
       const { bestMatch, extractedRoomName, extractedSocketName } = this.fuzzySearch(transcript, allCommands);
@@ -250,8 +278,8 @@ export default class VoiceCommandProcessor {
     return { bestMatch, extractedRoomName, extractedSocketName };
   }
 
-  async speakResponse(text) {
-    return new Promise((resolve) => {
+  async speakResponse(text: string): Promise<void> {
+    return new Promise<void>((resolve) => {
       if (!this.synthesis) return resolve();
       this.synthesis.cancel();
 
