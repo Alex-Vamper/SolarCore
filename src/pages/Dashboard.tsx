@@ -71,15 +71,29 @@ export default function Dashboard() {
   const handleSetupComplete = async (setupData: any) => {
     setView('loading');
     try {
-      // 1. Create UserSettings
-      await UserSettings.create({
-        setup_completed: true,
-        building_type: setupData.buildingType,
-        building_name: setupData.buildingName,
-        total_rooms: setupData.rooms.length,
-        energy_mode: setupData.energySource === "mixed" ? "auto_switch" : 
-                    setupData.energySource === "solar" ? "solar_only" : "grid_only"
-      });
+      // 1. Create or update UserSettings
+      const existingSettings = await UserSettings.filter({ created_by: user.email });
+      if (existingSettings.length > 0) {
+        // Update existing settings
+        await UserSettings.update(existingSettings[0].id, {
+          setup_completed: true,
+          building_type: setupData.buildingType,
+          building_name: setupData.buildingName,
+          total_rooms: setupData.rooms.length,
+          energy_mode: setupData.energySource === "mixed" ? "auto_switch" : 
+                      setupData.energySource === "solar" ? "solar_only" : "grid_only"
+        });
+      } else {
+        // Create new settings
+        await UserSettings.create({
+          setup_completed: true,
+          building_type: setupData.buildingType,
+          building_name: setupData.buildingName,
+          total_rooms: setupData.rooms.length,
+          energy_mode: setupData.energySource === "mixed" ? "auto_switch" : 
+                      setupData.energySource === "solar" ? "solar_only" : "grid_only"
+        });
+      }
 
       // 2. Create Rooms
       const roomPromises = setupData.rooms.map((room: any, index: number) => {
@@ -108,7 +122,8 @@ export default function Dashboard() {
       await loadData(true); // pass true to skip landing page after setup
     } catch (error) {
       console.error("Error completing setup:", error);
-      setView('landing'); // Go back to landing on error
+      // Don't go back to landing, stay in dashboard with existing data
+      setView('dashboard');
     }
   };
 

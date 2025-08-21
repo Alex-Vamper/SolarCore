@@ -8,7 +8,13 @@ export const createPageUrl = (pageName: string): string => {
     Safety: "/safety",
     Settings: "/settings",
     Notifications: "/notifications",
-    LandingPage: "/landing"
+    LandingPage: "/landing",
+    FAQ: "/faq",
+    ContactSupport: "/contact-support",
+    Feedback: "/feedback",
+    HelpCenter: "/help",
+    PrivacyPolicy: "/privacy",
+    Ander: "/ander"
   };
 
   return pageRoutes[pageName] || "/";
