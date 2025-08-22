@@ -236,6 +236,95 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_commands: {
+        Row: {
+          action_type: string | null
+          command_category: string
+          command_name: string
+          created_at: string
+          enabled: boolean
+          id: string
+          keywords: string[]
+          response: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_type?: string | null
+          command_category: string
+          command_name: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          keywords?: string[]
+          response: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_type?: string | null
+          command_category?: string
+          command_name?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          keywords?: string[]
+          response?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      voice_response_audios: {
+        Row: {
+          command_id: string | null
+          created_at: string
+          duration_seconds: number | null
+          format: string
+          id: string
+          provider: string
+          storage_path: string
+          transcript: string | null
+          updated_at: string
+          user_id: string
+          voice_id: string | null
+        }
+        Insert: {
+          command_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          format?: string
+          id?: string
+          provider?: string
+          storage_path: string
+          transcript?: string | null
+          updated_at?: string
+          user_id: string
+          voice_id?: string | null
+        }
+        Update: {
+          command_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          format?: string
+          id?: string
+          provider?: string
+          storage_path?: string
+          transcript?: string | null
+          updated_at?: string
+          user_id?: string
+          voice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_response_audios_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "voice_commands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { User, Room } from "@/entities/all";
 import { Button } from "@/components/ui/button";
@@ -212,6 +212,7 @@ const getRoomImage = (roomName) => {
 
 export default function RoomDetails() {
   const navigate = useNavigate();
+  const { roomId } = useParams();
   const [room, setRoom] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false);
@@ -219,11 +220,9 @@ export default function RoomDetails() {
 
   useEffect(() => {
     loadRoom();
-  }, []);
+  }, [roomId]);
 
   const loadRoom = async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get('id');
 
     if (!roomId) {
       navigate(createPageUrl("Automation"));
