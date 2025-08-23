@@ -1,13 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Mic, Volume2, MessageSquare, Power } from 'lucide-react';
+import { ArrowLeft, Mic, Volume2, MessageSquare, Power, Crown, Shield, Upload, Play } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { User, UserSettings, VoiceCommand } from "@/entities/all";
+import SubscriptionModal from "@/components/ai/SubscriptionModal";
+import AdminPasswordModal from "@/components/ai/AdminPasswordModal";
+import UploadAudioModal from "@/components/ai/UploadAudioModal";
+import ActionExecutor from "@/components/ai/ActionExecutor";
 
 const AILogoSVG = () => (
   <svg width="24" height="24" viewBox="0 0 100 100" className="w-6 h-6">
@@ -53,6 +56,13 @@ export default function Ander() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [voiceCommands, setVoiceCommands] = useState([]);
+  
+  // Modal states
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   useEffect(() => {
     loadUserSettings();
@@ -336,7 +346,25 @@ export default function Ander() {
   const handleAnderToggle = async (enabled) => {
     setAnderEnabled(enabled);
     await handleSettingUpdate({ ander_enabled: enabled });
-  }
+  };
+
+  const handleUploadAudio = (commandId: string) => {
+    setSelectedCommandId(commandId);
+    setShowUploadModal(true);
+  };
+
+  const handleAdminAction = (action: string) => {
+    if (!isAdminAuthenticated) {
+      setShowAdminModal(true);
+      return;
+    }
+    // Execute admin action
+    console.log(`Executing admin action: ${action}`);
+  };
+
+  const handleAdminAuthenticated = () => {
+    setIsAdminAuthenticated(true);
+  };
 
   const groupedCommands = voiceCommands.reduce((acc, command) => {
     const categoryKey = command.command_category;
@@ -429,6 +457,52 @@ export default function Ander() {
         </CardContent>
       </Card>
 
+      {/* Advanced Features Card */}
+      <Card className="glass-card border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-inter">
+            <Crown className="w-5 h-5 text-purple-600" />
+            Advanced Features
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowSubscriptionModal(true)}
+              className="flex items-center gap-2 h-auto p-4 flex-col"
+            >
+              <Crown className="w-5 h-5 text-purple-600" />
+              <span className="font-medium">Upgrade Plan</span>
+              <span className="text-xs text-gray-500">Get premium features</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => handleAdminAction('admin_settings')}
+              className="flex items-center gap-2 h-auto p-4 flex-col"
+            >
+              <Shield className="w-5 h-5 text-red-600" />
+              <span className="font-medium">Admin Settings</span>
+              <span className="text-xs text-gray-500">Advanced configurations</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              onClick={() => handleUploadAudio('')}
+              className="flex items-center gap-2 h-auto p-4 flex-col"
+            >
+              <Upload className="w-5 h-5 text-blue-600" />
+              <span className="font-medium">Upload Audio</span>
+              <span className="text-xs text-gray-500">Custom voice responses</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Action Executor */}
+      <ActionExecutor voiceCommands={voiceCommands} />
+
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-inter">
@@ -472,29 +546,49 @@ export default function Ander() {
                 <CardTitle className="text-lg font-inter">{categoryTitle}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {commandsInCategory.map((command) => (
-                  <div key={command.id} className="p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-start justify-between mb-2">
+                <ul className="space-y-2">
+                  {commandsInCategory.map((command, index) => (
+                    <li key={index} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-200 font-inter whitespace-normal text-left">
-                          {command.command_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        <span className="text-sm">{command.command_name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {command.keywords.length} keywords
                         </Badge>
                       </div>
-                      <Volume2 className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <p className="text-sm text-gray-700 font-inter mb-1">
-                      {command.response.replace('{RoomName}', '[Room]').replace('{SocketName}', '[Socket]')}
-                    </p>
-                    <p className="text-xs text-gray-500 font-inter italic">
-                      Example: "{command.keywords[0].replace('{RoomName}', 'Living Room').replace('{SocketName}', 'TV')}"
-                    </p>
-                  </div>
-                ))}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleUploadAudio(command.id)}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <Upload className="w-3 h-3" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
             </Card>
           );
         })}
       </div>
+
+      {/* Modals */}
+      <SubscriptionModal 
+        open={showSubscriptionModal} 
+        onOpenChange={setShowSubscriptionModal} 
+      />
+      
+      <AdminPasswordModal
+        open={showAdminModal}
+        onOpenChange={setShowAdminModal}
+        onPasswordVerified={handleAdminAuthenticated}
+      />
+      
+      <UploadAudioModal
+        open={showUploadModal}
+        onOpenChange={setShowUploadModal}
+        commandId={selectedCommandId}
+      />
     </div>
   );
 }

@@ -68,22 +68,11 @@ export default function AIAssistantButton() {
     
     voiceProcessor.current = new VoiceCommandProcessor();
     
-    const button = buttonRef.current;
-    if (button) {
-        button.addEventListener('mousedown', handleMouseDown);
-        // Use passive: false for touch events if preventing default behavior inside the handler
-        button.addEventListener('touchstart', handleTouchStart, { passive: false });
-    }
-    
     window.addEventListener('anderSettingsChanged', loadUserData);
     
     return () => {
       if (voiceProcessor.current) {
         voiceProcessor.current.cleanup();
-      }
-      if (button) {
-        button.removeEventListener('mousedown', handleMouseDown);
-        button.removeEventListener('touchstart', handleTouchStart);
       }
       window.removeEventListener('anderSettingsChanged', loadUserData);
     };
@@ -133,78 +122,44 @@ export default function AIAssistantButton() {
     localStorage.setItem('aiAssistantPosition', JSON.stringify(newPosition));
   };
 
-  const handleDragStart = (clientX, clientY) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
     dragStartPos.current = {
-      x: clientX - position.x,
-      y: clientY - position.y
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
     };
-    clickStartPos.current = { x: clientX, y: clientY };
+    clickStartPos.current = { x: e.clientX, y: e.clientY };
     setIsDragging(false);
-  };
-
-  const handleDragMove = (clientX, clientY) => {
-    const deltaX = Math.abs(clientX - clickStartPos.current.x);
-    const deltaY = Math.abs(clientY - clickStartPos.current.y);
     
-    if (deltaX > dragThreshold || deltaY > dragThreshold) {
+    const handlePointerMove = (e: PointerEvent) => {
+      const deltaX = Math.abs(e.clientX - clickStartPos.current.x);
+      const deltaY = Math.abs(e.clientY - clickStartPos.current.y);
+      
+      if (deltaX > dragThreshold || deltaY > dragThreshold) {
         setIsDragging(true);
-    }
+      }
+      
+      const newX = Math.max(20, Math.min(window.innerWidth - 80, e.clientX - dragStartPos.current.x));
+      const newY = Math.max(20, Math.min(window.innerHeight - 80, e.clientY - dragStartPos.current.y));
+      setPosition({ x: newX, y: newY });
+    };
     
-    const newX = Math.max(20, Math.min(window.innerWidth - 80, clientX - dragStartPos.current.x));
-    const newY = Math.max(20, Math.min(window.innerHeight - 80, clientY - dragStartPos.current.y));
-    setPosition({ x: newX, y: newY });
-  };
-  
-  const handleDragEnd = () => {
-    if (isDragging) {
+    const handlePointerUp = () => {
+      if (isDragging) {
         savePosition(position);
-    } else {
+      } else {
         // Only activate if we weren't dragging
         handleActivate();
-    }
-    // Reset dragging state after a brief delay to prevent accidental activation
-    setTimeout(() => setIsDragging(false), 100);
-  };
-  
-  const handleMouseDown = (e) => {
-    e.preventDefault(); // Prevent text selection during drag
-    handleDragStart(e.clientX, e.clientY);
-    
-    const onMouseMove = (e) => {
-      // e.preventDefault(); // Not typically needed for mousemove on document if dragStart prevents default
-      handleDragMove(e.clientX, e.clientY);
-    };
-    
-    const onMouseUp = () => {
-        // e.preventDefault(); // Not typically needed
-        handleDragEnd();
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
+      }
+      // Reset dragging state after a brief delay to prevent accidental activation
+      setTimeout(() => setIsDragging(false), 100);
+      
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
     };
 
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  };
-
-  const handleTouchStart = (e) => {
-    if(e.cancelable) e.preventDefault(); // Prevent default touch behavior (like scrolling) if allowed
-    const touch = e.touches[0];
-    handleDragStart(touch.clientX, touch.clientY);
-
-    const onTouchMove = (e) => {
-        if(e.cancelable) e.preventDefault(); // Prevent default touchmove behavior (like scrolling)
-        const touch = e.touches[0];
-        handleDragMove(touch.clientX, touch.clientY);
-    };
-    
-    const onTouchEnd = () => {
-        handleDragEnd();
-        document.removeEventListener('touchmove', onTouchMove);
-        document.removeEventListener('touchend', onTouchEnd);
-    };
-
-    document.addEventListener('touchmove', onTouchMove, { passive: false }); // Needs passive: false to allow preventDefault
-    document.addEventListener('touchend', onTouchEnd);
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
   };
 
   const handleActivate = async () => {
@@ -277,6 +232,7 @@ export default function AIAssistantButton() {
         <div className="relative">
           <Button
             size="icon"
+            onPointerDown={handlePointerDown}
             className={`w-16 h-16 rounded-full shadow-2xl transition-all duration-300 border-0 ${
               isListening 
                 ? 'animate-pulse bg-red-500 hover:bg-red-600 shadow-red-400/50' 
