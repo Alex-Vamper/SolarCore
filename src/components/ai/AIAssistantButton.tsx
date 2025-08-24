@@ -1,308 +1,295 @@
 
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { User, UserSettings } from "@/entities/all";
-import { Mic, MicOff } from "lucide-react";
-import VoiceCommandProcessor from "./VoiceCommandProcessor";
+import React, { useState, useEffect, useRef } from 'react';
+import { User, UserSettings, VoiceCommand } from "@/entities/all";
+import VoiceCommandProcessor from './VoiceCommandProcessor';
+import ActionExecutor from './ActionExecutor'; // Import the new executor
+import { motion, AnimatePresence } from 'framer-motion';
 
 const AILogoSVG = () => (
-  <svg width="40" height="40" viewBox="0 0 100 100" className="w-10 h-10">
-    <defs>
-      <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor="#FCD34D" />
-        <stop offset="50%" stopColor="#F59E0B" />
-        <stop offset="100%" stopColor="#D97706" />
-      </radialGradient>
-      <linearGradient id="bladeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#3B82F6" />
-        <stop offset="50%" stopColor="#1E40AF" />
-        <stop offset="100%" stopColor="#1E3A8A" />
-      </linearGradient>
-    </defs>
-    
-    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(59, 130, 246, 0.2)" strokeWidth="2"/>
-    
-    <g transform="translate(50, 50)">
-      <path d="M 0,-35 Q -15,-20 -35,-15 Q -20,-5 0,0 Q 5,-20 0,-35" 
-            fill="url(#bladeGradient)" 
-            opacity="0.8"/>
-      
-      <g transform="rotate(120)">
-        <path d="M 0,-35 Q -15,-20 -35,-15 Q -20,-5 0,0 Q 5,-20 0,-35" 
-              fill="url(#bladeGradient)" 
-              opacity="0.8"/>
+    <svg width="24" height="24" viewBox="0 0 100 100" className="w-8 h-8">
+      <defs>
+        <radialGradient id="centerGlowBtn" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#FCD34D" />
+          <stop offset="50%" stopColor="#F59E0B" />
+          <stop offset="100%" stopColor="#D97706" />
+        </radialGradient>
+        <linearGradient id="bladeGradientBtn" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#3B82F6" />
+          <stop offset="50%" stopColor="#1E40AF" />
+          <stop offset="100%" stopColor="#1E3A8A" />
+        </linearGradient>
+      </defs>
+      <g transform="translate(50, 50)">
+        <path d="M 0,-35 Q -15,-20 -35,-15 Q -20,-5 0,0 Q 5,-20 0,-35" fill="url(#bladeGradientBtn)" opacity="0.8"/>
+        <g transform="rotate(120)"><path d="M 0,-35 Q -15,-20 -35,-15 Q -20,-5 0,0 Q 5,-20 0,-35" fill="url(#bladeGradientBtn)" opacity="0.8"/></g>
+        <g transform="rotate(240)"><path d="M 0,-35 Q -15,-20 -35,-15 Q -20,-5 0,0 Q 5,-20 0,-35" fill="url(#bladeGradientBtn)" opacity="0.8"/></g>
+        <circle cx="0" cy="0" r="12" fill="url(#centerGlowBtn)" />
+        <circle cx="0" cy="0" r="6" fill="#FFFFFF" opacity="0.9" />
       </g>
-      
-      <g transform="rotate(240)">
-        <path d="M 0,-35 Q -15,-20 -35,-15 Q -20,-5 0,0 Q 5,-20 0,-35" 
-              fill="url(#bladeGradient)" 
-              opacity="0.8"/>
-      </g>
-      
-      <circle cx="0" cy="0" r="12" fill="url(#centerGlow)" />
-      <circle cx="0" cy="0" r="6" fill="#FFFFFF" opacity="0.9" />
-    </g>
-  </svg>
+    </svg>
 );
 
 export default function AIAssistantButton() {
-  const [isEnabled, setIsEnabled] = useState(true);
-  const [isActive, setIsActive] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [response, setResponse] = useState("");
-  const [position, setPosition] = useState({ x: 20, y: 100 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [user, setUser] = useState(null);
-  const [voiceResponseEnabled, setVoiceResponseEnabled] = useState(true);
-  
-  const dragStartPos = useRef({ x: 0, y: 0 });
-  const clickStartPos = useRef({ x: 0, y: 0 });
-  const voiceProcessor = useRef(null);
-  const buttonRef = useRef(null);
-  const dragThreshold = 5; // pixels
-
-  useEffect(() => {
-    loadUserData();
-    loadPosition();
+    const [anderEnabled, setAnderEnabled] = useState(false);
+    const [voiceResponseEnabled, setVoiceResponseEnabled] = useState(true);
+    const [isListening, setIsListening] = useState(false);
+    const [responseMessage, setResponseMessage] = useState('');
     
-    voiceProcessor.current = new VoiceCommandProcessor();
-    
-    window.addEventListener('anderSettingsChanged', loadUserData);
-    
-    return () => {
-      if (voiceProcessor.current) {
-        voiceProcessor.current.cleanup();
-      }
-      window.removeEventListener('anderSettingsChanged', loadUserData);
-    };
-  }, []);
+    // State for drag-and-drop and position persistence
+    const [position, setPosition] = useState({ x: window.innerWidth - 80, y: window.innerHeight - 80 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [hasMoved, setHasMoved] = useState(false); // To distinguish click from drag
+    const buttonRef = useRef(null);
+    const dragStartPoint = useRef({ x: 0, y: 0 });
+    const userSettingsRef = useRef(null); // To store user settings object
+    const systemFallbacksRef = useRef({}); // Store fallbacks here
 
-  const loadUserData = async () => {
-    try {
-      const currentUser = await User.me();
-      setUser(currentUser);
-      
-      const settingsResult = await UserSettings.filter({ created_by: currentUser.email });
-      if (settingsResult.length > 0) {
-        const settings = settingsResult[0];
-        setVoiceResponseEnabled(settings.voice_response_enabled ?? true);
-        setIsEnabled(settings.ander_enabled ?? true);
-      } else {
-        // Default to enabled if no settings exist
-        setVoiceResponseEnabled(true);
-        setIsEnabled(true);
-      }
-    } catch (error) {
-      console.error("Error loading user:", error);
-      setIsEnabled(false); // Disable if user can't be loaded
-    }
-  };
+    const voiceProcessor = useRef(new VoiceCommandProcessor());
 
-  const loadPosition = () => {
-    // Use a global key that persists across logout/login
-    const savedPosition = localStorage.getItem('aiAssistantPosition');
-    if (savedPosition) {
-      try {
-        const parsedPosition = JSON.parse(savedPosition);
-        // Validate position is within screen bounds
-        if (parsedPosition.x >= 0 && parsedPosition.y >= 0 && 
-            parsedPosition.x <= window.innerWidth - 80 && 
-            parsedPosition.y <= window.innerHeight - 80) {
-          setPosition(parsedPosition);
+    const loadSettings = async () => {
+        try {
+            const currentUser = await User.me();
+            // Fetch settings
+            const settingsResult = await UserSettings.filter({ created_by: currentUser.email });
+
+            if (settingsResult.length > 0) {
+                const settings = settingsResult[0];
+                userSettingsRef.current = settings;
+                setAnderEnabled(settings.ander_enabled ?? false);
+                setVoiceResponseEnabled(settings.voice_response_enabled ?? true);
+                if (settings.ander_button_position) {
+                    setPosition(settings.ander_button_position);
+                }
+            } else {
+                setAnderEnabled(false); // No settings, so no button
+            }
+            
+            // Fetch system fallbacks
+            const allCommands = await VoiceCommand.list();
+            systemFallbacksRef.current = {
+                unrecognized: allCommands.find(c => c.command_name === '_system_fallback_unrecognized_'),
+                device_not_found: allCommands.find(c => c.command_name === '_system_fallback_device_not_found_')
+            };
+
+        } catch (error) {
+            // Not logged in or other error, disable button
+            setAnderEnabled(false); 
         }
-      } catch (error) {
-        console.error("Error parsing saved position:", error);
-      }
-    }
-  };
-
-  const savePosition = (newPosition) => {
-    // Use a global key that persists across logout/login
-    localStorage.setItem('aiAssistantPosition', JSON.stringify(newPosition));
-  };
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
-    dragStartPos.current = {
-      x: e.clientX - position.x,
-      y: e.clientY - position.y
     };
-    clickStartPos.current = { x: e.clientX, y: e.clientY };
-    setIsDragging(false);
-    
-    const handlePointerMove = (e: PointerEvent) => {
-      const deltaX = Math.abs(e.clientX - clickStartPos.current.x);
-      const deltaY = Math.abs(e.clientY - clickStartPos.current.y);
-      
-      if (deltaX > dragThreshold || deltaY > dragThreshold) {
+
+    useEffect(() => {
+        loadSettings();
+        window.addEventListener('anderSettingsChanged', loadSettings);
+        return () => window.removeEventListener('anderSettingsChanged', loadSettings);
+    }, []);
+
+    const handleMouseDown = (e) => {
+        if (e.button !== 0) return;
         setIsDragging(true);
-      }
-      
-      const newX = Math.max(20, Math.min(window.innerWidth - 80, e.clientX - dragStartPos.current.x));
-      const newY = Math.max(20, Math.min(window.innerHeight - 80, e.clientY - dragStartPos.current.y));
-      setPosition({ x: newX, y: newY });
-    };
-    
-    const handlePointerUp = () => {
-      if (isDragging) {
-        savePosition(position);
-      } else {
-        // Only activate if we weren't dragging
-        handleActivate();
-      }
-      // Reset dragging state after a brief delay to prevent accidental activation
-      setTimeout(() => setIsDragging(false), 100);
-      
-      document.removeEventListener('pointermove', handlePointerMove);
-      document.removeEventListener('pointerup', handlePointerUp);
+        setHasMoved(false);
+        dragStartPoint.current = {
+            x: e.clientX,
+            y: e.clientY
+        };
+        e.preventDefault();
     };
 
-    document.addEventListener('pointermove', handlePointerMove);
-    document.addEventListener('pointerup', handlePointerUp);
-  };
+    const handleMouseMove = (e) => {
+        if (!isDragging) return;
+        setHasMoved(true);
 
-  const handleActivate = async () => {
-    // Don't activate if we're in the middle of dragging or already listening
-    if (isDragging || isListening) {
-      if (voiceProcessor.current && isListening) voiceProcessor.current.stopListening();
-      return;
-    }
-
-    setIsActive(true);
-    setIsListening(true);
-    setTranscript("Listening...");
-    setResponse("");
-
-    try {
-      const result = await voiceProcessor.current.startListening(8000);
-      
-      if (result.transcript) {
-        setTranscript(`You said: "${result.transcript}"`);
-        const commandResponse = await voiceProcessor.current.processCommand(result.transcript);
-        setResponse(commandResponse.response);
+        const newX = position.x + e.clientX - dragStartPoint.current.x;
+        const newY = position.y + e.clientY - dragStartPoint.current.y;
         
-        if (voiceResponseEnabled && commandResponse.response) {
-          await voiceProcessor.current.speakResponse(commandResponse.response);
+        dragStartPoint.current = { x: e.clientX, y: e.clientY };
+
+        const buttonWidth = buttonRef.current?.offsetWidth || 64;
+        const buttonHeight = buttonRef.current?.offsetHeight || 64;
+        
+        const clampedX = Math.max(10, Math.min(newX, window.innerWidth - buttonWidth - 10));
+        const clampedY = Math.max(10, Math.min(newY, window.innerHeight - buttonHeight - 10));
+
+        setPosition({ x: clampedX, y: clampedY });
+    };
+
+    const savePosition = async (newPos) => {
+        if (userSettingsRef.current?.id) {
+            try {
+                await UserSettings.update(userSettingsRef.current.id, {
+                    ander_button_position: newPos
+                });
+                userSettingsRef.current.ander_button_position = newPos;
+            } catch (error) {
+                console.error("Failed to save button position:", error);
+            }
+        } else {
+            try {
+                const currentUser = await User.me();
+                const newSettings = await UserSettings.create({ 
+                    created_by: currentUser.email,
+                    ander_button_position: newPos
+                });
+                userSettingsRef.current = newSettings;
+            } catch(error) {
+                 console.error("Failed to create settings to save button position:", error);
+            }
         }
-      } else {
-        setTranscript("No speech detected");
-        setResponse("Please try speaking more clearly");
-      }
-    } catch (error) {
-      console.error("Voice processing error:", error);
-      setTranscript("Voice recognition failed");
-      setResponse("Please check your microphone and try again");
-    } finally {
-      setIsListening(false);
-      setTimeout(() => {
-        setIsActive(false);
-        setTranscript("");
-        setResponse("");
-      }, 4000);
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+        if (hasMoved) {
+            savePosition(position);
+        }
+    };
+
+    useEffect(() => {
+        if (isDragging) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = 'none';
+        }
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = 'auto';
+        };
+    }, [isDragging, position]);
+
+    const handleClick = async () => {
+        if (hasMoved || isListening) return;
+
+        setIsListening(true);
+        setResponseMessage('');
+        
+        try {
+            const { transcript } = await voiceProcessor.current.startListening();
+            setIsListening(false); // Set to false right after listening finishes
+            
+            if (transcript) {
+                const result = await voiceProcessor.current.processCommand(transcript);
+                
+                if (result.matched) {
+                    // Execute the action
+                    const actionResult = await ActionExecutor.execute(result.command, transcript);
+
+                    let finalResponseCommand = result.command; // Use 'command' as the source for response and audio
+                    // If action failed because device not found, use device_not_found fallback
+                    if (!actionResult.success && actionResult.reason === 'device_not_found' && systemFallbacksRef.current.device_not_found) {
+                        finalResponseCommand = systemFallbacksRef.current.device_not_found;
+                    }
+
+                    setResponseMessage(finalResponseCommand.response);
+                    if (voiceResponseEnabled) {
+                        await voiceProcessor.current.speakResponse(finalResponseCommand.response, finalResponseCommand.audio_url);
+                    }
+                } else {
+                    // Use unrecognized fallback
+                    const fallback = systemFallbacksRef.current.unrecognized;
+                    if (fallback) {
+                        setResponseMessage(fallback.response);
+                        if (voiceResponseEnabled) {
+                           await voiceProcessor.current.speakResponse(fallback.response, fallback.audio_url);
+                        }
+                    } else {
+                        // Fallback to default message from VoiceCommandProcessor if no DB fallback exists
+                        setResponseMessage(result.response); 
+                    }
+                }
+            } else {
+                setResponseMessage("No command heard.");
+            }
+        } catch (error) {
+            console.error("Voice command failed:", error);
+            setIsListening(false); // Ensure listening state is reset on error
+            const fallback = systemFallbacksRef.current.unrecognized;
+            // Use the fallback response or a generic error message
+            setResponseMessage(fallback?.response || "An error occurred.");
+        }
+    };
+
+    // Calculate text box position based on button position
+    const getTextBoxPosition = () => {
+        const isOnLeftHalf = position.x < window.innerWidth / 2;
+        if (isOnLeftHalf) {
+            // Button on left, text box on right
+            return {
+                left: position.x + 80,
+                top: position.y,
+                transform: 'translateY(-50%)'
+            };
+        } else {
+            // Button on right, text box on left
+            return {
+                right: window.innerWidth - position.x + 16,
+                top: position.y,
+                transform: 'translateY(-50%)'
+            };
+        }
+    };
+
+    if (!anderEnabled) {
+        return null;
     }
-  };
 
-  const firstName = user?.full_name?.split(' ')[0] || 'User';
-  
-  const isOnLeftHalf = position.x < window.innerWidth / 2;
-  const bubbleLeft = isOnLeftHalf ? position.x + 80 : position.x - 320;
-
-  if (!isEnabled) {
-    return null;
-  }
-
-  return (
-    <>
-      <div
-        ref={buttonRef}
-        style={{
-          position: 'fixed',
-          left: position.x,
-          top: position.y,
-          zIndex: 1000,
-          cursor: isDragging ? 'grabbing' : 'grab',
-          touchAction: 'none', // Prevents browser gestures like pull-to-refresh
-          userSelect: 'none' // Prevents text selection on drag
-        }}
-        className="select-none"
-        // onMouseDown={handleMouseDown} // Event listeners moved to useEffect
-        // onTouchStart={handleTouchStart} // Event listeners moved to useEffect
-      >
-        <div className="relative">
-          <Button
-            size="icon"
-            onPointerDown={handlePointerDown}
-            className={`w-16 h-16 rounded-full shadow-2xl transition-all duration-300 border-0 ${
-              isListening 
-                ? 'animate-pulse bg-red-500 hover:bg-red-600 shadow-red-400/50' 
-                : isActive 
-                ? 'animate-pulse shadow-yellow-400/50' 
-                : 'hover:scale-110 shadow-blue-600/30'
-            }`}
-            style={{
-              background: isListening 
-                ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%)'
-                : 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%)',
-              boxShadow: isActive 
-                ? '0 0 30px rgba(251, 191, 36, 0.6), 0 0 60px rgba(251, 191, 36, 0.4)' 
-                : '0 10px 25px rgba(59, 130, 246, 0.3)'
-            }}
-          >
-            {isListening ? <MicOff className="w-6 h-6" /> : <AILogoSVG />}
-          </Button>
-          
-          {(isActive || isListening) && (
-            <div className={`absolute inset-0 rounded-full border-4 animate-ping opacity-75 ${
-              isListening ? 'border-red-400' : 'border-yellow-400'
-            }`}></div>
-          )}
-        </div>
-      </div>
-
-      {(isActive || transcript || response) && (
-        <div
-          style={{
-            position: 'fixed',
-            left: bubbleLeft,
-            top: position.y + 10,
-            zIndex: 1001
-          }}
-          className="bg-white rounded-xl shadow-xl border border-gray-200 p-3 max-w-xs animate-in slide-in-from-left-2 duration-300"
-        >
-          <div className="relative">
-            <div 
-              className={`absolute top-4 w-0 h-0 border-t-4 border-b-4 border-transparent ${
-                isOnLeftHalf 
-                  ? '-left-2 border-r-8 border-r-white' 
-                  : '-right-2 border-l-8 border-l-white'
-              }`}
-            ></div>
-            
+    return (
+        <>
+            {/* Listening pulse effect */}
             {isListening && (
-              <div className="flex items-center gap-2 mb-2">
-                <Mic className="w-4 h-4 text-red-500 animate-pulse" />
-                <span className="text-sm text-gray-600 font-inter">Listening...</span>
-              </div>
+                <div
+                    className="fixed z-40 pointer-events-none"
+                    style={{
+                        left: position.x - 16,
+                        top: position.y - 16,
+                        width: '96px',
+                        height: '96px'
+                    }}
+                >
+                    <div className="absolute inset-0 rounded-full bg-yellow-400 opacity-30 animate-ping"></div>
+                    <div className="absolute inset-2 rounded-full bg-yellow-300 opacity-40 animate-ping animation-delay-75"></div>
+                    <div className="absolute inset-4 rounded-full bg-yellow-200 opacity-50 animate-ping animation-delay-150"></div>
+                </div>
             )}
-            
-            {transcript && !response && (
-              <p className="text-sm text-gray-800 font-inter mb-2">{transcript}</p>
-            )}
-            
-            {response ? (
-              <div>
-                <p className="text-sm font-semibold text-blue-600 font-inter mb-1">Ander:</p>
-                <p className="text-sm text-gray-800 font-inter">{response}</p>
-              </div>
-            ) : !transcript && !isListening && (
-              <p className="text-sm text-gray-800 font-inter">
-                Hi <span className="font-semibold text-blue-600">{firstName}</span>, tap and speak your command!
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-    </>
-  );
+
+            {/* Response text box */}
+            <AnimatePresence>
+                {responseMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="fixed z-50 bg-white text-black p-3 rounded-lg shadow-xl text-sm max-w-xs font-inter border border-gray-200"
+                        style={getTextBoxPosition()}
+                    >
+                        {responseMessage}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* AI Assistant Button */}
+            <motion.button
+                ref={buttonRef}
+                className="fixed z-50 w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing focus:outline-none"
+                style={{
+                    left: position.x,
+                    top: position.y,
+                }}
+                onMouseDown={handleMouseDown}
+                onClick={handleClick}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+            >
+                <AILogoSVG />
+            </motion.button>
+
+            <style jsx>{`
+                .animation-delay-75 {
+                    animation-delay: 75ms;
+                }
+                .animation-delay-150 {
+                    animation-delay: 150ms;
+                }
+            `}</style>
+        </>
+    );
 }
