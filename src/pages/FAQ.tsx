@@ -2,6 +2,8 @@ import * as React from "react";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ArrowLeft, HelpCircle } from 'lucide-react';
 
 export default function FAQ() {
@@ -25,35 +27,33 @@ export default function FAQ() {
   ];
 
   return (
-    <Layout>
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <HelpCircle className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold text-gray-900 font-inter">Frequently Asked Questions</h1>
-          </div>
-          <p className="text-gray-600 font-inter">
-            Find answers to common questions about your SolarCore smart home system
-          </p>
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <HelpCircle className="w-8 h-8 text-primary" />
+          <h1 className="text-3xl font-bold text-gray-900 font-inter">Frequently Asked Questions</h1>
         </div>
-
-        <Card className="glass-card border-0 shadow-lg">
-          <CardContent className="p-6">
-            <Accordion type="single" collapsible className="space-y-4">
-              {faqs.map((faq, index) => (
-                <AccordionItem key={index} value={`item-${index}`} className="border-b border-gray-200 last:border-0">
-                  <AccordionTrigger className="text-left font-semibold text-gray-900 font-inter hover:text-primary">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-gray-600 font-inter">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </CardContent>
-        </Card>
+        <p className="text-gray-600 font-inter">
+          Find answers to common questions about your SolarCore smart home system
+        </p>
       </div>
-    </Layout>
+
+      <Card className="glass-card border-0 shadow-lg">
+        <CardContent className="p-6">
+          <Accordion type="single" collapsible className="space-y-4">
+            {faqs.map((faq, index) => (
+              <AccordionItem key={index} value={`item-${index}`} className="border-b border-gray-200 last:border-0">
+                <AccordionTrigger className="text-left font-semibold text-gray-900 font-inter hover:text-primary">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-gray-600 font-inter">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Outlet } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -163,11 +163,10 @@ const DesktopHeader = () => {
 };
 
 interface LayoutProps {
-  children: React.ReactNode;
   currentPageName?: string;
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({}: LayoutProps = {}) {
   return (
     <div className="min-h-screen bg-solarcore-gray flex flex-col lg:flex-row">
       <SideNav />
@@ -176,7 +175,7 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex-1 lg:pl-64">
         <DesktopHeader />
         <main className="flex-1 overflow-auto pb-24 lg:pb-6">
-          {children}
+          <Outlet />
         </main>
       </div>
 

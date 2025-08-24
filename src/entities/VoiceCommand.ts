@@ -1,55 +1,48 @@
-{
-  "name": "VoiceCommand",
-  "type": "object",
-  "properties": {
-    "command_category": {
-      "type": "string",
-      "description": "Category of the voice command"
-    },
-    "command_name": {
-      "type": "string",
-      "description": "Internal name for the command"
-    },
-    "keywords": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Array of possible phrases user might say"
-    },
-    "response": {
-      "type": "string",
-      "description": "Text response Ander should give"
-    },
-    "action_type": {
-      "type": "string",
-      "description": "Type of action to perform"
-    },
-    "audio_url": {
-      "type": "string",
-      "description": "URL to pre-recorded audio response file"
-    },
-    "target_room_id": {
-      "type": "string",
-      "description": "ID of the target Room entity for a device-specific command"
-    },
-    "target_appliance_id": {
-      "type": "string",
-      "description": "ID of the target appliance within the room"
-    },
-    "target_state_key": {
-      "type": "string",
-      "description": "The property key of the appliance to change (e.g., 'status')"
-    },
-    "target_state_value": {
-      "type": "string",
-      "description": "The value to set for the target state key (e.g., 'true' or 'false')"
-    }
-  },
-  "required": [
-    "command_category",
-    "command_name",
-    "keywords",
-    "response"
-  ]
+export interface VoiceCommand {
+  id?: string;
+  command_category: 'system_control' | 'lighting_control' | 'safety_security' | 'energy_management' | 'information_interaction';
+  command_name: string;
+  keywords: string[];
+  response: string;
+  action_type?: string;
 }
+
+export class VoiceCommandService {
+  static async list(): Promise<VoiceCommand[]> {
+    return this.getDefaultCommands();
+  }
+
+  static async bulkCreate(commands: VoiceCommand[]): Promise<VoiceCommand[]> {
+    // For now, just return the commands as this is mock data
+    return commands;
+  }
+
+  static getDefaultCommands(): VoiceCommand[] {
+    return [
+      {
+        command_category: 'system_control',
+        command_name: 'status_check',
+        keywords: ['status', 'how is everything', 'system report'],
+        response: 'All systems are operating normally. Energy is running efficiently and safety systems are active.',
+        action_type: 'status_report'
+      },
+      {
+        command_category: 'lighting_control',
+        command_name: 'lights_on',
+        keywords: ['turn on lights', 'lights on', 'illuminate'],
+        response: 'Turning on the lights in the main areas.',
+        action_type: 'lighting_control'
+      },
+      {
+        command_category: 'energy_management',
+        command_name: 'energy_report',
+        keywords: ['energy usage', 'power consumption', 'battery level'],
+        response: 'Current energy usage is optimal. Solar panels are generating efficiently.',
+        action_type: 'energy_report'
+      }
+    ];
+  }
+}
+
+// Keep backward compatibility
+export const VoiceCommand = VoiceCommandService;

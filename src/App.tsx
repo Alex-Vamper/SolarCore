@@ -56,7 +56,7 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <ProtectedRoute>
-        <Layout children={undefined} />
+        <Layout />
       </ProtectedRoute>
     ),
     children: [
@@ -97,7 +97,7 @@ const router = createBrowserRouter([
         element: <FAQ />
       },
       {
-        path: "contact",
+        path: "contact-support",
         element: <ContactSupport />
       },
       {

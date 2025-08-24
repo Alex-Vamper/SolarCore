@@ -98,7 +98,7 @@ export default function RoomBox({ room, dragHandleProps }) {
   }, [room]); // Depend on the 'room' prop to update state when parent re-renders with a new room object
 
   const handleClick = () => {
-    navigate(createPageUrl(`RoomDetails?id=${currentRoom.id}`));
+    navigate(`/room/${currentRoom.id}`);
   };
 
   const RoomIcon = getRoomIcon(currentRoom.name);

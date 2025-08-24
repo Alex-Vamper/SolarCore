@@ -152,7 +152,7 @@ const SYSTEM_SETTINGS_MAP = {
 }
 
 export default function SafetySystemSettingsModal({ isOpen, onClose, system, onSave, onDelete }) {
-    const [settings, setSettings] = React.useState(system.automation_settings || {});
+    const [settings, setSettings] = useState(system.automation_settings || {});
 
     if (!isOpen || !system) return null;
 
