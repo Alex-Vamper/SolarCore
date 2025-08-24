@@ -1,4 +1,5 @@
 import { VoiceCommand, User, Room } from "@/entities/all";
+import { supabase } from "@/integrations/supabase/client";
 
 // Add TypeScript declarations for Speech APIs
 declare global {
@@ -117,7 +118,7 @@ export default class VoiceCommandProcessor {
     await this.initialize();
     
     try {
-      const allCommands = VoiceCommand.getDefaultCommands();
+      const allCommands = await VoiceCommand.list();
       if (!allCommands.length) return { command: null, response: "I'm still learning." };
 
       const { bestMatch, extractedRoomName, extractedSocketName } = this.fuzzySearch(transcript, allCommands);
@@ -279,28 +280,74 @@ export default class VoiceCommandProcessor {
   }
 
   async speakResponse(text: string): Promise<void> {
-    return new Promise<void>((resolve) => {
-      if (!this.synthesis) return resolve();
-      this.synthesis.cancel();
+    try {
+      // Use our TTS edge function for better quality speech
+      const { data, error } = await supabase.functions.invoke('generate-tts', {
+        body: { text, voiceId: "9BWtsMINqrJLrRacOk9x" }
+      });
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1.0;
-      utterance.volume = 0.8;
-      
-      let repeatCount = 0;
-      const speak = () => {
-        if (repeatCount < 2) {
-          repeatCount++;
-          utterance.onend = () => {
-              if(repeatCount < 2) setTimeout(speak, 500); else resolve();
+      if (error) throw error;
+
+      if (data?.audioContent) {
+        // Convert base64 to blob and play
+        const audioBytes = atob(data.audioContent);
+        const byteNumbers = new Array(audioBytes.length);
+        for (let i = 0; i < audioBytes.length; i++) {
+          byteNumbers[i] = audioBytes.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const audioBlob = new Blob([byteArray], { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        const audio = new Audio(audioUrl);
+        audio.volume = 0.7;
+        
+        return new Promise((resolve) => {
+          audio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            resolve();
           };
-          utterance.onerror = () => resolve();
-          this.synthesis.speak(utterance);
-        } else resolve();
-      };
-      speak();
-    });
+          audio.onerror = () => {
+            URL.revokeObjectURL(audioUrl);
+            this.fallbackToWebSpeech(text);
+            resolve();
+          };
+          audio.play().catch(() => {
+            URL.revokeObjectURL(audioUrl);
+            this.fallbackToWebSpeech(text);
+            resolve();
+          });
+        });
+      } else {
+        this.fallbackToWebSpeech(text);
+      }
+    } catch (error) {
+      console.error('TTS error:', error);
+      this.fallbackToWebSpeech(text);
+    }
+  }
+
+  private fallbackToWebSpeech(text: string): void {
+    if (!this.synthesis) return;
+    this.synthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9;
+    utterance.pitch = 1.0;
+    utterance.volume = 0.8;
+    
+    let repeatCount = 0;
+    const speak = () => {
+      if (repeatCount < 2) {
+        repeatCount++;
+        utterance.onend = () => {
+            if(repeatCount < 2) setTimeout(speak, 500);
+        };
+        utterance.onerror = () => {};
+        this.synthesis.speak(utterance);
+      }
+    };
+    speak();
   }
 
   cleanup() {
