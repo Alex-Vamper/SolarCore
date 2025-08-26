@@ -1,6 +1,8 @@
 {
   "name": "SolarCore Auto",
   "short_name": "SolarCore",
+  "id": "com.solarcore.auto",
+  "description": "SolarCore Auto helps you monitor, manage, and automate solar-powered smart homes with ease.",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -13,7 +15,17 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
-  "display": "standalone"
+  "theme_color": "#0B111F",
+  "background_color": "#F5E006",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "dir": "ltr",
+  "lang": "en",
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ]
 }
