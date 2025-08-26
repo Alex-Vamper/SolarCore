@@ -72,7 +72,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan }) {
       setShowPayment(true);
     } else if (planId === 'enterprise') {
       // For enterprise, open mail client as per outline
-      window.location.href = 'mailto:sales@solarcore.com?subject=Enterprise Plan Inquiry';
+      window.location.href = 'mailto:samuelalexander851@gmail.com?subject=Enterprise Plan Inquiry';
     } else if (planId === 'free') {
       // Handle free plan selection - update database
       try {
