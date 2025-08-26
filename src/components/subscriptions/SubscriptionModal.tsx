@@ -66,20 +66,45 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan }) {
   const [showPayment, setShowPayment] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
 
-  const handlePlanSelect = (planId) => {
+  const handlePlanSelect = async (planId) => {
     if (planId === 'premium') {
       setSelectedPlan(planId);
       setShowPayment(true);
     } else if (planId === 'enterprise') {
       // For enterprise, open mail client as per outline
       window.location.href = 'mailto:sales@solarcore.com?subject=Enterprise Plan Inquiry';
-    } else {
+    } else if (planId === 'free') {
+      // Handle free plan selection - update database
+      try {
+        const { UserSettings } = await import('@/entities/all');
+        await UserSettings.upsert({ 
+          subscription_plan: 'free',
+          subscription_status: 'active'
+        });
+        // Notify other components that settings have changed
+        window.dispatchEvent(new CustomEvent('anderSettingsChanged'));
+      } catch (error) {
+        console.error('Error updating subscription:', error);
+      }
       onSelectPlan(planId);
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     setShowPayment(false);
+    // Update user settings with premium subscription
+    try {
+      const { UserSettings } = await import('@/entities/all');
+      await UserSettings.upsert({ 
+        subscription_plan: 'premium',
+        subscription_status: 'active',
+        subscription_start_date: new Date().toISOString()
+      });
+      // Notify other components that settings have changed
+      window.dispatchEvent(new CustomEvent('anderSettingsChanged'));
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+    }
     onSelectPlan('premium');
   };
 

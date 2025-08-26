@@ -49,16 +49,17 @@ export default function AIAssistantButton() {
     const loadSettings = async () => {
         try {
             const currentUser = await User.me();
-            // Fetch settings
-            const settingsResult = await UserSettings.filter({ created_by: currentUser.email });
+            // Fetch settings using the corrected list method
+            const settingsResult = await UserSettings.list();
 
             if (settingsResult.length > 0) {
                 const settings = settingsResult[0];
                 userSettingsRef.current = settings;
                 setAnderEnabled(settings.ander_enabled ?? false);
                 setVoiceResponseEnabled(settings.voice_response_enabled ?? true);
-                // Note: ander_button_position not in current schema, using default position
-                setPosition({ x: 20, y: 20 });
+                // Use ander_button_position from settings or default
+                const buttonPos = settings.ander_button_position || { x: 20, y: 20 };
+                setPosition(buttonPos);
             } else {
                 setAnderEnabled(false); // No settings, so no button
             }
@@ -66,8 +67,8 @@ export default function AIAssistantButton() {
             // Fetch system fallbacks
             const allCommands = await VoiceCommand.list();
             systemFallbacksRef.current = {
-                unrecognized: allCommands.find(c => c.command_name === '_system_fallback_unrecognized_') || null,
-                device_not_found: allCommands.find(c => c.command_name === '_system_fallback_device_not_found_') || null
+                unrecognized: allCommands.find(c => c.command_name === '_admin_didnt_understand_') || null,
+                device_not_found: allCommands.find(c => c.command_name === '_admin_device_not_found_') || null
             };
 
         } catch (error) {
@@ -112,24 +113,12 @@ export default function AIAssistantButton() {
     };
 
     const savePosition = async (newPos) => {
-        if (userSettingsRef.current?.id) {
-            try {
-                // Note: ander_button_position not in current schema
-                console.log('Button position saved:', newPos);
-                // userSettingsRef.current.ander_button_position = newPos;
-            } catch (error) {
-                console.error("Failed to save button position:", error);
-            }
-        } else {
-            try {
-                const currentUser = await User.me();
-                const newSettings = await UserSettings.create({ 
-                    building_name: 'Default Building'
-                });
-                userSettingsRef.current = newSettings;
-            } catch(error) {
-                 console.error("Failed to create settings to save button position:", error);
-            }
+        try {
+            // Use upsert to save the button position
+            await UserSettings.upsert({ ander_button_position: newPos });
+            console.log('Button position saved:', newPos);
+        } catch (error) {
+            console.error("Failed to save button position:", error);
         }
     };
 

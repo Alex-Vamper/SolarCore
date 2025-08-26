@@ -89,8 +89,17 @@ export default function Ander() {
   useEffect(() => {
     loadUserSettings();
     initializeVoiceCommands(); // This will call loadAllCommands internally
+    
+    // Listen for settings changes from other components
+    const handleSettingsChange = () => {
+      loadUserSettings();
+    };
+    
+    window.addEventListener('anderSettingsChanged', handleSettingsChange);
+    
     return () => {
       if (logoClickTimer.current) clearTimeout(logoClickTimer.current);
+      window.removeEventListener('anderSettingsChanged', handleSettingsChange);
     };
   }, []);
 
@@ -99,14 +108,13 @@ export default function Ander() {
       const currentUser = await User.me();
       setUser(currentUser);
 
-      const settingsResult = await UserSettings.filter({ created_by: currentUser.email });
+      const settingsResult = await UserSettings.list();
       if (settingsResult.length > 0) {
         const settings = settingsResult[0];
         setVoiceResponseEnabled(settings.voice_response_enabled ?? true);
         setAnderEnabled(settings.ander_enabled ?? false);
-        // Note: subscription_plan and ander_device_id not in current schema
-        // setSubscriptionPlan(settings.subscription_plan ?? 'none');
-        // setAnderDeviceId(settings.ander_device_id ?? '');
+        setSubscriptionPlan(settings.subscription_plan ?? 'free');
+        setAnderDeviceId(settings.ander_device_id ?? '');
       }
     } catch (error) {
       console.error("Error loading user settings:", error);
@@ -289,16 +297,9 @@ export default function Ander() {
           console.warn("User not loaded, cannot update settings.");
           return;
         }
-        const settingsResult = await UserSettings.filter({ created_by: user.email });
         
-        let settingsId;
-        if (settingsResult.length > 0) {
-            settingsId = settingsResult[0].id;
-            await UserSettings.update(settingsId, setting);
-        } else {
-            const newSettings = await UserSettings.create({ ...setting, created_by: user.email });
-            settingsId = newSettings.id;
-        }
+        // Use upsert to create or update settings
+        await UserSettings.upsert(setting);
 
         // Notify other components of the change
         window.dispatchEvent(new CustomEvent('anderSettingsChanged'));
@@ -316,8 +317,8 @@ export default function Ander() {
   };
 
   const handleAnderToggle = async (enabled) => {
-    // If user is trying to enable Ander for the first time, show subscription modal
-    if (enabled && subscriptionPlan === 'none') {
+    // If user is trying to enable Ander for the first time, check subscription plan
+    if (enabled && (subscriptionPlan === 'none' || subscriptionPlan === null)) {
       setShowSubscriptionModal(true);
       return;
     }
