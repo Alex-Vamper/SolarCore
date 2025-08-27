@@ -8,11 +8,14 @@ import { ArrowLeft, Mic, Volume2, Power, HardDrive, Lock, AlertTriangle, Check, 
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import { User, UserSettings, VoiceCommand } from "@/entities/all";
 import SubscriptionModal from '../components/subscriptions/SubscriptionModal';
 import AdminPasswordModal from '../components/voice/AdminPasswordModal';
 import AudioUploadModal from '../components/voice/AudioUploadModal';
 import CommandEditorModal from '../components/voice/CommandEditorModal';
+import { useVoiceCommandInitializer } from "@/components/ai/VoiceCommandInitializer";
+import { useCrossSystemSync } from "@/hooks/useCrossSystemSync";
 
 const AILogoSVG = () => (
   <svg width="24" height="24" viewBox="0 0 100 100" className="w-6 h-6">
@@ -88,7 +91,7 @@ export default function Ander() {
   // This effect will run when the component mounts.
   useEffect(() => {
     loadUserSettings();
-    initializeVoiceCommands(); // This will call loadAllCommands internally
+    initializeDefaultCommands(); // This will call loadAllCommands internally
     
     // Listen for settings changes from other components
     const handleSettingsChange = () => {
@@ -123,7 +126,7 @@ export default function Ander() {
     }
   };
 
-  const initializeVoiceCommands = async () => {
+  const initializeDefaultCommands = async () => {
     try {
       // Check if any commands exist at all
       const existingCommands = await VoiceCommand.list();
@@ -421,9 +424,17 @@ export default function Ander() {
               Accept Changes
             </Button>
              <Button onClick={handleAddNewCommand} className="font-inter">
-              <Plus className="w-4 h-4 mr-2"/>
-              New Command
-            </Button>
+               <Plus className="w-4 h-4 mr-2"/>
+               New Command
+             </Button>
+             <Button onClick={async () => {
+               await VoiceCommand.deleteAll();
+               await initializeDefaultCommands();
+               toast.success("Voice commands refreshed with current room configuration!");
+             }} variant="outline" className="font-inter">
+               <AlertTriangle className="w-4 h-4 mr-2"/>
+               Refresh Commands
+             </Button>
           </div>
         )}
       </div>

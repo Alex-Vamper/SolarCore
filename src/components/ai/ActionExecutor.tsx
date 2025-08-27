@@ -1,4 +1,3 @@
-
 import { User, Room, SafetySystem } from "@/entities/all";
 
 class ActionExecutor {
@@ -60,6 +59,28 @@ class ActionExecutor {
         const roomName = extractRoomName();
         const socketName = extractSocketName();
 
+        // --- Safety System Synchronization Helper ---
+        const syncShadesWithSafety = async (type, isOpen, roomName = null) => {
+            try {
+                const safetySystems = await SafetySystem.filter({ created_by: currentUser.email });
+                const windowSystems = safetySystems.filter(sys => 
+                    sys.system_type === 'window_rain' && 
+                    (roomName ? sys.room_name.toLowerCase() === roomName : true)
+                );
+                
+                for (const system of windowSystems) {
+                    await SafetySystem.update(system.id, {
+                        sensor_readings: {
+                            ...system.sensor_readings,
+                            window_status: isOpen ? 'open' : 'closed'
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error syncing with safety systems:', error);
+            }
+        };
+
         // --- Generic Action Handlers ---
         const updateAllAppliances = async (type, status) => {
             const updates = rooms.map(room => {
@@ -69,7 +90,7 @@ class ActionExecutor {
                 return Room.update(room.id, { appliances: updatedAppliances });
             });
             await Promise.all(updates);
-            return { success: true };
+            return { success: true, reason: `All ${type} ${status ? 'turned on' : 'turned off'}` };
         };
 
         const updateRoomAppliances = async (type, status) => {
@@ -81,7 +102,7 @@ class ActionExecutor {
                 app.type === type ? { ...app, status } : app
             );
             await Room.update(targetRoom.id, { appliances: updatedAppliances });
-            return { success: true };
+            return { success: true, reason: `${roomName} ${type} ${status ? 'turned on' : 'turned off'}` };
         };
 
         const updateAllDevices = async (status) => {
@@ -90,7 +111,7 @@ class ActionExecutor {
                 return Room.update(room.id, { appliances: updatedAppliances });
             });
             await Promise.all(updates);
-            return { success: true };
+            return { success: true, reason: `All devices ${status ? 'turned on' : 'turned off'}` };
         };
         
         const updateSpecificSocket = async (status) => {
@@ -110,7 +131,7 @@ class ActionExecutor {
             if (!deviceFound) return { success: false, reason: "device_not_found" };
             
             await Room.update(targetRoom.id, { appliances: updatedAppliances });
-            return { success: true };
+            return { success: true, reason: `${roomName} ${socketName} socket ${status ? 'turned on' : 'turned off'}` };
         };
         
         const handleSecurityMode = async (mode) => {
@@ -119,67 +140,108 @@ class ActionExecutor {
             }
             // Dispatch event for UI to update
             window.dispatchEvent(new CustomEvent('securityModeChanged', { detail: { mode } }));
-            return { success: true };
+            return { success: true, reason: `${mode} mode activated` };
         }
         
         const handleLockDoor = async (lock) => {
-            const safetySystems = await SafetySystem.filter({ created_by: currentUser.email, system_type: 'front_door_lock' });
-            if (safetySystems.length === 0) return { success: false, reason: 'device_not_found' };
-            const doorLock = safetySystems[0];
-            await SafetySystem.update(doorLock.id, { status: lock ? 'active' : 'safe' });
-            
-            // Dispatch specific events for door lock status
-            if(lock) {
-                 window.dispatchEvent(new CustomEvent('doorLocked', { detail: { locked: true } }));
-            } else {
-                 window.dispatchEvent(new CustomEvent('doorUnlocked', { detail: { locked: false } }));
+            try {
+                // Create a door lock safety system if it doesn't exist
+                const safetySystems = await SafetySystem.list();
+                let doorLockSystem = safetySystems.find(sys => 
+                    sys.system_type === 'gas_leak' && sys.room_name === 'Front Door' // Use gas_leak as proxy for door lock
+                );
+                
+                if (!doorLockSystem) {
+                    // Create a door lock system using available system type
+                    doorLockSystem = await SafetySystem.create({
+                        system_id: 'door_lock_001',
+                        system_type: 'gas_leak', // Using available type as proxy
+                        room_name: 'Front Door',
+                        status: 'safe',
+                        sensor_readings: { door_locked: false }
+                    });
+                }
+                
+                if (doorLockSystem) {
+                    await SafetySystem.update(doorLockSystem.id, { 
+                        status: lock ? 'active' : 'safe',
+                        sensor_readings: {
+                            ...doorLockSystem.sensor_readings,
+                            door_locked: lock
+                        }
+                    });
+                }
+                
+                // Dispatch events for SecurityOverview to listen
+                if(lock) {
+                    window.dispatchEvent(new CustomEvent('doorLocked', { detail: { locked: true } }));
+                    // Auto-activate security mode when door is locked
+                    window.dispatchEvent(new CustomEvent('securityModeChanged', { detail: { mode: 'away' } }));
+                } else {
+                    window.dispatchEvent(new CustomEvent('doorUnlocked', { detail: { locked: false } }));
+                }
+                
+                return { success: true, reason: `Front door ${lock ? 'locked' : 'unlocked'}` };
+            } catch (error) {
+                console.error('Error in handleLockDoor:', error);
+                return { success: false, reason: 'execution_error' };
             }
-            return { success: true };
         }
 
         // --- Main Switch Statement ---
         let result = { success: false, reason: "unrecognized" };
         switch (command.action_type) {
             // System
-            case "all_devices_on": result = { success: true, reason: "All devices turned on" }; break;
-            case "all_devices_off": result = { success: true, reason: "All devices turned off" }; break;
+            case "all_devices_on": result = await updateAllDevices(true); break;
+            case "all_devices_off": result = await updateAllDevices(false); break;
             
             // Lighting
-            case "lights_all_on": result = { success: true, reason: "All lights turned on" }; break;
-            case "lights_all_off": result = { success: true, reason: "All lights turned off" }; break;
-            case "lights_room_on": result = { success: true, reason: "Room lights turned on" }; break;
-            case "lights_room_off": result = { success: true, reason: "Room lights turned off" }; break;
+            case "lights_all_on": result = await updateAllAppliances('smart_lighting', true); break;
+            case "lights_all_off": result = await updateAllAppliances('smart_lighting', false); break;
+            case "lights_room_on": result = await updateRoomAppliances('smart_lighting', true); break;
+            case "lights_room_off": result = await updateRoomAppliances('smart_lighting', false); break;
 
-            // Shading (assuming status 'true' = open, 'false' = close)
-            // Note: This needs device names/series to be "window" or "curtain"
-            case "windows_all_open": result = { success: true, reason: "All windows opened" }; break;
-            case "windows_all_close": result = { success: true, reason: "All windows closed" }; break;
-            case "windows_room_open": result = { success: true, reason: "Room windows opened" }; break;
-            case "windows_room_close": result = { success: true, reason: "Room windows closed" }; break;
-            case "curtains_all_open": result = { success: true, reason: "All curtains opened" }; break;
-            case "curtains_all_close": result = { success: true, reason: "All curtains closed" }; break;
-            case "curtains_room_open": result = { success: true, reason: "Room curtains opened" }; break;
-            case "curtains_room_close": result = { success: true, reason: "Room curtains closed" }; break;
+            // Shading - sync with safety systems
+            case "windows_all_open": 
+                result = await updateAllAppliances('smart_shading', true);
+                await syncShadesWithSafety('window', true);
+                break;
+            case "windows_all_close": 
+                result = await updateAllAppliances('smart_shading', false);
+                await syncShadesWithSafety('window', false);
+                break;
+            case "windows_room_open": 
+                result = await updateRoomAppliances('smart_shading', true);
+                await syncShadesWithSafety('window', true, roomName);
+                break;
+            case "windows_room_close": 
+                result = await updateRoomAppliances('smart_shading', false);
+                await syncShadesWithSafety('window', false, roomName);
+                break;
+            case "curtains_all_open": result = await updateAllAppliances('smart_shading', true); break;
+            case "curtains_all_close": result = await updateAllAppliances('smart_shading', false); break;
+            case "curtains_room_open": result = await updateRoomAppliances('smart_shading', true); break;
+            case "curtains_room_close": result = await updateRoomAppliances('smart_shading', false); break;
 
             // HVAC
-            case "ac_all_on": result = { success: true, reason: "All AC units turned on" }; break;
-            case "ac_all_off": result = { success: true, reason: "All AC units turned off" }; break;
-            case "ac_room_on": result = { success: true, reason: "Room AC turned on" }; break;
-            case "ac_room_off": result = { success: true, reason: "Room AC turned off" }; break;
+            case "ac_all_on": result = await updateAllAppliances('smart_ac', true); break;
+            case "ac_all_off": result = await updateAllAppliances('smart_ac', false); break;
+            case "ac_room_on": result = await updateRoomAppliances('smart_ac', true); break;
+            case "ac_room_off": result = await updateRoomAppliances('smart_ac', false); break;
 
             // Sockets
-            case "sockets_all_on": result = { success: true, reason: "All sockets turned on" }; break;
-            case "sockets_all_off": result = { success: true, reason: "All sockets turned off" }; break;
-            case "sockets_room_on": result = { success: true, reason: "Room sockets turned on" }; break;
-            case "sockets_room_off": result = { success: true, reason: "Room sockets turned off" }; break;
-            case "socket_specific_on": result = { success: true, reason: "Socket turned on" }; break;
-            case "socket_specific_off": result = { success: true, reason: "Socket turned off" }; break;
+            case "sockets_all_on": result = await updateAllAppliances('smart_socket', true); break;
+            case "sockets_all_off": result = await updateAllAppliances('smart_socket', false); break;
+            case "sockets_room_on": result = await updateRoomAppliances('smart_socket', true); break;
+            case "sockets_room_off": result = await updateRoomAppliances('smart_socket', false); break;
+            case "socket_specific_on": result = await updateSpecificSocket(true); break;
+            case "socket_specific_off": result = await updateSpecificSocket(false); break;
 
-            // Security
-            case "away_mode": result = { success: true, reason: "Away mode activated" }; break;
-            case "home_mode": result = { success: true, reason: "Home mode activated" }; break;
-            case "lock_door": result = { success: true, reason: "Door locked" }; break;
-            case "unlock_door": result = { success: true, reason: "Door unlocked" }; break;
+            // Security - real implementation with safety system sync
+            case "away_mode": result = await handleSecurityMode('away'); break;
+            case "home_mode": result = await handleSecurityMode('home'); break;
+            case "lock_door": result = await handleLockDoor(true); break;
+            case "unlock_door": result = await handleLockDoor(false); break;
 
             // Non-state-changing actions
             case "wake_up":
@@ -194,6 +256,7 @@ class ActionExecutor {
                 console.warn(`Unhandled action type: ${command.action_type}`);
                 result = { success: true, reason: `Action '${command.action_type}' acknowledged but not implemented.` };
         }
+
 
         if (result.success) {
             window.dispatchEvent(new CustomEvent('systemStateChanged'));
