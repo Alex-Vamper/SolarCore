@@ -34,10 +34,11 @@ const FAQ = () => {
         {faqs.map((faq, index) => (
           <div
             key={index}
-            className={`w-full border border-gray-500 rounded-lg bg-white overflow-hidden ${
+            className={`w-full border-[0.5px] border-[rgba(0,0,0,0.4)] rounded-lg bg-white overflow-hidden ${
               index !== faqs.length - 1 ? 'mb-5' : ''
             }`}
           >
+
             <button
               className="w-full flex justify-between items-center py-3 px-4 text-left font-semibold"
               onClick={() => toggleFAQ(index)}
