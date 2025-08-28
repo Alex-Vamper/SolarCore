@@ -177,7 +177,7 @@ export default function Layout({ children }: LayoutProps) {
 
       <div className="flex-1 lg:pl-64">
         <DesktopHeader />
-        <main className="flex-1 overflow-auto pb-24 lg:pb-6 pt-16 lg:pt-0">
+        <main className="flex-1 overflow-auto pb-24 lg:pb-6">
           {children || <Outlet />}
         </main>
       </div>
