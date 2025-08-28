@@ -183,10 +183,15 @@ export default function Auth() {
                     </Button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  className="w-full bg-[#011437] hover:bg-[#022060] text-white" 
+                  disabled={isLoading}
+                >
                   {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Sign In
                 </Button>
+
               </form>
             </TabsContent>
             
@@ -247,10 +252,15 @@ export default function Auth() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  className="w-full bg-[#011437] hover:bg-[#022060] text-white" 
+                  disabled={isLoading}
+                >
                   {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Create Account
                 </Button>
+
               </form>
             </TabsContent>
           </Tabs>

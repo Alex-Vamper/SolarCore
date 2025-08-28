@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import AIAssistantButton from "@/components/ai/AIAssistantButton";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 const navigationItems = [
   {
@@ -170,6 +171,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-solarcore-gray flex flex-col lg:flex-row">
+      <ScrollToTop />
       <SideNav />
       <TopBar />
 
@@ -180,7 +182,7 @@ export default function Layout({ children }: LayoutProps) {
         </main>
       </div>
 
-      <AIAssistantButton />
+      {/* <AIAssistantButton /> */}
       <BottomNav />
     </div>
   );
