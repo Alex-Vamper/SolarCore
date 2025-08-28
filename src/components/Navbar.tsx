@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+
 import solarcore from "../assets/SolarCore-1.svg";
 
 interface NavbarProps {
@@ -25,11 +25,11 @@ export default function Navbar({ onGetStarted }: NavbarProps) {
         {/* Get Started Button */}
         <button
           onClick={onGetStarted}
-          className="flex items-center gap-2 bg-[#0B111F] text-white px-1 py-1 rounded-lg font-medium hover:bg-[#0B111F] transition"
+          className="bg-[#0B111F] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#0B111F] transition whitespace-nowrap"
         >
           Get Started
-          <ArrowRight size={18} />
         </button>
+
       </div>
     </nav>
   );

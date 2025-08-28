@@ -36,10 +36,10 @@ const features = [
 const SmartHomeFeatures = () => {
   return (
     <div className="bg-white py-16 px-4 text-center">
-      <h2 className="text-1xl md:text-3xl font-bold mb-4">
+      <h2 className="text-4xl md:text-3xl font-bold mb-4">
         A Smarter Home is a Better Home
       </h2>
-      <p className="max-w-2xl mx-auto text-sm mb-10">
+      <p className="max-w-2xl mx-auto text-2x1 mb-10">
         At SolarCore, we bring Advanced technology to your fingertips. Our system
         integrates cutting-edge energy management, robust security protocols, and
         personalized automation to transform your house into an intelligent home

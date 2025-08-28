@@ -32,7 +32,7 @@ export default function Footer() {
             <p className="text-yellow-600 font-semibold mb-2">Message</p>
             <div className="flex space-x-3">
               <a
-                href="https://wa.me/2349137998820" // 🔗 replace with your WhatsApp number in international format
+                href="https://wa.me/2349137998820?text=Hello!%20I%20want%20to%20get%20started%20with%20SolarCore." // 🔗 replace with your WhatsApp number in international format
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center space-x-2 bg-yellow-500 text-black text-sm font-semibold py-1 px-4 rounded-full hover:bg-yellow-600 transition transform hover:scale-105"
@@ -41,7 +41,7 @@ export default function Footer() {
                 <span>WhatsApp</span>
               </a>
               <a
-                href="https://t.me/@fifthweaver" // 🔗 replace with your Telegram username
+                href="https://t.me/fifthweaver?text=Hello!%20I%20want%20to%20get%20started%20with%20SolarCore." // 🔗 replace with your Telegram username
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center space-x-2 bg-yellow-500 text-black text-sm font-semibold py-1 px-4 rounded-full hover:bg-yellow-600 transition transform hover:scale-105"
@@ -57,11 +57,11 @@ export default function Footer() {
         <div>
           <h4 className="text-yellow-600 font-semibold mb-4">Products</h4>
           <ul className="space-y-2 text-sm">
-            <li><a href="#" className="hover:text-yellow-400">Smart Central Control Panel</a></li>
-            <li><a href="#" className="hover:text-yellow-400">Smart Switches</a></li>
-            <li><a href="#" className="hover:text-yellow-400">Smart Lighting</a></li>
-            <li><a href="#" className="hover:text-yellow-400">Home Security and Sensors</a></li>
-            <li><a href="#" className="hover:text-yellow-400">HVAC</a></li>
+            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Central Control Panel</a></li>
+            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Switches</a></li>
+            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Lighting</a></li>
+            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Home Security and Sensors</a></li>
+            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">HVAC</a></li>
           </ul>
         </div>
 
@@ -69,10 +69,10 @@ export default function Footer() {
         <div>
           <h4 className="text-yellow-600 font-semibold mb-4">Solutions</h4>
           <ul className="space-y-2 text-sm">
-            <li><a href="https://-solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Home Solutions</a></li>
-            <li><a href="https://-solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Real Estate Solutions</a></li>
-            <li><a href="https://-solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Office Solutions</a></li>
-            <li><a href="https://-solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Institution Solutions</a></li>
+            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Home Solutions</a></li>
+            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Real Estate Solutions</a></li>
+            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Office Solutions</a></li>
+            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Institution Solutions</a></li>
           </ul>
         </div>
 
@@ -81,7 +81,6 @@ export default function Footer() {
           <h4 className="text-yellow-600 font-semibold mb-4">Support</h4>
           <ul className="space-y-2 text-sm">
             <li><a href="/faq" className="hover:text-yellow-400">FAQs</a></li>
-            <li><a href="#" className="hover:text-yellow-400">App Download</a></li>
           </ul>
         </div>
 
