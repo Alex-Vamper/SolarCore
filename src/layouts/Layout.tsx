@@ -118,7 +118,7 @@ const BottomNav = () => {
 
 const TopBar = () => {
   return (
-    <header className="lg:hidden bg-white shadow-sm border-b border-gray-100 px-4 py-3 sticky top-0 z-10">
+    <header className="lg:hidden bg-white shadow-sm border-b border-gray-100 px-4 py-3 sticky top-0 z-50">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src={solarcore} alt="SolarCore Logo" className="h-10 object-contain" />
@@ -146,7 +146,7 @@ const TopBar = () => {
 
 const DesktopHeader = () => {
   return (
-    <header className="hidden lg:flex bg-white shadow-sm border-b border-gray-100 px-6 py-3 items-center justify-end">
+    <header className="hidden lg:flex bg-white shadow-sm border-b border-gray-100 px-6 py-3 items-center justify-end sticky top-0 z-50">
       <div className="flex items-center gap-3">
         <Link to={createPageUrl("Notifications")}>
           <Button variant="ghost" size="icon">
@@ -177,12 +177,12 @@ export default function Layout({ children }: LayoutProps) {
 
       <div className="flex-1 lg:pl-64">
         <DesktopHeader />
-        <main className="flex-1 overflow-auto pb-24 lg:pb-6">
+        <main className="flex-1 overflow-auto pb-24 lg:pb-6 pt-16 lg:pt-0">
           {children || <Outlet />}
         </main>
       </div>
 
-      {/* <AIAssistantButton /> */}
+      <AIAssistantButton />
       <BottomNav />
     </div>
   );
