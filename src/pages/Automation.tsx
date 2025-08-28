@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 
 import RoomBox from "../components/automation/RoomBox";
 import AddRoomModal from "../components/automation/AddRoomModal";
@@ -13,10 +14,6 @@ export default function Automation() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-
-  useEffect(() => {
-    loadRooms();
-  }, []);
 
   const loadRooms = async () => {
     setIsLoading(true);
@@ -29,6 +26,13 @@ export default function Automation() {
     }
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    loadRooms();
+  }, []);
+
+  // Auto-refresh when voice commands change room states
+  useAutoRefresh(loadRooms, ['roomStateChanged', 'applianceStateChanged']);
   
   const handleAddRoom = async (roomData) => {
     try {

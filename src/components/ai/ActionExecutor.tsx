@@ -1,3 +1,4 @@
+
 import { User, Room, SafetySystem } from "@/entities/all";
 
 class ActionExecutor {
@@ -259,7 +260,22 @@ class ActionExecutor {
 
 
         if (result.success) {
-            window.dispatchEvent(new CustomEvent('systemStateChanged'));
+            // Dispatch specific events for different state changes
+            window.dispatchEvent(new CustomEvent('systemStateChanged', {
+              detail: { success: true, command: command.action_type }
+            }));
+            window.dispatchEvent(new CustomEvent('deviceStateChanged', {
+              detail: { success: true, command: command.action_type }
+            }));
+            window.dispatchEvent(new CustomEvent('applianceStateChanged', {
+              detail: { success: true, command: command.action_type }
+            }));
+            window.dispatchEvent(new CustomEvent('roomStateChanged', {
+              detail: { success: true, command: command.action_type }
+            }));
+            window.dispatchEvent(new CustomEvent('safetyStateChanged', {
+              detail: { success: true, command: command.action_type }
+            }));
         }
 
         return result;

@@ -21,6 +21,7 @@ import {
   HeartPulse,
   Hotel 
 } from "lucide-react";
+import solarcore from '../../assets/SolarCore-1.svg';
 
 const BUILDING_TYPES = [
     { id: "home", name: "Home", icon: Home },
@@ -102,8 +103,8 @@ export default function SetupWizard({ onComplete }) {
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Sun className="w-8 h-8 text-white" />
+          <div className="w-16 h-auto mx-auto mb-4">
+            <img src={solarcore} alt="SolarCore Logo" className="w-full h-auto" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 font-inter">Welcome to SolarCore</h1>
           <p className="text-gray-600 font-inter mt-2">Let's set up your smart home system</p>

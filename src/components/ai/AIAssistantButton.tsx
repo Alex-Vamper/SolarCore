@@ -4,6 +4,7 @@ import { User, UserSettings, VoiceCommand } from "@/entities/all";
 import VoiceCommandProcessor from './VoiceCommandProcessor';
 import ActionExecutor from './ActionExecutor'; // Import the new executor
 import { motion, AnimatePresence } from 'framer-motion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const AILogoSVG = () => (
     <svg width="24" height="24" viewBox="0 0 100 100" className="w-8 h-8">
@@ -43,6 +44,8 @@ export default function AIAssistantButton() {
     const dragStartPoint = useRef({ x: 0, y: 0 });
     const userSettingsRef = useRef(null); // To store user settings object
     const systemFallbacksRef = useRef<{ unrecognized?: any; device_not_found?: any }>({});
+    
+    const isMobile = useIsMobile();
 
     const voiceProcessor = useRef(new VoiceCommandProcessor());
 
@@ -83,25 +86,28 @@ export default function AIAssistantButton() {
         return () => window.removeEventListener('anderSettingsChanged', loadSettings);
     }, []);
 
-    const handleMouseDown = (e) => {
-        if (e.button !== 0) return;
+    const handlePointerDown = (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
         setIsDragging(true);
         setHasMoved(false);
         dragStartPoint.current = {
-            x: e.clientX,
-            y: e.clientY
+            x: e.clientX || e.touches?.[0]?.clientX || 0,
+            y: e.clientY || e.touches?.[0]?.clientY || 0
         };
         e.preventDefault();
     };
 
-    const handleMouseMove = (e) => {
+    const handlePointerMove = (e) => {
         if (!isDragging) return;
         setHasMoved(true);
 
-        const newX = position.x + e.clientX - dragStartPoint.current.x;
-        const newY = position.y + e.clientY - dragStartPoint.current.y;
+        const clientX = e.clientX || e.touches?.[0]?.clientX || 0;
+        const clientY = e.clientY || e.touches?.[0]?.clientY || 0;
+
+        const newX = position.x + clientX - dragStartPoint.current.x;
+        const newY = position.y + clientY - dragStartPoint.current.y;
         
-        dragStartPoint.current = { x: e.clientX, y: e.clientY };
+        dragStartPoint.current = { x: clientX, y: clientY };
 
         const buttonWidth = buttonRef.current?.offsetWidth || 64;
         const buttonHeight = buttonRef.current?.offsetHeight || 64;
@@ -122,7 +128,7 @@ export default function AIAssistantButton() {
         }
     };
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
         setIsDragging(false);
         if (hasMoved) {
             savePosition(position);
@@ -131,16 +137,28 @@ export default function AIAssistantButton() {
 
     useEffect(() => {
         if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
+            if (isMobile) {
+                document.addEventListener('touchmove', handlePointerMove as any, { passive: false });
+                document.addEventListener('touchend', handlePointerUp as any);
+            } else {
+                document.addEventListener('mousemove', handlePointerMove as any);
+                document.addEventListener('mouseup', handlePointerUp as any);
+            }
             document.body.style.userSelect = 'none';
+            document.body.style.touchAction = 'none';
         }
         return () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
+            if (isMobile) {
+                document.removeEventListener('touchmove', handlePointerMove as any);
+                document.removeEventListener('touchend', handlePointerUp as any);
+            } else {
+                document.removeEventListener('mousemove', handlePointerMove as any);
+                document.removeEventListener('mouseup', handlePointerUp as any);
+            }
             document.body.style.userSelect = 'auto';
+            document.body.style.touchAction = 'auto';
         };
-    }, [isDragging, position]);
+    }, [isDragging, position, isMobile]);
 
     const handleClick = async () => {
         if (hasMoved || isListening) return;
@@ -260,7 +278,8 @@ export default function AIAssistantButton() {
                     left: position.x,
                     top: position.y,
                 }}
-                onMouseDown={handleMouseDown}
+                onMouseDown={!isMobile ? handlePointerDown : undefined}
+                onTouchStart={isMobile ? handlePointerDown : undefined}
                 onClick={handleClick}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}

@@ -46,14 +46,16 @@ export class UserSettingsService {
       const { data, error } = await supabase
         .from('user_settings')
         .upsert({
-          ...settings,
-          user_id: user.id,
-          notification_preferences: settings.notification_preferences as Json,
-          emergency_contacts: settings.emergency_contacts as Json,
-          ander_button_position: settings.ander_button_position as Json
-        }, {
-          onConflict: 'user_id'
-        })
+           ...settings,
+           user_id: user.id,
+           notification_preferences: settings.notification_preferences as Json,
+           emergency_contacts: settings.emergency_contacts as Json,
+           ander_button_position: settings.ander_button_position as Json,
+           // Set default ander_enabled to false for new users
+           ander_enabled: settings.ander_enabled ?? false
+         }, {
+           onConflict: 'user_id'
+         })
         .select()
         .single();
 

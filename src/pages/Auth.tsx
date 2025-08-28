@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sun, Eye, EyeOff, Loader2 } from 'lucide-react';
+import solarcore from '../assets/SolarCore-1.svg';
 import { User } from '@/entities/all';
 import { useToast } from '@/hooks/use-toast';
 
@@ -134,8 +135,8 @@ export default function Auth() {
       {/* Main Auth Card */}
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Sun className="w-8 h-8 text-white" />
+          <div className="w-16 h-auto mx-auto mb-4">
+            <img src={solarcore} alt="SolarCore Logo" className="w-full h-auto" />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">SolarCore</CardTitle>
           <p className="text-gray-600">Intelligent Home Management</p>

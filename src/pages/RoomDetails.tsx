@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { User, Room } from "@/entities/all";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -217,10 +218,6 @@ export default function RoomDetails() {
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false);
   const [activeTab, setActiveTab] = useState("devices");
 
-  useEffect(() => {
-    loadRoom();
-  }, []);
-
   const loadRoom = async () => {
     const pathParts = window.location.pathname.split('/');
     const roomId = pathParts[pathParts.length - 1];
@@ -248,6 +245,13 @@ export default function RoomDetails() {
     }
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    loadRoom();
+  }, []);
+
+  // Auto-refresh when voice commands change room/device states
+  useAutoRefresh(loadRoom, ['roomStateChanged', 'applianceStateChanged', 'deviceStateChanged']);
 
   const handleBack = () => {
     navigate(createPageUrl("Automation"));

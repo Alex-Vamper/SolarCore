@@ -40,9 +40,13 @@ export const useCrossSystemSync = () => {
 
     // Listen for both system state changes and safety system changes
     window.addEventListener('systemStateChanged', handleSystemStateChanged);
+    window.addEventListener('safetyStateChanged', handleSystemStateChanged);
+    window.addEventListener('applianceStateChanged', handleSystemStateChanged);
     
     return () => {
       window.removeEventListener('systemStateChanged', handleSystemStateChanged);
+      window.removeEventListener('safetyStateChanged', handleSystemStateChanged);
+      window.removeEventListener('applianceStateChanged', handleSystemStateChanged);
     };
   }, []);
 };
