@@ -16,6 +16,8 @@ import {
 
 import AIAssistantButton from "@/components/ai/AIAssistantButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import solarcore from '../assets/SolarCore-1.svg';
+
 
 const navigationItems = [
   {
@@ -55,14 +57,13 @@ const SideNav = () => {
   return (
     <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 fixed h-full">
       <div className="flex items-center gap-3 p-4 border-b">
-        <div className="w-10 h-10 gradient-solarcore rounded-xl flex items-center justify-center shadow-lg">
-          <Sun className="w-6 h-6 text-white" />
-        </div>
+        <img src={solarcore} alt="SolarCore Logo" className="h-10 object-contain" />
         <div>
           <h1 className="text-xl font-bold text-gray-900 font-inter">SolarCore</h1>
           <p className="text-xs text-gray-500 font-inter">Smart Home Control</p>
         </div>
       </div>
+
       <nav className="flex-1 p-4 space-y-2">
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.url;
@@ -120,13 +121,12 @@ const TopBar = () => {
     <header className="lg:hidden bg-white shadow-sm border-b border-gray-100 px-4 py-3 sticky top-0 z-10">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 gradient-solarcore rounded-xl flex items-center justify-center shadow-lg">
-            <Sun className="w-6 h-6 text-white" />
-          </div>
+          <img src={solarcore} alt="SolarCore Logo" className="h-10 object-contain" />
           <div>
             <h1 className="text-xl font-bold text-gray-900 font-inter">SolarCore</h1>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
           <Link to={createPageUrl("Notifications")}>
             <Button variant="ghost" size="icon">
