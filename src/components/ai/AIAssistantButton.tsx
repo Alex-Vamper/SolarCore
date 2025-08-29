@@ -160,6 +160,16 @@ export default function AIAssistantButton() {
         };
     }, [isDragging, position, isMobile]);
 
+        useEffect(() => {
+        if (responseMessage) {
+            const timer = setTimeout(() => {
+                setResponseMessage('');
+            }, 8000); // 8 seconds
+
+            return () => clearTimeout(timer);
+        }
+    }, [responseMessage]);
+
     const handleClick = async () => {
         if (hasMoved || isListening) return;
 
