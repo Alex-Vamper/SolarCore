@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { User, UserSettings, VoiceCommand } from "@/entities/all";
 import VoiceCommandProcessor from './VoiceCommandProcessor';
@@ -46,13 +45,11 @@ export default function AIAssistantButton() {
     const systemFallbacksRef = useRef<{ unrecognized?: any; device_not_found?: any }>({});
     
     const isMobile = useIsMobile();
-
     const voiceProcessor = useRef(new VoiceCommandProcessor());
 
     const loadSettings = async () => {
         try {
             const currentUser = await User.me();
-            // Fetch settings using the corrected list method
             const settingsResult = await UserSettings.list();
 
             if (settingsResult.length > 0) {
@@ -60,14 +57,12 @@ export default function AIAssistantButton() {
                 userSettingsRef.current = settings;
                 setAnderEnabled(settings.ander_enabled ?? false);
                 setVoiceResponseEnabled(settings.voice_response_enabled ?? true);
-                // Use ander_button_position from settings or default
                 const buttonPos = settings.ander_button_position || { x: 20, y: 20 };
                 setPosition(buttonPos);
             } else {
-                setAnderEnabled(false); // No settings, so no button
+                setAnderEnabled(false);
             }
             
-            // Fetch system fallbacks
             const allCommands = await VoiceCommand.list();
             systemFallbacksRef.current = {
                 unrecognized: allCommands.find(c => c.command_name === '_admin_didnt_understand_') || null,
@@ -75,7 +70,6 @@ export default function AIAssistantButton() {
             };
 
         } catch (error) {
-            // Not logged in or other error, disable button
             setAnderEnabled(false); 
         }
     };
@@ -120,7 +114,6 @@ export default function AIAssistantButton() {
 
     const savePosition = async (newPos) => {
         try {
-            // Use upsert to save the button position
             await UserSettings.upsert({ ander_button_position: newPos });
             console.log('Button position saved:', newPos);
         } catch (error) {
@@ -168,17 +161,15 @@ export default function AIAssistantButton() {
         
         try {
             const result = await voiceProcessor.current.startListening() as { transcript: string | null };
-            setIsListening(false); // Set to false right after listening finishes
+            setIsListening(false);
             
             if (result?.transcript) {
                 const commandResult = await voiceProcessor.current.processCommand(result.transcript);
                 
                 if (commandResult.matched) {
-                    // Execute the action
                     const actionResult = await ActionExecutor.execute(commandResult.command, result.transcript);
 
-                    let finalResponseCommand = commandResult.command; // Use 'command' as the source for response and audio
-                    // If action failed because device not found, use device_not_found fallback
+                    let finalResponseCommand = commandResult.command;
                     if (!actionResult.success && actionResult.reason === 'device_not_found' && systemFallbacksRef.current?.device_not_found) {
                         finalResponseCommand = systemFallbacksRef.current.device_not_found;
                     }
@@ -188,7 +179,6 @@ export default function AIAssistantButton() {
                         await voiceProcessor.current.speakResponse(finalResponseCommand.response, finalResponseCommand.audio_url);
                     }
                 } else {
-                    // Use unrecognized fallback
                     const fallback = systemFallbacksRef.current?.unrecognized;
                     if (fallback) {
                         setResponseMessage(fallback.response);
@@ -196,7 +186,6 @@ export default function AIAssistantButton() {
                            await voiceProcessor.current.speakResponse(fallback.response, fallback.audio_url);
                         }
                     } else {
-                        // Fallback to default message from VoiceCommandProcessor if no DB fallback exists
                         setResponseMessage(commandResult.response); 
                     }
                 }
@@ -205,25 +194,33 @@ export default function AIAssistantButton() {
             }
         } catch (error) {
             console.error("Voice command failed:", error);
-            setIsListening(false); // Ensure listening state is reset on error
+            setIsListening(false);
             const fallback = systemFallbacksRef.current?.unrecognized;
-            // Use the fallback response or a generic error message
             setResponseMessage(fallback?.response || "An error occurred.");
         }
     };
 
-    // Calculate text box position based on button position
+    // 🔹 Auto-hide text box after 8 seconds (regardless of TTS/audio)
+    useEffect(() => {
+        if (!responseMessage) return;
+
+        const timer = setTimeout(() => {
+            setResponseMessage('');
+        }, 8000); // 8 seconds
+
+        return () => clearTimeout(timer);
+    }, [responseMessage]);
+
+
     const getTextBoxPosition = () => {
         const isOnLeftHalf = position.x < window.innerWidth / 2;
         if (isOnLeftHalf) {
-            // Button on left, text box on right
             return {
                 left: position.x + 80,
                 top: position.y,
                 transform: 'translateY(-50%)'
             };
         } else {
-            // Button on right, text box on left
             return {
                 right: window.innerWidth - position.x + 16,
                 top: position.y,
@@ -238,7 +235,6 @@ export default function AIAssistantButton() {
 
     return (
         <>
-            {/* Listening pulse effect */}
             {isListening && (
                 <div
                     className="fixed z-40 pointer-events-none"
@@ -255,7 +251,6 @@ export default function AIAssistantButton() {
                 </div>
             )}
 
-            {/* Response text box */}
             <AnimatePresence>
                 {responseMessage && (
                     <motion.div
@@ -270,7 +265,6 @@ export default function AIAssistantButton() {
                 )}
             </AnimatePresence>
 
-            {/* AI Assistant Button */}
             <motion.button
                 ref={buttonRef}
                 className="fixed z-50 w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing focus:outline-none"
