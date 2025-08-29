@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, Link, Volume2, CheckCircle, AlertCircle } from 'lucide-react';
-import { UploadFile } from '@/integrations/Core';
+import { supabase } from '@/integrations/supabase/client';
 import { VoiceCommand } from '@/entities/all';
 
 export default function AudioUploadModal({ isOpen, onClose, command }) {
@@ -23,7 +23,7 @@ export default function AudioUploadModal({ isOpen, onClose, command }) {
 
   useEffect(() => {
     if (command) {
-      setAudioUrl(command.action_type || ''); // Using action_type as temp storage
+      setAudioUrl(command.audio_url || '');
       setUploadStatus(null);
       setSelectedFile(null);
       setActiveTab('upload');
@@ -57,26 +57,31 @@ export default function AudioUploadModal({ isOpen, onClose, command }) {
     }
 
     setIsUploading(true);
-    setUploadStatus({ type: 'info', message: 'Uploading audio file...' });
+    setUploadStatus({ type: 'info', message: 'Processing audio upload...' });
 
     try {
-      const fileName = `voice-commands/${Date.now()}-${selectedFile.name}`;
-      const result = await UploadFile({ 
-        bucket: 'ander-tts',
-        path: fileName, 
-        file: selectedFile 
+      const formData = new FormData();
+      formData.append('audio', selectedFile);
+      formData.append('commandId', command?.id || '');
+      formData.append('isAdmin', 'true');
+      formData.append('adminPassword', 'Alex-Ander-1.05');
+      
+      const { data, error } = await supabase.functions.invoke('process-audio-upload', {
+        body: formData
       });
       
-      if (result.url) {
-        setAudioUrl(result.url);
-        setUploadStatus({ type: 'success', message: 'Audio file uploaded successfully!' });
-        setActiveTab('url'); // Switch to URL tab to show the uploaded URL
+      if (error) throw error;
+      
+      if (data.success) {
+        setAudioUrl(data.audioUrl);
+        setUploadStatus({ type: 'success', message: data.message || 'Audio uploaded and propagated globally!' });
+        setActiveTab('url');
       } else {
-        throw new Error('Upload failed - no URL returned');
+        throw new Error(data.error || 'Upload failed');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      setUploadStatus({ type: 'error', message: 'Failed to upload file. Please try again.' });
+      setUploadStatus({ type: 'error', message: `Upload failed: ${error.message}` });
     } finally {
       setIsUploading(false);
     }
@@ -92,8 +97,7 @@ export default function AudioUploadModal({ isOpen, onClose, command }) {
     setUploadStatus({ type: 'info', message: 'Saving audio URL...' });
 
     try {
-      // Note: audio_url field not in current schema, storing as action_type for now
-      await VoiceCommand.update(command.id, { action_type: audioUrl });
+      await VoiceCommand.update(command.id, { audio_url: audioUrl });
       setUploadStatus({ type: 'success', message: 'Audio URL saved successfully!' });
       
       // Close modal after a short delay
@@ -113,7 +117,7 @@ export default function AudioUploadModal({ isOpen, onClose, command }) {
     setUploadStatus({ type: 'info', message: 'Removing audio...' });
 
     try {
-      await VoiceCommand.update(command.id, { action_type: null });
+      await VoiceCommand.update(command.id, { audio_url: null });
       setAudioUrl('');
       setUploadStatus({ type: 'success', message: 'Audio removed successfully!' });
       
@@ -253,7 +257,7 @@ export default function AudioUploadModal({ isOpen, onClose, command }) {
             Cancel
           </Button>
           
-          {command?.action_type && (
+          {command?.audio_url && (
             <Button
               variant="destructive"
               onClick={handleRemove}

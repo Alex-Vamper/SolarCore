@@ -8,6 +8,8 @@ export interface VoiceCommand {
   keywords: string[];
   response: string;
   action_type?: string;
+  audio_url?: string;
+  is_global?: boolean;
   enabled?: boolean;
   created_at?: string;
   updated_at?: string;

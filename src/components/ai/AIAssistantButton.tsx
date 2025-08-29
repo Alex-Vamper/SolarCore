@@ -160,16 +160,6 @@ export default function AIAssistantButton() {
         };
     }, [isDragging, position, isMobile]);
 
-        useEffect(() => {
-        if (responseMessage) {
-            const timer = setTimeout(() => {
-                setResponseMessage('');
-            }, 8000); // 8 seconds
-
-            return () => clearTimeout(timer);
-        }
-    }, [responseMessage]);
-
     const handleClick = async () => {
         if (hasMoved || isListening) return;
 
@@ -195,7 +185,7 @@ export default function AIAssistantButton() {
 
                     setResponseMessage(finalResponseCommand.response);
                     if (voiceResponseEnabled) {
-                        await voiceProcessor.current.speakResponse(finalResponseCommand.response);
+                        await voiceProcessor.current.speakResponse(finalResponseCommand.response, finalResponseCommand.audio_url);
                     }
                 } else {
                     // Use unrecognized fallback
@@ -203,7 +193,7 @@ export default function AIAssistantButton() {
                     if (fallback) {
                         setResponseMessage(fallback.response);
                         if (voiceResponseEnabled) {
-                           await voiceProcessor.current.speakResponse(fallback.response);
+                           await voiceProcessor.current.speakResponse(fallback.response, fallback.audio_url);
                         }
                     } else {
                         // Fallback to default message from VoiceCommandProcessor if no DB fallback exists

@@ -75,6 +75,7 @@ export default class VoiceCommandProcessor {
         return {
           command: matchedCommand,
           response: matchedCommand.response,
+          audioUrl: matchedCommand.audio_url,
           matched: true
         };
       } else {
