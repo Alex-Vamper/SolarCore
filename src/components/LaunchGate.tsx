@@ -86,15 +86,25 @@ export default function LaunchGate({
   const pretty = formatRemaining(remainingMs);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-      <div className="max-w-xl w-full text-center rounded-xl shadow-lg p-8 bg-white">
-        <h1 className="text-2xl font-bold mb-3">We’re launching soon</h1>
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background gradient inspired by Solaco (light, energy, solar) */}
+      <div className="absolute inset-0 bg-gradient-to-br from-solarcore-yellow/40 via-solarcore-orange/30 to-solarcore-blue/40 animate-pulse-slow" />
+
+      {/* Overlay to soften visuals */}
+      <div className="absolute inset-0 bg-white/70 backdrop-blur-sm" />
+
+      {/* Content */}
+      <div className="relative z-10 max-w-xl w-full text-center rounded-2xl shadow-2xl p-10 bg-white/90 border border-border">
+        <h1 className="text-3xl font-bold mb-4 text-solarcore-blue">
+          We’re launching soon
+        </h1>
         <p className="text-sm text-muted-foreground mb-6">
           Our app will go live on{" "}
           <strong>September 27, 2025 (Africa/Lagos)</strong>.
         </p>
 
-        <div className="text-3xl font-mono tracking-widest bg-gray-100 p-4 rounded">
+        {/* Countdown */}
+        <div className="text-4xl font-mono tracking-widest bg-gray-100 p-6 rounded-xl shadow-inner">
           {pretty /* DD:HH:MM:SS */}
         </div>
       </div>
