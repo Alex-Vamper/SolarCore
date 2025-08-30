@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 type Props = {
   children?: React.ReactNode;
-  launchIso?: string; // ISO string, e.g. "2025-09-27T00:00:00+01:00"
+  launchIso?: string; // ISO string, e.g. "2025-08-30T00:00:00+01:00"
   serverTimeUrl?: string | null; // optional endpoint returning { now: "2025-08-30T12:34:56.789Z" }
   userId?: string | null; // optional: if provided splash is tracked per-user+date
   displayMs?: number; // how long to auto-show (ms). default 20000 (20s)
