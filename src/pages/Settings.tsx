@@ -94,7 +94,7 @@ export default function Settings() {
       if (error) throw error;
 
       // Optional: clear extra app state
-      localStorage.clear();
+      //localStorage.clear();
       sessionStorage.clear();
 
       // Redirect user to the auth or landing page
