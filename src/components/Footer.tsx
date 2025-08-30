@@ -57,11 +57,11 @@ export default function Footer() {
         <div>
           <h4 className="text-yellow-600 font-semibold mb-4">Products</h4>
           <ul className="space-y-2 text-sm">
-            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Central Control Panel</a></li>
-            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Switches</a></li>
-            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Smart Lighting</a></li>
-            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">Home Security and Sensors</a></li>
-            <li><a href="https://solarcore-powered-living-20.lovable.app/products" className="hover:text-yellow-400">HVAC</a></li>
+            <li><a href="https://solar-core-powered-living.vercel.app/products" className="hover:text-yellow-400">Smart Central Control Panel</a></li>
+            <li><a href="https://solar-core-powered-living.vercel.app/products" className="hover:text-yellow-400">Smart Switches</a></li>
+            <li><a href="https://solar-core-powered-living.vercel.app/products" className="hover:text-yellow-400">Smart Lighting</a></li>
+            <li><a href="https://solar-core-powered-living.vercel.app/products" className="hover:text-yellow-400">Home Security and Sensors</a></li>
+            <li><a href="https://solar-core-powered-living.vercel.app/products" className="hover:text-yellow-400">HVAC</a></li>
           </ul>
         </div>
 
@@ -69,10 +69,10 @@ export default function Footer() {
         <div>
           <h4 className="text-yellow-600 font-semibold mb-4">Solutions</h4>
           <ul className="space-y-2 text-sm">
-            <li><a href="https://solarcore-powered-living-20.lovable.app/solutions" className="hover:text-yellow-400">Smart Home Solutions</a></li>
-            <li><a href="https://solarcore-powered-living-20.lovable.app/solutions" className="hover:text-yellow-400">Smart Real Estate Solutions</a></li>
-            <li><a href="https://solarcore-powered-living-20.lovable.app/solutions" className="hover:text-yellow-400">Smart Office Solutions</a></li>
-            <li><a href="https://solarcore-powered-living-20.lovable.app/solutions" className="hover:text-yellow-400">Smart Institution Solutions</a></li>
+            <li><a href="https://solar-core-powered-living.vercel.app/solutions" className="hover:text-yellow-400">Smart Home Solutions</a></li>
+            <li><a href="https://solar-core-powered-living.vercel.app/solutions" className="hover:text-yellow-400">Smart Real Estate Solutions</a></li>
+            <li><a href="https://solar-core-powered-living.vercel.app/solutions" className="hover:text-yellow-400">Smart Office Solutions</a></li>
+            <li><a href="https://solar-core-powered-living.vercel.app/solutions" className="hover:text-yellow-400">Smart Institution Solutions</a></li>
           </ul>
         </div>
 
