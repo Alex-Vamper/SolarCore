@@ -21,6 +21,7 @@ import {
   Star
 } from "lucide-react";
 import EditAccountModal from "../components/settings/EditAccountModal";
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -88,11 +89,18 @@ export default function Settings() {
 
   const handleLogout = async () => {
     try {
-      sessionStorage.removeItem('landingPageSeen');
-      await User.logout();
-      window.location.href = createPageUrl('Dashboard'); // Changed from LandingPage to Dashboard
-    } catch (error) {
-      console.error("Error logging out:", error);
+      // Clear Supabase session + tokens
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      // Optional: clear extra app state
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Redirect user to the auth or landing page
+      window.location.href = "/auth"; 
+    } catch (err: any) {
+      console.error("Logout failed:", err.message);
     }
   };
 

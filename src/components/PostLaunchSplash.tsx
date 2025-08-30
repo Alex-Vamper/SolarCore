@@ -22,6 +22,7 @@ function getDateKey(date: Date) {
  * - Shows once per device (or once-per-user if you pass userId) per day.
  * - Optionally uses serverTimeUrl to get authoritative time.
  * - When visible, overlays a full-screen celebratory splash and blocks interaction below.
+ * - Includes smooth fade-in / fade-out transitions for the splash overlay.
  */
 export default function PostLaunchSplash({
   children,
@@ -32,7 +33,8 @@ export default function PostLaunchSplash({
 }: Props) {
   const navigate = useNavigate();
   const [serverOffset, setServerOffset] = useState<number>(0); // serverNow - clientNow
-  const [visible, setVisible] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(false); // whether splash should be rendered
+  const [showing, setShowing] = useState<boolean>(false); // controls fade animations
   const [loadingServerTime, setLoadingServerTime] = useState<boolean>(true);
 
   // Compute the effective launch ISO:
@@ -103,9 +105,11 @@ export default function PostLaunchSplash({
 
     // Otherwise show splash and auto-mark as seen after displayMs
     setVisible(true);
+    setTimeout(() => setShowing(true), 1500); // fade-in trigger
     const timer = setTimeout(() => {
       localStorage.setItem(storageKey, "1");
-      setVisible(false);
+      setShowing(false); // trigger fade-out
+      setTimeout(() => setVisible(false), 500); // allow fade-out before removing
     }, displayMs);
 
     return () => clearTimeout(timer);
@@ -128,12 +132,21 @@ export default function PostLaunchSplash({
   return (
     <>
       {children}
-      <div className="fixed inset-0 z-[60] flex items-center justify-center">
+      <div
+        className={`fixed inset-0 z-[60] flex items-center justify-center transition-opacity duration-500 ${
+          showing ? "opacity-100" : "opacity-0"
+        }`}
+      >
         {/* Background gradient (SolarCore feel) */}
-        <div className="absolute inset-0 bg-gradient-to-br from-solarcore-orange/85 via-solarcore-yellow/60 to-solarcore-blue/40" />
-        <div className="absolute inset-0 bg-black/25 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-br from-solarcore-orange/85 via-solarcore-yellow/60 to-solarcore-blue/40 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-black/25 backdrop-blur-sm transition-opacity duration-500" />
 
-        <div className="relative z-10 max-w-3xl w-full mx-4 p-8 rounded-2xl bg-white/8 border border-white/20 shadow-2xl text-center">
+        {/* Content box with fade + slight scale animation */}
+        <div
+          className={`relative z-10 max-w-3xl w-full mx-4 p-8 rounded-2xl bg-white/8 border border-white/20 shadow-2xl text-center transform transition-all duration-500 ${
+            showing ? "opacity-100 scale-100" : "opacity-0 scale-95"
+          }`}
+        >
           <h2 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg mb-4">
             SolarCore has launched 🎉
           </h2>
@@ -152,7 +165,8 @@ export default function PostLaunchSplash({
                 const nowKey = getDateKey(new Date(Date.now() + serverOffset));
                 const storageKey = userId ? `post_launch_splash_${nowKey}_${userId}` : `post_launch_splash_${nowKey}`;
                 localStorage.setItem(storageKey, "1");
-                setVisible(false);
+                setShowing(false); // fade out smoothly
+                setTimeout(() => setVisible(false), 500);
               }}
               className="px-6 py-3 rounded-lg bg-white/90 text-gray-900 font-semibold shadow hover:scale-[1.02] transition"
             >
@@ -164,7 +178,11 @@ export default function PostLaunchSplash({
                 const nowKey = getDateKey(new Date(Date.now() + serverOffset));
                 const storageKey = userId ? `post_launch_splash_${nowKey}_${userId}` : `post_launch_splash_${nowKey}`;
                 localStorage.setItem(storageKey, "1");
-                navigate("/");
+                setShowing(false); // fade out smoothly
+                setTimeout(() => {
+                  setVisible(false);
+                  navigate("/");
+                }, 500);
               }}
               className="px-6 py-3 rounded-lg bg-transparent border border-white/30 text-white hover:bg-white/10 transition"
             >
