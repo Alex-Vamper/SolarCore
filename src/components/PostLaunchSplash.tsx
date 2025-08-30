@@ -129,19 +129,19 @@ export default function PostLaunchSplash({
     <>
       {children}
       <div className="fixed inset-0 z-[60] flex items-center justify-center">
-        {/* Background gradient (solaco feel) */}
+        {/* Background gradient (SolarCore feel) */}
         <div className="absolute inset-0 bg-gradient-to-br from-solarcore-orange/85 via-solarcore-yellow/60 to-solarcore-blue/40" />
         <div className="absolute inset-0 bg-black/25 backdrop-blur-sm" />
 
         <div className="relative z-10 max-w-3xl w-full mx-4 p-8 rounded-2xl bg-white/8 border border-white/20 shadow-2xl text-center">
           <h2 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg mb-4">
-            Solaco has launched 🎉
+            SolarCore has launched 🎉
           </h2>
 
           <p className="text-sm md:text-base text-white/90 mb-6">
             {timeSince.hours > 0
-              ? `Solaco launched ${timeSince.hours} hour${timeSince.hours > 1 ? "s" : ""} ${timeSince.minutes} minute${timeSince.minutes !== 1 ? "s" : ""} ago.`
-              : `Solaco launched ${timeSince.minutes} minute${timeSince.minutes !== 1 ? "s" : ""} ago.`}
+              ? `SolarCore launched ${timeSince.hours} hour${timeSince.hours > 1 ? "s" : ""} ${timeSince.minutes} minute${timeSince.minutes !== 1 ? "s" : ""} ago.`
+              : `SolarCore launched ${timeSince.minutes} minute${timeSince.minutes !== 1 ? "s" : ""} ago.`}
             {"  "}Welcome — your smart home awaits.
           </p>
 
