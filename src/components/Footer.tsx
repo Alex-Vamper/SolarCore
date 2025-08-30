@@ -1,6 +1,7 @@
 import { FaFacebookF, FaInstagram, FaXTwitter, FaYoutube } from "react-icons/fa6";
 import { FaWhatsapp, FaTelegramPlane } from "react-icons/fa";
 import logo from "../assets/SolarCore-1.svg"
+import { ExternalLink } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -53,28 +54,119 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Products */}
-        <div>
-          <h4 className="text-yellow-600 font-semibold mb-4">Products</h4>
-          <ul className="space-y-2 text-sm">
-            <li><a href="https://solar-core-powered-living.vercel.app/products" className="hover:text-yellow-400">Smart Central Control Panel</a></li>
-            <li><a href="https://solar-core-powered-living.vercel.app/products" className="hover:text-yellow-400">Smart Switches</a></li>
-            <li><a href="https://solar-core-powered-living.vercel.app/products" className="hover:text-yellow-400">Smart Lighting</a></li>
-            <li><a href="https://solar-core-powered-living.vercel.app/products" className="hover:text-yellow-400">Home Security and Sensors</a></li>
-            <li><a href="https://solar-core-powered-living.vercel.app/products" className="hover:text-yellow-400">HVAC</a></li>
-          </ul>
-        </div>
+          {/* Products */}
+          <div>
+            <h4 className="text-yellow-600 font-semibold mb-4">Products</h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a
+                  href="https://solar-core-powered-living.vercel.app/products"
+                  className="flex items-center gap-1 hover:text-yellow-400"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Smart Central Control Panel
+                  <ExternalLink size={14} className="inline opacity-70" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://solar-core-powered-living.vercel.app/products"
+                  className="flex items-center gap-1 hover:text-yellow-400"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Smart Switches
+                  <ExternalLink size={14} className="inline opacity-70" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://solar-core-powered-living.vercel.app/products"
+                  className="flex items-center gap-1 hover:text-yellow-400"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Smart Lighting
+                  <ExternalLink size={14} className="inline opacity-70" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://solar-core-powered-living.vercel.app/products"
+                  className="flex items-center gap-1 hover:text-yellow-400"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Home Security and Sensors
+                  <ExternalLink size={14} className="inline opacity-70" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://solar-core-powered-living.vercel.app/products"
+                  className="flex items-center gap-1 hover:text-yellow-400"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  HVAC
+                  <ExternalLink size={14} className="inline opacity-70" />
+                </a>
+              </li>
+            </ul>
+          </div>
 
-        {/* Solutions */}
-        <div>
-          <h4 className="text-yellow-600 font-semibold mb-4">Solutions</h4>
-          <ul className="space-y-2 text-sm">
-            <li><a href="https://solar-core-powered-living.vercel.app/solutions" className="hover:text-yellow-400">Smart Home Solutions</a></li>
-            <li><a href="https://solar-core-powered-living.vercel.app/solutions" className="hover:text-yellow-400">Smart Real Estate Solutions</a></li>
-            <li><a href="https://solar-core-powered-living.vercel.app/solutions" className="hover:text-yellow-400">Smart Office Solutions</a></li>
-            <li><a href="https://solar-core-powered-living.vercel.app/solutions" className="hover:text-yellow-400">Smart Institution Solutions</a></li>
-          </ul>
-        </div>
+          {/* Solutions */}
+          <div>
+            <h4 className="text-yellow-600 font-semibold mb-4">Solutions</h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a
+                  href="https://solar-core-powered-living.vercel.app/solutions"
+                  className="flex items-center gap-1 hover:text-yellow-400"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Smart Home Solutions
+                  <ExternalLink size={14} className="inline opacity-70" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://solar-core-powered-living.vercel.app/solutions"
+                  className="flex items-center gap-1 hover:text-yellow-400"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Smart Real Estate Solutions
+                  <ExternalLink size={14} className="inline opacity-70" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://solar-core-powered-living.vercel.app/solutions"
+                  className="flex items-center gap-1 hover:text-yellow-400"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Smart Office Solutions
+                  <ExternalLink size={14} className="inline opacity-70" />
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://solar-core-powered-living.vercel.app/solutions"
+                  className="flex items-center gap-1 hover:text-yellow-400"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Smart Institution Solutions
+                  <ExternalLink size={14} className="inline opacity-70" />
+                </a>
+              </li>
+            </ul>
+          </div>
+
 
         {/* Support */}
         <div>
