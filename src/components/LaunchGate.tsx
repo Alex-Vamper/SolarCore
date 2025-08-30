@@ -143,13 +143,25 @@ export default function LaunchGate({
           ))}
         </div>
 
-        {/* Back to Landing Page button */}
-        <button
-          onClick={() => navigate("/")}
-          className="mt-4 px-6 py-3 rounded-xl bg-orange-600 text-white font-semibold shadow-lg hover:bg-orange-700 transition"
+        {/* Back to Landing Page Button */}
+        <motion.div
+          className="mt-8"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
         >
-          Back to Landing Page
-        </button>
+          <a
+            href="/"
+            className="inline-block px-6 py-3 rounded-xl 
+              bg-white/20 backdrop-blur-lg text-gray-800 font-semibold 
+              border border-white/40 shadow-md
+              hover:bg-white/30 hover:shadow-lg 
+              transition duration-300"
+          >
+            ⬅ Back to Landing Page
+          </a>
+        </motion.div>
+
       </motion.div>
     </div>
   );
