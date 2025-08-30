@@ -1,5 +1,4 @@
 import * as React from "react";
-
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -17,8 +16,8 @@ import {
 import AIAssistantButton from "@/components/ai/AIAssistantButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import LaunchGate from "@/components/LaunchGate";
-import solarcore from '../assets/SolarCore-1.svg';
-
+import PostLaunchSplash from "@/components/PostLaunchSplash";  // 👈 import splash
+import solarcore from "../assets/SolarCore-1.svg";
 
 const navigationItems = [
   {
@@ -74,11 +73,13 @@ const SideNav = () => {
               to={item.url}
               className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${
                 isActive
-                  ? 'bg-primary/10 text-primary font-semibold'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
-              <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : item.color}`} />
+              <item.icon
+                className={`w-5 h-5 ${isActive ? "text-primary" : item.color}`}
+              />
               <span className="font-inter">{item.title}</span>
             </Link>
           );
@@ -101,12 +102,18 @@ const BottomNav = () => {
               to={item.url}
               className={`flex flex-col items-center justify-center gap-1 p-1 rounded-lg transition-all duration-200 ${
                 isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : item.color}`} />
-              <span className={`text-[10px] font-medium font-inter text-center ${isActive ? 'text-primary' : ''}`}>
+              <item.icon
+                className={`w-5 h-5 ${isActive ? "text-primary" : item.color}`}
+              />
+              <span
+                className={`text-[10px] font-medium font-inter text-center ${
+                  isActive ? "text-primary" : ""
+                }`}
+              >
                 {item.title}
               </span>
             </Link>
@@ -131,12 +138,12 @@ const TopBar = () => {
         <div className="flex items-center gap-2">
           <Link to={createPageUrl("Notifications")}>
             <Button variant="ghost" size="icon">
-              <Bell className="w-5 h-5 text-gray-600"/>
+              <Bell className="w-5 h-5 text-gray-600" />
             </Button>
           </Link>
           <Link to={createPageUrl("Settings")}>
             <Button variant="ghost" size="icon">
-              <UserIcon className="w-5 h-5 text-gray-600"/>
+              <UserIcon className="w-5 h-5 text-gray-600" />
             </Button>
           </Link>
         </div>
@@ -151,12 +158,12 @@ const DesktopHeader = () => {
       <div className="flex items-center gap-3">
         <Link to={createPageUrl("Notifications")}>
           <Button variant="ghost" size="icon">
-            <Bell className="w-5 h-5 text-gray-600"/>
+            <Bell className="w-5 h-5 text-gray-600" />
           </Button>
         </Link>
         <Link to={createPageUrl("Settings")}>
           <Button variant="ghost" size="icon">
-            <UserIcon className="w-5 h-5 text-gray-600"/>
+            <UserIcon className="w-5 h-5 text-gray-600" />
           </Button>
         </Link>
       </div>
@@ -170,12 +177,11 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  // Environment-driven launch gate config (fallback to Sept 27, 2025 Africa/Lagos)
-  // Environment-driven launch gate config (fallback to Sept 27, 2025 Africa/Lagos)
-  const launchIso = import.meta.env.VITE_LAUNCH_DATE ?? "2025-09-27T00:00:00+01:00";
+  // LaunchGate config
+  const launchIso =
+    import.meta.env.VITE_LAUNCH_DATE ?? "2025-09-27T00:00:00+01:00";
   const previewKey = import.meta.env.VITE_PREVIEW_KEY;
   const serverTimeUrl = import.meta.env.VITE_TIME_ENDPOINT ?? null;
-
 
   return (
     <div className="min-h-screen bg-solarcore-gray flex flex-col lg:flex-row">
@@ -186,14 +192,16 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex-1 lg:pl-64">
         <DesktopHeader />
         <main className="flex-1 overflow-auto pb-24 lg:pb-6">
+          {/* 👇 Wrap LaunchGate output in PostLaunchSplash */}
           <LaunchGate launchIso={launchIso} serverTimeUrl={serverTimeUrl}>
-            {children || <Outlet />}
+            <PostLaunchSplash>
+              {children || <Outlet />}
+            </PostLaunchSplash>
           </LaunchGate>
         </main>
       </div>
 
-
-      {/*<AIAssistantButton />*/}
+      {/* <AIAssistantButton /> */}
       <BottomNav />
     </div>
   );
