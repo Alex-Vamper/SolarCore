@@ -16,6 +16,7 @@ import {
 
 import AIAssistantButton from "@/components/ai/AIAssistantButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import LaunchGate from "@/components/LaunchGate";
 import solarcore from '../assets/SolarCore-1.svg';
 
 
@@ -169,6 +170,13 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
+  // Environment-driven launch gate config (fallback to Sept 27, 2025 Africa/Lagos)
+  // Environment-driven launch gate config (fallback to Sept 27, 2025 Africa/Lagos)
+  const launchIso = import.meta.env.VITE_LAUNCH_DATE ?? "2025-09-27T00:00:00+01:00";
+  const previewKey = import.meta.env.VITE_PREVIEW_KEY;
+  const serverTimeUrl = import.meta.env.VITE_TIME_ENDPOINT ?? null;
+
+
   return (
     <div className="min-h-screen bg-solarcore-gray flex flex-col lg:flex-row">
       <ScrollToTop />
@@ -178,9 +186,12 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex-1 lg:pl-64">
         <DesktopHeader />
         <main className="flex-1 overflow-auto pb-24 lg:pb-6">
-          {children || <Outlet />}
+          <LaunchGate launchIso={launchIso} serverTimeUrl={serverTimeUrl}>
+            {children || <Outlet />}
+          </LaunchGate>
         </main>
       </div>
+
 
       {/*<AIAssistantButton />*/}
       <BottomNav />
