@@ -21,7 +21,7 @@ function formatParts(ms: number) {
 
 export default function LaunchGate({
   children,
-  launchIso = "2025-0-30T00:00:00+01:00",
+  launchIso = "2025-08-30T00:00:00+01:00",
   serverTimeUrl = null,
 }: LaunchGateProps) {
   const navigate = useNavigate();

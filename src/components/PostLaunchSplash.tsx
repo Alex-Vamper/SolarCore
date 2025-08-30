@@ -17,7 +17,7 @@ function getDateKey(date: Date) {
 
 export default function PostLaunchSplash({
   children,
-  launchIso = import.meta.env.VITE_LAUNCH_DATE ?? "2025-09-27T00:00:00+01:00",
+  launchIso = import.meta.env.VITE_LAUNCH_DATE ?? "2025-08-30T00:00:00+01:00",
   serverTimeUrl = null,
   userId = null,
   displayMs = 20_000,
