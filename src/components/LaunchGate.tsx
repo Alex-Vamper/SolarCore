@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 type LaunchGateProps = {
   launchIso?: string;
@@ -23,6 +24,8 @@ export default function LaunchGate({
   launchIso = "2025-09-27T00:00:00+01:00",
   serverTimeUrl = null,
 }: LaunchGateProps) {
+  const navigate = useNavigate();
+
   const [nowOffsetMs, setNowOffsetMs] = useState(0);
   const [remainingMs, setRemainingMs] = useState(() => {
     const target = new Date(launchIso).getTime();
@@ -119,7 +122,7 @@ export default function LaunchGate({
         </p>
 
         {/* Countdown boxes */}
-        <div className="flex justify-center gap-4 text-white font-mono text-3xl">
+        <div className="flex justify-center gap-4 text-white font-mono text-3xl mb-8">
           {[
             { label: "Days", val: d },
             { label: "Hours", val: h },
@@ -139,6 +142,14 @@ export default function LaunchGate({
             </motion.div>
           ))}
         </div>
+
+        {/* Back to Landing Page button */}
+        <button
+          onClick={() => navigate("/")}
+          className="mt-4 px-6 py-3 rounded-xl bg-orange-600 text-white font-semibold shadow-lg hover:bg-orange-700 transition"
+        >
+          Back to Landing Page
+        </button>
       </motion.div>
     </div>
   );
