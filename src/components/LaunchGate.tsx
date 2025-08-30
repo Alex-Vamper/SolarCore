@@ -1,36 +1,35 @@
-// LaunchGate.tsx
 import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 
 type LaunchGateProps = {
-  launchIso?: string; // e.g. "2025-09-27T00:00:00+01:00"
+  launchIso?: string;
   children: React.ReactNode;
-  serverTimeUrl?: string | null; // optional endpoint to fetch authoritative time
+  serverTimeUrl?: string | null;
 };
 
-function formatRemaining(ms: number) {
-  if (ms <= 0) return "00:00:00:00";
+function formatParts(ms: number) {
+  if (ms <= 0) return { d: "00", h: "00", m: "00", s: "00" };
   const totalSec = Math.floor(ms / 1000);
-  const days = Math.floor(totalSec / (3600 * 24));
-  const hours = Math.floor((totalSec % (3600 * 24)) / 3600);
-  const mins = Math.floor((totalSec % 3600) / 60);
-  const secs = totalSec % 60;
+  const d = Math.floor(totalSec / (3600 * 24));
+  const h = Math.floor((totalSec % (3600 * 24)) / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(days)}:${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+  return { d: pad(d), h: pad(h), m: pad(m), s: pad(s) };
 }
 
 export default function LaunchGate({
   children,
-  launchIso = "2025-09-27T00:00:00+01:00", // default launch date
+  launchIso = "2025-09-27T00:00:00+01:00",
   serverTimeUrl = null,
 }: LaunchGateProps) {
-  const [nowOffsetMs, setNowOffsetMs] = useState<number>(0); // serverNow - clientNow
-  const [remainingMs, setRemainingMs] = useState<number>(() => {
+  const [nowOffsetMs, setNowOffsetMs] = useState(0);
+  const [remainingMs, setRemainingMs] = useState(() => {
     const target = new Date(launchIso).getTime();
     return target - Date.now();
   });
-  const [ready, setReady] = useState<boolean>(() => remainingMs <= 0);
+  const [ready, setReady] = useState(() => remainingMs <= 0);
 
-  // Always bypass countdown in dev/local
   useEffect(() => {
     if (
       window.location.hostname === "localhost" ||
@@ -40,7 +39,6 @@ export default function LaunchGate({
     }
   }, []);
 
-  // Optionally fetch server time to prevent client clock tampering
   useEffect(() => {
     if (!serverTimeUrl) return;
     let mounted = true;
@@ -56,15 +54,12 @@ export default function LaunchGate({
         setRemainingMs(rem);
         if (rem <= 0) setReady(true);
       })
-      .catch(() => {
-        // ignore errors; fallback to client clock
-      });
+      .catch(() => {});
     return () => {
       mounted = false;
     };
   }, [serverTimeUrl, launchIso]);
 
-  // Countdown tick
   useEffect(() => {
     const target = new Date(launchIso).getTime();
     const id = setInterval(() => {
@@ -77,37 +72,74 @@ export default function LaunchGate({
     return () => clearInterval(id);
   }, [launchIso, nowOffsetMs]);
 
-  // If ready -> render children (actual app)
-  if (ready) {
-    return <>{children}</>;
-  }
+  if (ready) return <>{children}</>;
 
-  // Otherwise show the countdown gate
-  const pretty = formatRemaining(remainingMs);
+  const { d, h, m, s } = formatParts(remainingMs);
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background gradient inspired by Solaco (light, energy, solar) */}
-      <div className="absolute inset-0 bg-gradient-to-br from-solarcore-yellow/40 via-solarcore-orange/30 to-solarcore-blue/40 animate-pulse-slow" />
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-amber-400 to-yellow-500 animate-gradient" />
 
-      {/* Overlay to soften visuals */}
-      <div className="absolute inset-0 bg-white/70 backdrop-blur-sm" />
+      {/* Subtle star sparkles */}
+      <div className="absolute inset-0">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full opacity-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0] }}
+            transition={{
+              duration: 3,
+              delay: i * 0.4,
+              repeat: Infinity,
+              repeatType: "loop",
+            }}
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+            }}
+          />
+        ))}
+      </div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-xl w-full text-center rounded-2xl shadow-2xl p-10 bg-white/90 border border-border">
-        <h1 className="text-3xl font-bold mb-4 text-solarcore-blue">
-          We’re launching soon
+      {/* Countdown Card */}
+      <motion.div
+        className="relative z-10 max-w-xl w-full text-center rounded-2xl shadow-2xl p-10 bg-white/90 backdrop-blur"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1 }}
+      >
+        <h1 className="text-3xl font-extrabold mb-4 text-gray-900">
+          We’re Launching Soon
         </h1>
-        <p className="text-sm text-muted-foreground mb-6">
-          Our app will go live on{" "}
+        <p className="text-sm text-gray-600 mb-8">
+          Our app goes live on{" "}
           <strong>September 27, 2025 (Africa/Lagos)</strong>.
         </p>
 
-        {/* Countdown */}
-        <div className="text-4xl font-mono tracking-widest bg-gray-100 p-6 rounded-xl shadow-inner">
-          {pretty /* DD:HH:MM:SS */}
+        {/* Countdown boxes */}
+        <div className="flex justify-center gap-4 text-white font-mono text-3xl">
+          {[
+            { label: "Days", val: d },
+            { label: "Hours", val: h },
+            { label: "Min", val: m },
+            { label: "Sec", val: s },
+          ].map((unit) => (
+            <motion.div
+              key={unit.label}
+              className="bg-orange-600 rounded-lg px-4 py-2 shadow-lg"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >
+              <div>{unit.val}</div>
+              <div className="text-xs uppercase text-orange-100">
+                {unit.label}
+              </div>
+            </motion.div>
+          ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
