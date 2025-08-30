@@ -1,3 +1,4 @@
+//src/layouts/Layout.tsx
 import * as React from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { createPageUrl } from "@/utils";

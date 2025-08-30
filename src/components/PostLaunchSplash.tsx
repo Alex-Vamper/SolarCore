@@ -4,79 +4,94 @@ import { useNavigate } from "react-router-dom";
 
 type Props = {
   children?: React.ReactNode;
-  launchIso?: string; // ISO string, e.g. "2025-08-30T00:00:00+01:00"
+  launchIso?: string | null; // optional ISO string override
   serverTimeUrl?: string | null; // optional endpoint returning { now: "2025-08-30T12:34:56.789Z" }
   userId?: string | null; // optional: if provided splash is tracked per-user+date
   displayMs?: number; // how long to auto-show (ms). default 20000 (20s)
 };
 
 function getDateKey(date: Date) {
-  // YYYY-MM-DD local date string for per-day key
+  // YYYY-MM-DD (UTC date portion) — used as the per-day key
   return date.toISOString().slice(0, 10);
 }
 
+/**
+ * PostLaunchSplash
+ *
+ * - By default (no launchIso provided), treats *today at 00:00 local time* as the launch moment.
+ * - Shows once per device (or once-per-user if you pass userId) per day.
+ * - Optionally uses serverTimeUrl to get authoritative time.
+ * - When visible, overlays a full-screen celebratory splash and blocks interaction below.
+ */
 export default function PostLaunchSplash({
   children,
-  launchIso = import.meta.env.VITE_LAUNCH_DATE ?? "2025-08-30T00:00:00+01:00",
+  launchIso = null,
   serverTimeUrl = null,
   userId = null,
   displayMs = 20_000,
 }: Props) {
   const navigate = useNavigate();
-  const [serverOffset, setServerOffset] = useState<number>(0);
+  const [serverOffset, setServerOffset] = useState<number>(0); // serverNow - clientNow
   const [visible, setVisible] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingServerTime, setLoadingServerTime] = useState<boolean>(true);
 
-  // get authoritative now (server) if provided
+  // Compute the effective launch ISO:
+  // - prefer explicit launchIso (prop)
+  // - else prefer VITE_LAUNCH_DATE env var
+  // - else default to today at 00:00 local time
+  const effectiveLaunchIso = useMemo(() => {
+    if (launchIso) return launchIso;
+    if (import.meta.env.VITE_LAUNCH_DATE) return import.meta.env.VITE_LAUNCH_DATE;
+    // compute today's local midnight
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString(); // expresses local-midnight moment in ISO (UTC adjusted)
+  }, [launchIso]);
+
+  // If provided, fetch server time once to compute offset
   useEffect(() => {
     let mounted = true;
     if (!serverTimeUrl) {
-      setLoading(false);
+      setLoadingServerTime(false);
       return;
     }
     fetch(serverTimeUrl)
       .then((r) => r.json())
       .then((data) => {
         if (!mounted) return;
-        // expected: { now: "2025-08-30T12:34:56.789Z" }
+        // expect { now: "2025-08-30T12:34:56.789Z" }
         const serverNow = new Date(data.now).getTime();
         const clientNow = Date.now();
         setServerOffset(serverNow - clientNow);
       })
       .catch(() => {
-        // ignore; fallback to client time
+        // ignore errors, fallback to client time
       })
       .finally(() => {
-        if (mounted) setLoading(false);
+        if (mounted) setLoadingServerTime(false);
       });
     return () => {
       mounted = false;
     };
   }, [serverTimeUrl]);
 
-  // decide whether to show splash
+  // decide whether to show the splash (runs after serverTime fetch completes)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // dev convenience: don't show on localhost
-    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-      setVisible(false);
-      return;
-    }
-
-    // If still loading server time, wait (effect above toggles loading)
-    if (loading) return;
+    // Wait for server time to finish loading (if provided)
+    if (loadingServerTime) return;
 
     const now = new Date(Date.now() + serverOffset);
-    const launchDate = new Date(launchIso);
+    const launchDate = new Date(effectiveLaunchIso);
 
-    // If current time is earlier than launch, do nothing
+    // If current time is earlier than launch, do nothing (no splash)
     if (now < launchDate) {
       setVisible(false);
       return;
     }
 
-    // Compose a per-day key using the server date if serverOffset provided
+    // Compose per-day (YYYY-MM-DD) key using the server-compensated date
     const dayKey = getDateKey(new Date(now.toISOString().slice(0, 10)));
     const storageKey = userId ? `post_launch_splash_${dayKey}_${userId}` : `post_launch_splash_${dayKey}`;
 
@@ -86,36 +101,36 @@ export default function PostLaunchSplash({
       return;
     }
 
-    // Otherwise show splash
+    // Otherwise show splash and auto-mark as seen after displayMs
     setVisible(true);
-
-    // auto-mark as seen after displayMs when visible closes
     const timer = setTimeout(() => {
       localStorage.setItem(storageKey, "1");
       setVisible(false);
     }, displayMs);
 
     return () => clearTimeout(timer);
-  }, [launchIso, serverOffset, loading, userId, displayMs]);
+  }, [effectiveLaunchIso, serverOffset, loadingServerTime, userId, displayMs]);
 
   // compute time since launch for messaging
   const timeSince = useMemo(() => {
     const now = Date.now() + serverOffset;
-    const launch = new Date(launchIso).getTime();
+    const launch = new Date(effectiveLaunchIso).getTime();
     const diffMs = Math.max(0, now - launch);
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
     return { hours, minutes };
-  }, [launchIso, serverOffset]);
+  }, [effectiveLaunchIso, serverOffset]);
 
-  // When not visible, simply render children (no overlay)
+  // If not visible, render children normally
   if (!visible) return <>{children}</>;
 
-  // If visible, render children underneath and full-screen overlay on top (blocks interaction)
+  // If visible: render children underneath and overlay full-screen celebratory splash
   return (
     <>
       {children}
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gradient-to-br from-solarcore-orange/85 via-solarcore-yellow/60 to-solarcore-blue/40">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center">
+        {/* Background gradient (solaco feel) */}
+        <div className="absolute inset-0 bg-gradient-to-br from-solarcore-orange/85 via-solarcore-yellow/60 to-solarcore-blue/40" />
         <div className="absolute inset-0 bg-black/25 backdrop-blur-sm" />
 
         <div className="relative z-10 max-w-3xl w-full mx-4 p-8 rounded-2xl bg-white/8 border border-white/20 shadow-2xl text-center">
@@ -133,7 +148,7 @@ export default function PostLaunchSplash({
           <div className="flex justify-center gap-4 mt-6">
             <button
               onClick={() => {
-                // mark seen
+                // mark seen (per-day key) and close splash
                 const nowKey = getDateKey(new Date(Date.now() + serverOffset));
                 const storageKey = userId ? `post_launch_splash_${nowKey}_${userId}` : `post_launch_splash_${nowKey}`;
                 localStorage.setItem(storageKey, "1");
@@ -146,7 +161,6 @@ export default function PostLaunchSplash({
 
             <button
               onClick={() => {
-                // also allow user to go to landing (optional)
                 const nowKey = getDateKey(new Date(Date.now() + serverOffset));
                 const storageKey = userId ? `post_launch_splash_${nowKey}_${userId}` : `post_launch_splash_${nowKey}`;
                 localStorage.setItem(storageKey, "1");
