@@ -118,7 +118,7 @@ export default function LaunchGate({
         </h1>
         <p className="text-sm text-gray-600 mb-8">
           Our app goes live on{" "}
-          <strong>September 27, 2025 (Africa/Lagos)</strong>.
+          <strong>September 26th, 2025 (Africa/Lagos)</strong>.
         </p>
 
         {/* Countdown boxes */}
