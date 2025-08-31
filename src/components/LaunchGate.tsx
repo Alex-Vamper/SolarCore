@@ -205,13 +205,14 @@ export default function LaunchGate({
         {/* Extra idea: Not you? Log out */}
         <p className="mt-2 text-sm text-gray-700">
           Not you?{" "}
-          <span
+          <button
             onClick={handleLogout}
-            className="text-red-600 font-semibold cursor-pointer underline decoration-red-400 decoration-2 hover:opacity-80 active:scale-95 transition-transform duration-150"
+            className="text-red-600 font-semibold underline decoration-red-400 decoration-2 hover:opacity-80 active:scale-95 transition-transform duration-150 bg-transparent p-0 border-0"
           >
             Log out
-          </span>
+          </button>
         </p>
+
       </motion.div>
     </div>
   );
