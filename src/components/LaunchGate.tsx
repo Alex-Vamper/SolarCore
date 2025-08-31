@@ -207,7 +207,7 @@ export default function LaunchGate({
           Not you?{" "}
           <span
             onClick={handleLogout}
-            className="text-solarcore-blue-600 font-semibold cursor-pointer underline decoration-red-400 decoration-2 hover:opacity-80 active:scale-95 transition-transform duration-150"
+            className="text-red-600 font-semibold cursor-pointer underline decoration-red-400 decoration-2 hover:opacity-80 active:scale-95 transition-transform duration-150"
           >
             Log out
           </span>
