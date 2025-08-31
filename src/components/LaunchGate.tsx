@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client"; // <- reuse existing client
 
 type LaunchGateProps = {
   launchIso?: string | null;
@@ -131,6 +132,12 @@ export default function LaunchGate({
     }
   })();
 
+  // New logout function for shared devices
+  const handleLogout = async () => {
+    await supabase.auth.signOut(); // properly end session
+    navigate("/"); // send back to landing
+  };
+
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Animated gradient background */}
@@ -169,18 +176,12 @@ export default function LaunchGate({
           We’re Launching Soon
         </h1>
         <p className="text-sm text-gray-600 mb-8">
-          Our app goes live on{" "}
-          <strong>{displayLaunch}</strong>.
+          Our app goes live on <strong>{displayLaunch}</strong>.
         </p>
 
         {/* Countdown boxes */}
         <div className="flex justify-center gap-4 text-white font-mono text-3xl mb-8">
-          {[
-            { label: "Days", val: d },
-            { label: "Hours", val: h },
-            { label: "Min", val: m },
-            { label: "Sec", val: s },
-          ].map((unit) => (
+          {[{ label: "Days", val: d }, { label: "Hours", val: h }, { label: "Min", val: m }, { label: "Sec", val: s }].map((unit) => (
             <motion.div
               key={unit.label}
               className="bg-orange-600 rounded-lg px-4 py-2 shadow-lg"
@@ -200,6 +201,17 @@ export default function LaunchGate({
         >
           Back to Landing Page
         </button>
+
+        {/* Extra idea: Not you? Log out */}
+        <p className="mt-2 text-sm text-gray-700">
+          Not you?{" "}
+          <span
+            onClick={handleLogout}
+            className="text-red-600 font-semibold cursor-pointer hover:underline"
+          >
+            Log out
+          </span>
+        </p>
       </motion.div>
     </div>
   );
