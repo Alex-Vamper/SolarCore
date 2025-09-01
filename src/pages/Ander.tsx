@@ -384,268 +384,270 @@ export default function Ander() {
   const planInfo = getPlanDisplayInfo();
 
   return (
-    <div className="p-4 space-y-6 pb-24 md:pb-6">
-      <Link to={createPageUrl('Settings')}>
-        <Button variant="outline" className="font-inter">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Settings
-        </Button>
-      </Link>
-      
-      <div className="text-center py-6">
-        <button
-          onClick={handleLogoClick}
-          className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg hover:scale-105 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          <AILogoSVG />
-        </button>
-        {isAdminMode && (
-          <div className="mb-2">
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
-              <Lock className="w-3 h-3" />
-              Admin Mode Active
-            </span>
-          </div>
-        )}
-        <h1 className="text-2xl font-bold text-gray-900 font-inter">
-          Ander Voice Commands
-        </h1>
-        <p className="text-gray-600 font-inter mt-2">
-          Control your smart home with natural voice commands
-        </p>
-        {isAdminMode && (
-          <div className="mt-4 flex justify-center gap-2">
-            <Button onClick={handleCancelChanges} variant="outline" className="font-inter">
-              <X className="w-4 h-4 mr-2"/>
-              Cancel
-            </Button>
-            <Button onClick={handleAcceptChanges} className="bg-green-600 hover:bg-green-700 font-inter">
-              <Check className="w-4 h-4 mr-2"/>
-              Accept Changes
-            </Button>
-             <Button onClick={handleAddNewCommand} className="font-inter">
-               <Plus className="w-4 h-4 mr-2"/>
-               New Command
-             </Button>
-             <Button onClick={async () => {
-               await VoiceCommand.deleteAll();
-               await initializeDefaultCommands();
-               toast.success("Voice commands refreshed with current room configuration!");
-             }} variant="outline" className="font-inter">
-               <AlertTriangle className="w-4 h-4 mr-2"/>
-               Refresh Commands
-             </Button>
-          </div>
-        )}
-      </div>
-
-      <Card className="glass-card border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <Power className="w-5 h-5 text-blue-600" />
-            Assistant Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex-1">
-              <span className="font-medium font-inter">Enable Ander Assistant</span>
-              <p className="text-sm text-gray-500 font-inter">
-                Show or hide the floating AI assistant button
-              </p>
+    <div className="p-4 pb-24">
+      <div className="max-w-[1280px] mx-auto space-y-6">
+        <Link to={createPageUrl('Settings')}>
+          <Button variant="outline" className="font-inter">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Settings
+          </Button>
+        </Link>
+        
+        <div className="text-center py-6">
+          <button
+            onClick={handleLogoClick}
+            className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg hover:scale-105 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            <AILogoSVG />
+          </button>
+          {isAdminMode && (
+            <div className="mb-2">
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                <Lock className="w-3 h-3" />
+                Admin Mode Active
+              </span>
             </div>
-            <div className="flex items-center gap-3">
-              {subscriptionPlan !== 'none' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleChangePlan}
-                  className={`${planInfo.color} border font-inter`}
-                >
-                  {planInfo.label}
-                </Button>
-              )}
+          )}
+          <h1 className="text-2xl font-bold text-gray-900 font-inter">
+            Ander Voice Commands
+          </h1>
+          <p className="text-gray-600 font-inter mt-2">
+            Control your smart home with natural voice commands
+          </p>
+          {isAdminMode && (
+            <div className="mt-4 flex justify-center gap-2">
+              <Button onClick={handleCancelChanges} variant="outline" className="font-inter">
+                <X className="w-4 h-4 mr-2"/>
+                Cancel
+              </Button>
+              <Button onClick={handleAcceptChanges} className="bg-green-600 hover:bg-green-700 font-inter">
+                <Check className="w-4 h-4 mr-2"/>
+                Accept Changes
+              </Button>
+              <Button onClick={handleAddNewCommand} className="font-inter">
+                <Plus className="w-4 h-4 mr-2"/>
+                New Command
+              </Button>
+              <Button onClick={async () => {
+                await VoiceCommand.deleteAll();
+                await initializeDefaultCommands();
+                toast.success("Voice commands refreshed with current room configuration!");
+              }} variant="outline" className="font-inter">
+                <AlertTriangle className="w-4 h-4 mr-2"/>
+                Refresh Commands
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <Card className="glass-card border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg font-inter">
+              <Power className="w-5 h-5 text-blue-600" />
+              Assistant Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex-1">
+                <span className="font-medium font-inter">Enable Ander Assistant</span>
+                <p className="text-sm text-gray-500 font-inter">
+                  Show or hide the floating AI assistant button
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {subscriptionPlan !== 'none' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleChangePlan}
+                    className={`${planInfo.color} border font-inter`}
+                  >
+                    {planInfo.label}
+                  </Button>
+                )}
+                <Switch
+                  checked={anderEnabled}
+                  onCheckedChange={handleAnderToggle}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <span className="font-medium font-inter">Enable Voice Responses</span>
+                <p className="text-sm text-gray-500 font-inter">
+                  When enabled, Ander will speak responses aloud
+                </p>
+              </div>
               <Switch
-                checked={anderEnabled}
-                onCheckedChange={handleAnderToggle}
-                disabled={isLoading}
+                checked={voiceResponseEnabled}
+                onCheckedChange={handleVoiceResponseToggle}
+                disabled={isLoading || !anderEnabled}
               />
             </div>
-          </div>
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <span className="font-medium font-inter">Enable Voice Responses</span>
-              <p className="text-sm text-gray-500 font-inter">
-                When enabled, Ander will speak responses aloud
-              </p>
-            </div>
-            <Switch
-              checked={voiceResponseEnabled}
-              onCheckedChange={handleVoiceResponseToggle}
-              disabled={isLoading || !anderEnabled}
-            />
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card className="glass-card border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <HardDrive className="w-5 h-5 text-purple-600" />
-            Device Configuration
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-            <div>
-              <Label htmlFor="anderDeviceId" className="font-inter">Ander Device ID</Label>
-              <Input
-                id="anderDeviceId"
-                placeholder="Enter your physical device ID"
-                value={anderDeviceId}
-                onChange={(e) => {
-                    setAnderDeviceId(e.target.value);
-                    handleSettingUpdate({ ander_device_id: e.target.value });
-                }}
-                className="mt-1 font-inter"
-              />
-              <p className="text-xs text-gray-500 mt-2 font-inter">This ID connects the app to your SolarCore hardware.</p>
+        <Card className="glass-card border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg font-inter">
+              <HardDrive className="w-5 h-5 text-purple-600" />
+              Device Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+              <div>
+                <Label htmlFor="anderDeviceId" className="font-inter">Ander Device ID</Label>
+                <Input
+                  id="anderDeviceId"
+                  placeholder="Enter your physical device ID"
+                  value={anderDeviceId}
+                  onChange={(e) => {
+                      setAnderDeviceId(e.target.value);
+                      handleSettingUpdate({ ander_device_id: e.target.value });
+                  }}
+                  className="mt-1 font-inter"
+                />
+                <p className="text-xs text-gray-500 mt-2 font-inter">This ID connects the app to your SolarCore hardware.</p>
+              </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="glass-card border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg font-inter">
+              <Mic className="w-5 h-5 text-blue-600" />
+              How to Use Voice Commands
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+              <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+              <div>
+                <p className="font-medium text-blue-900 font-inter">Tap the AI Assistant Button</p>
+                <p className="text-sm text-blue-700 font-inter">Look for the floating blue button with the Ander logo</p>
+              </div>
             </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="glass-card border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <Mic className="w-5 h-5 text-blue-600" />
-            How to Use Voice Commands
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-            <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
-            <div>
-              <p className="font-medium text-blue-900 font-inter">Tap the AI Assistant Button</p>
-              <p className="text-sm text-blue-700 font-inter">Look for the floating blue button with the Ander logo</p>
+            <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+              <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+              <div>
+                <p className="font-medium text-green-900 font-inter">Speak Your Command</p>
+                <p className="text-sm text-green-700 font-inter">You have 8 seconds to give your voice command clearly</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-            <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
-            <div>
-              <p className="font-medium text-green-900 font-inter">Speak Your Command</p>
-              <p className="text-sm text-green-700 font-inter">You have 8 seconds to give your voice command clearly</p>
+            <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
+              <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
+              <div>
+                <p className="font-medium text-purple-900 font-inter">Get Response</p>
+                <p className="text-sm text-purple-700 font-inter">Ander will show and optionally speak the response</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
-            <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
-            <div>
-              <p className="font-medium text-purple-900 font-inter">Get Response</p>
-              <p className="text-sm text-purple-700 font-inter">Ander will show and optionally speak the response</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* COMMANDS SECTION */}
-      <div className="space-y-4">
-        {/* User-Facing Commands */}
-        {sortedUserCategories.map((categoryKey) => {
-          const commandsInCategory = groupedUserCommands[categoryKey] || [];
-          if (commandsInCategory.length === 0) return null; // Should not happen if category exists in map
+        {/* COMMANDS SECTION */}
+        <div className="space-y-4">
+          {/* User-Facing Commands */}
+          {sortedUserCategories.map((categoryKey) => {
+            const commandsInCategory = groupedUserCommands[categoryKey] || [];
+            if (commandsInCategory.length === 0) return null; // Should not happen if category exists in map
 
-          return (
-            <Card key={categoryKey} className="glass-card border-0 shadow-lg">
+            return (
+              <Card key={categoryKey} className="glass-card border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg font-inter capitalize text-gray-900">
+                    {categoryKey}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {commandsInCategory.map((command) => (
+                    <div key={command.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-blue-100 text-blue-800 border-blue-300 font-inter whitespace-normal text-left">
+                            {command.command_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Badge>
+                          {command.audio_url && <Badge className="bg-green-100 text-green-800 border-green-200 font-inter">Audio Set</Badge>}
+                        </div>
+                        {isAdminMode && (
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handleAudioUpload(command)} title="Upload audio" className="text-green-600 hover:text-green-700"><Volume2 className="w-4 h-4" /></button>
+                            <button onClick={() => handleEditCommand(command)} title="Edit command" className="text-blue-600 hover:text-blue-700"><Pencil className="w-4 h-4" /></button>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm font-inter mb-1 italic text-gray-700">"{command.response}"</p>
+                      {command.keywords.length > 0 && (
+                        <p className="text-xs text-gray-500 font-inter">Try saying: "{command.keywords[0]}"</p>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            );
+          })}
+
+          {/* Admin-Only Fallback Commands */}
+          {isAdminMode && adminCommands.length > 0 && (
+            <Card className="glass-card border-2 border-orange-300 bg-orange-50/30 shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-inter capitalize text-gray-900">
-                  {categoryKey}
+                <CardTitle className="flex items-center gap-2 text-lg font-inter text-orange-800 capitalize">
+                  <ShieldCheck className="w-5 h-5"/>
+                  Admin Commands
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {commandsInCategory.map((command) => (
-                  <div key={command.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                {adminCommands.map((command) => (
+                  <div key={command.id} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-300 font-inter whitespace-normal text-left">
-                          {command.command_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        <Badge className="bg-orange-100 text-orange-800 border-orange-300 font-inter whitespace-normal text-left">
+                          {command.command_name === '_admin_didnt_understand_' && "Didn't Understand Command"}
+                          {command.command_name === '_admin_device_not_found_' && "User does not have the device"}
+                          {command.command_name === '_admin_subscription_required_' && "User's subscription plan does not support command"}
                         </Badge>
                         {command.audio_url && <Badge className="bg-green-100 text-green-800 border-green-200 font-inter">Audio Set</Badge>}
                       </div>
-                      {isAdminMode && (
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => handleAudioUpload(command)} title="Upload audio" className="text-green-600 hover:text-green-700"><Volume2 className="w-4 h-4" /></button>
-                          <button onClick={() => handleEditCommand(command)} title="Edit command" className="text-blue-600 hover:text-blue-700"><Pencil className="w-4 h-4" /></button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleAudioUpload(command)} title="Upload audio" className="text-green-600 hover:text-green-700"><Volume2 className="w-4 h-4" /></button>
+                        <button onClick={() => handleEditCommand(command)} title="Edit command" className="text-blue-600 hover:text-blue-700"><Pencil className="w-4 h-4" /></button>
+                      </div>
                     </div>
-                    <p className="text-sm font-inter mb-1 italic text-gray-700">"{command.response}"</p>
-                    {command.keywords.length > 0 && (
-                      <p className="text-xs text-gray-500 font-inter">Try saying: "{command.keywords[0]}"</p>
-                    )}
+                    <p className="text-sm font-inter mb-1 italic text-orange-700">"{command.response}"</p>
+                    <p className="text-xs text-orange-600 font-inter">System response for when this situation occurs</p>
                   </div>
                 ))}
               </CardContent>
             </Card>
-          );
-        })}
+          )}
+        </div>
 
-        {/* Admin-Only Fallback Commands */}
-        {isAdminMode && adminCommands.length > 0 && (
-          <Card className="glass-card border-2 border-orange-300 bg-orange-50/30 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg font-inter text-orange-800 capitalize">
-                <ShieldCheck className="w-5 h-5"/>
-                Admin Commands
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {adminCommands.map((command) => (
-                <div key={command.id} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Badge className="bg-orange-100 text-orange-800 border-orange-300 font-inter whitespace-normal text-left">
-                        {command.command_name === '_admin_didnt_understand_' && "Didn't Understand Command"}
-                        {command.command_name === '_admin_device_not_found_' && "User does not have the device"}
-                        {command.command_name === '_admin_subscription_required_' && "User's subscription plan does not support command"}
-                      </Badge>
-                      {command.audio_url && <Badge className="bg-green-100 text-green-800 border-green-200 font-inter">Audio Set</Badge>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleAudioUpload(command)} title="Upload audio" className="text-green-600 hover:text-green-700"><Volume2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleEditCommand(command)} title="Edit command" className="text-blue-600 hover:text-blue-700"><Pencil className="w-4 h-4" /></button>
-                    </div>
-                  </div>
-                  <p className="text-sm font-inter mb-1 italic text-orange-700">"{command.response}"</p>
-                  <p className="text-xs text-orange-600 font-inter">System response for when this situation occurs</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        <SubscriptionModal
+          isOpen={showSubscriptionModal}
+          onClose={() => setShowSubscriptionModal(false)}
+          onSelectPlan={handleSelectPlan}
+        />
+
+        <AdminPasswordModal
+          isOpen={showAdminModal}
+          onClose={() => setShowAdminModal(false)}
+          onAuthenticated={handleAdminAuthenticated}
+        />
+
+        <AudioUploadModal
+          isOpen={showAudioModal}
+          onClose={handleAudioModalClose}
+          command={selectedCommand}
+        />
+        
+        <CommandEditorModal
+          isOpen={showCommandEditor}
+          onClose={handleCommandEditorClose}
+          command={selectedCommand}
+          onSave={handleCommandSave}
+        />
       </div>
-
-      <SubscriptionModal
-        isOpen={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
-        onSelectPlan={handleSelectPlan}
-      />
-
-      <AdminPasswordModal
-        isOpen={showAdminModal}
-        onClose={() => setShowAdminModal(false)}
-        onAuthenticated={handleAdminAuthenticated}
-      />
-
-      <AudioUploadModal
-        isOpen={showAudioModal}
-        onClose={handleAudioModalClose}
-        command={selectedCommand}
-      />
-      
-      <CommandEditorModal
-        isOpen={showCommandEditor}
-        onClose={handleCommandEditorClose}
-        command={selectedCommand}
-        onSave={handleCommandSave}
-      />
     </div>
   );
 }

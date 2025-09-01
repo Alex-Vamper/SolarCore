@@ -71,70 +71,72 @@ export default function Energy() {
   }
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Header */}
-      <div className="text-center py-4">
-        <h1 className="text-2xl font-bold text-gray-900 font-inter">Energy Hub</h1>
-        <p className="text-gray-600 font-inter mt-1">Monitor and manage your energy consumption</p>
-      </div>
+    <div className="p-4 pb-24">
+      <div className="max-w-[1280px] mx-auto space-y-6">
+        {/* Header */}
+        <div className="text-center py-4">
+          <h1 className="text-2xl font-bold text-gray-900 font-inter">Energy Hub</h1>
+          <p className="text-gray-600 font-inter mt-1">Monitor and manage your energy consumption</p>
+        </div>
 
-      {/* Current Status Sticky Header */}
-      <div className="sticky top-0 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-4 mb-4 shadow-sm z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-              currentSource.type === 'solar' ? 'bg-yellow-500' :
-              currentSource.type === 'battery' ? 'bg-green-500' : 'bg-blue-500'
-            }`}>
-              <currentSource.icon className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-semibold text-gray-900 font-inter">
-                Running on {currentSource.type.charAt(0).toUpperCase() + currentSource.type.slice(1)}
+        {/* Current Status Sticky Header */}
+        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-4 mb-4 shadow-sm z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                currentSource.type === 'solar' ? 'bg-yellow-500' :
+                currentSource.type === 'battery' ? 'bg-green-500' : 'bg-blue-500'
+              }`}>
+                <currentSource.icon className="w-5 h-5 text-white" />
               </div>
-              <div className="text-sm text-gray-500 font-inter">
-                {energyData?.current_usage?.toFixed(1) || '0.0'} kWh current usage
+              <div>
+                <div className="font-semibold text-gray-900 font-inter">
+                  Running on {currentSource.type.charAt(0).toUpperCase() + currentSource.type.slice(1)}
+                </div>
+                <div className="text-sm text-gray-500 font-inter">
+                  {energyData?.current_usage?.toFixed(1) || '0.0'} kWh current usage
+                </div>
               </div>
             </div>
-          </div>
-          <div className="text-right">
-            <div className="text-lg font-bold text-gray-900 font-inter">
-              {energyData?.daily_usage?.toFixed(1) || '0.0'} kWh
+            <div className="text-right">
+              <div className="text-lg font-bold text-gray-900 font-inter">
+                {energyData?.daily_usage?.toFixed(1) || '0.0'} kWh
+              </div>
+              <div className="text-sm text-gray-500 font-inter">Today</div>
             </div>
-            <div className="text-sm text-gray-500 font-inter">Today</div>
           </div>
         </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="overview" className="flex items-center gap-1 text-xs">
+              <TrendingUp className="w-3 h-3" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="appliances" className="flex items-center gap-1 text-xs">
+              <Home className="w-3 h-3" />
+              Appliances
+            </TabsTrigger>
+            <TabsTrigger value="billing" className="flex items-center gap-1 text-xs">
+              <Receipt className="w-3 h-3" />
+              Billing
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            <EnergyOverview energyData={energyData} />
+          </TabsContent>
+
+          <TabsContent value="appliances" className="space-y-4">
+            <ApplianceUsage rooms={rooms} />
+          </TabsContent>
+
+          <TabsContent value="billing" className="space-y-4">
+            <BillingRecharges energyData={energyData} />
+          </TabsContent>
+        </Tabs>
       </div>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="overview" className="flex items-center gap-1 text-xs">
-            <TrendingUp className="w-3 h-3" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="appliances" className="flex items-center gap-1 text-xs">
-            <Home className="w-3 h-3" />
-            Appliances
-          </TabsTrigger>
-          <TabsTrigger value="billing" className="flex items-center gap-1 text-xs">
-            <Receipt className="w-3 h-3" />
-            Billing
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          <EnergyOverview energyData={energyData} />
-        </TabsContent>
-
-        <TabsContent value="appliances" className="space-y-4">
-          <ApplianceUsage rooms={rooms} />
-        </TabsContent>
-
-        <TabsContent value="billing" className="space-y-4">
-          <BillingRecharges energyData={energyData} />
-        </TabsContent>
-      </Tabs>
-    </div>
+     </div>
   );
 }

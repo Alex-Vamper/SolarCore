@@ -119,6 +119,9 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
+  .app-text {
+    @apply text-xs sm:text-sm font-inter;
+  }
   .glass-card {
     backdrop-filter: blur(20px);
     background: var(--glass-background);

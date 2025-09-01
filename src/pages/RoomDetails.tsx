@@ -424,86 +424,88 @@ export default function RoomDetails() {
         </div>
       </div>
 
-      <div className="p-4">
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="devices" className="font-inter">Devices</TabsTrigger>
-            <TabsTrigger value="settings" className="font-inter">Settings</TabsTrigger>
-          </TabsList>
+      <div className="p-4 pb-24">
+        <div className="max-w-[1280px] mx-auto space-y-6">
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="devices" className="font-inter">Devices</TabsTrigger>
+              <TabsTrigger value="settings" className="font-inter">Settings</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="devices" className="space-y-4 mt-4">
-            {/* Master Switch Card */}
-            <Card className="glass-card border-0 shadow-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold font-inter">Master Switch</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 font-inter">Turn On or Off All Devices</p>
-                <Button
-                  onClick={handleMasterToggle}
-                  disabled={!room.appliances?.length}
-                  className={`w-32 ${allOn ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} font-inter disabled:bg-gray-400`}
-                >
-                  <Power className="w-4 h-4 mr-2" />
-                  {allOn ? 'Turn All Off' : 'Turn All On'}
-                </Button>
-              </CardContent>
-            </Card>
+            <TabsContent value="devices" className="space-y-4 mt-4">
+              {/* Master Switch Card */}
+              <Card className="glass-card border-0 shadow-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-semibold font-inter">Master Switch</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600 font-inter">Turn On or Off All Devices</p>
+                  <Button
+                    onClick={handleMasterToggle}
+                    disabled={!room.appliances?.length}
+                    className={`w-32 ${allOn ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} font-inter disabled:bg-gray-400`}
+                  >
+                    <Power className="w-4 h-4 mr-2" />
+                    {allOn ? 'Turn All Off' : 'Turn All On'}
+                  </Button>
+                </CardContent>
+              </Card>
 
-            {/* Devices List */}
-            {room.appliances?.length > 0 ? (
-              <DragDropContext onDragEnd={onApplianceDragEnd}>
-                <Droppable droppableId="appliances">
-                  {(provided) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                      {room.appliances.map((appliance, index) => (
-                        <Draggable key={appliance.id} draggableId={appliance.id} index={index}>
-                          {(provided) => (
-                            <div ref={provided.innerRef} {...provided.draggableProps}>
-                              <ApplianceControl
-                                appliance={appliance}
-                                onUpdate={handleApplianceUpdate}
-                                onDelete={handleApplianceDelete}
-                                dragHandleProps={provided.dragHandleProps}
-                              />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Power className="w-8 h-8 text-gray-400" />
+              {/* Devices List */}
+              {room.appliances?.length > 0 ? (
+                <DragDropContext onDragEnd={onApplianceDragEnd}>
+                  <Droppable droppableId="appliances">
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                        {room.appliances.map((appliance, index) => (
+                          <Draggable key={appliance.id} draggableId={appliance.id} index={index}>
+                            {(provided) => (
+                              <div ref={provided.innerRef} {...provided.draggableProps}>
+                                <ApplianceControl
+                                  appliance={appliance}
+                                  onUpdate={handleApplianceUpdate}
+                                  onDelete={handleApplianceDelete}
+                                  dragHandleProps={provided.dragHandleProps}
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Power className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 font-inter mb-2">No devices added</h3>
+                  <p className="text-gray-600 font-inter mb-4">
+                    Add your first smart device to get started
+                  </p>
+                  <Button onClick={() => setShowAddDeviceModal(true)} className="bg-blue-600 hover:bg-blue-700 font-inter">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Device
+                  </Button>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 font-inter mb-2">No devices added</h3>
-                <p className="text-gray-600 font-inter mb-4">
-                  Add your first smart device to get started
-                </p>
-                <Button onClick={() => setShowAddDeviceModal(true)} className="bg-blue-600 hover:bg-blue-700 font-inter">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Device
-                </Button>
-              </div>
-            )}
-          </TabsContent>
+              )}
+            </TabsContent>
 
-          <TabsContent value="settings" className="space-y-4 mt-4">
-            <RoomSettingsTab room={room} onRoomUpdate={handleRoomUpdate} onDeleteRoom={handleDeleteRoom} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="settings" className="space-y-4 mt-4">
+              <RoomSettingsTab room={room} onRoomUpdate={handleRoomUpdate} onDeleteRoom={handleDeleteRoom} />
+            </TabsContent>
+          </Tabs>
 
-        <AddDeviceModal
-          isOpen={showAddDeviceModal}
-          onClose={() => setShowAddDeviceModal(false)}
-          onSave={handleAddDevice}
-          roomName={room.name}
-        />
+          <AddDeviceModal
+            isOpen={showAddDeviceModal}
+            onClose={() => setShowAddDeviceModal(false)}
+            onSave={handleAddDevice}
+            roomName={room.name}
+          />
+        </div>
       </div>
     </div>
   );

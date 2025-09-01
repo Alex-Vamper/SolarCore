@@ -122,7 +122,7 @@ export default function BillingRecharges({ energyData }) {
                 key={amount}
                 variant="outline"
                 onClick={() => setNewRecharge(prev => ({ ...prev, amount: amount.toString() }))}
-                className="h-auto p-3 flex flex-col gap-1 font-inter"
+                className="h-auto p-2 flex flex-col gap-1 font-inter"
               >
                 <span className="font-bold">₦{amount.toLocaleString()}</span>
                 <span className="text-xs text-gray-500">{currentUnitRate > 0 ? (amount / currentUnitRate).toFixed(1) : '0.0'} kWh</span>

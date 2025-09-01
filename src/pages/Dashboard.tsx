@@ -72,37 +72,39 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 space-y-6 pb-24">
-      {/* Welcome Header */}
-      <div className="text-center py-6">
-        <h1 className="text-2xl font-bold text-gray-900 font-inter">
-          Welcome back, {user?.full_name?.split(' ')[0] || 'User'}!
-        </h1>
-        <p className="text-gray-600 font-inter mt-1">
-          Your smart home is running smoothly
-        </p>
-      </div>
-
-      {/* Energy Overview */}
-      <EnergyOverview energyData={energyData} />
-
-      {/* Quick Actions */}
-      <QuickActions onAction={handleQuickAction} />
-      
-      {/* Quick Access Rooms */}
-      {quickAccessRooms.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="font-semibold text-gray-900 font-inter">Quick Access Rooms</h3>
-          <div className="space-y-3">
-            {quickAccessRooms.map((room: any) => (
-              <RoomBox key={room.id} room={room} dragHandleProps={null} />
-            ))}
-          </div>
+    <div className="p-4 pb-24">
+      <div className="max-w-[1280px] mx-auto space-y-6">
+        {/* Welcome Header */}
+        <div className="text-center py-6">
+          <h1 className="text-2xl font-bold text-gray-900 font-inter">
+            Welcome back, {user?.full_name?.split(' ')[0] || 'User'}!
+          </h1>
+          <p className="text-gray-600 font-inter mt-1">
+            Your smart home is running smoothly
+          </p>
         </div>
-      )}
 
-      {/* Safety Status */}
-      <SafetyStatus safetyData={safetyData} />
+        {/* Energy Overview */}
+        <EnergyOverview energyData={energyData} />
+
+        {/* Quick Actions */}
+        <QuickActions onAction={handleQuickAction} />
+        
+        {/* Quick Access Rooms */}
+        {quickAccessRooms.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="font-semibold text-gray-900 font-inter">Quick Access Rooms</h3>
+            <div className="space-y-3">
+              {quickAccessRooms.map((room: any) => (
+                <RoomBox key={room.id} room={room} dragHandleProps={null} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Safety Status */}
+        <SafetyStatus safetyData={safetyData} />
+      </div>
     </div>
   );
 }

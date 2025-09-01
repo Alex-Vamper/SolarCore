@@ -151,133 +151,135 @@ export default function Safety() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 font-inter">Safety Systems</h1>
-            <p className="text-gray-600 font-inter mt-1">
-              Monitor and control your home safety
-            </p>
+    <div className="p-4 pb-24">
+      <div className="max-w-[1280px] mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 font-inter">Safety Systems</h1>
+              <p className="text-gray-600 font-inter mt-1">
+                Monitor and control your home safety
+              </p>
+            </div>
+            <Button onClick={() => setShowAddModal(true)} className="bg-red-600 hover:bg-red-700 font-inter">
+              <Plus className="w-4 h-4 mr-2" />
+              Add System
+            </Button>
           </div>
-          <Button onClick={() => setShowAddModal(true)} className="bg-red-600 hover:bg-red-700 font-inter">
-            <Plus className="w-4 h-4 mr-2" />
-            Add System
-          </Button>
-        </div>
 
-        {/* Security Overview */}
-        <SecurityOverview 
-          onSecurityModeToggle={handleSecurityModeToggle}
-          onSecuritySettings={handleSecuritySettings}
-        />
+          {/* Security Overview */}
+          <SecurityOverview 
+            onSecurityModeToggle={handleSecurityModeToggle}
+            onSecuritySettings={handleSecuritySettings}
+          />
 
-        {/* Overall Status */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className={`p-4 rounded-xl ${
-            overallStatus === "safe" ? 'bg-green-50 border-green-200' :
-            overallStatus === "alert" ? 'bg-yellow-50 border-yellow-200' :
-            'bg-red-50 border-red-200'
-          } border-2`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                overallStatus === "safe" ? 'bg-green-500' :
-                overallStatus === "alert" ? 'bg-yellow-500' :
-                'bg-red-500'
-              }`}>
-                {overallStatus === "safe" ? (
-                  <CheckCircle className="w-5 h-5 text-white" />
-                ) : overallStatus === "alert" ? (
-                  <AlertTriangle className="w-5 h-5 text-white" />
-                ) : (
-                  <Shield className="w-5 h-5 text-white" />
-                )}
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900 font-inter">Overall Status</div>
-                <div className={`text-sm font-medium ${
-                  overallStatus === "safe" ? 'text-green-600' :
-                  overallStatus === "alert" ? 'text-yellow-600' :
-                  'text-red-600'
+          {/* Overall Status */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className={`p-4 rounded-xl ${
+              overallStatus === "safe" ? 'bg-green-50 border-green-200' :
+              overallStatus === "alert" ? 'bg-yellow-50 border-yellow-200' :
+              'bg-red-50 border-red-200'
+            } border-2`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  overallStatus === "safe" ? 'bg-green-500' :
+                  overallStatus === "alert" ? 'bg-yellow-500' :
+                  'bg-red-500'
                 }`}>
-                  {overallStatus === "safe" ? "All Systems Safe" :
-                   overallStatus === "alert" ? "Alert Active" :
-                   "Emergency Active"}
+                  {overallStatus === "safe" ? (
+                    <CheckCircle className="w-5 h-5 text-white" />
+                  ) : overallStatus === "alert" ? (
+                    <AlertTriangle className="w-5 h-5 text-white" />
+                  ) : (
+                    <Shield className="w-5 h-5 text-white" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900 font-inter">Overall Status</div>
+                  <div className={`text-sm font-medium ${
+                    overallStatus === "safe" ? 'text-green-600' :
+                    overallStatus === "alert" ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`}>
+                    {overallStatus === "safe" ? "All Systems Safe" :
+                    overallStatus === "alert" ? "Alert Active" :
+                    "Emergency Active"}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="p-4 bg-white rounded-xl border-2 border-gray-200">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600 font-inter">{stats.safe}</div>
-              <div className="text-sm text-gray-500 font-inter">Safe</div>
+            <div className="p-4 bg-white rounded-xl border-2 border-gray-200">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 font-inter">{stats.safe}</div>
+                <div className="text-sm text-gray-500 font-inter">Safe</div>
+              </div>
             </div>
-          </div>
 
-          <div className="p-4 bg-white rounded-xl border-2 border-gray-200">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600 font-inter">{stats.alert}</div>
-              <div className="text-sm text-gray-500 font-inter">Alert</div>
+            <div className="p-4 bg-white rounded-xl border-2 border-gray-200">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600 font-inter">{stats.alert}</div>
+                <div className="text-sm text-gray-500 font-inter">Alert</div>
+              </div>
             </div>
-          </div>
 
-          <div className="p-4 bg-white rounded-xl border-2 border-gray-200">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600 font-inter">{stats.active}</div>
-              <div className="text-sm text-gray-500 font-inter">Active</div>
+            <div className="p-4 bg-white rounded-xl border-2 border-gray-200">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600 font-inter">{stats.active}</div>
+                <div className="text-sm text-gray-500 font-inter">Active</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Safety Systems */}
-      {safetySystems.length > 0 ? (
-        <div className="space-y-4">
-          {safetySystems.map((system) => (
-            <SafetyPanel
-              key={system.id}
-              system={system}
-              onManualOverride={handleManualOverride}
-              onSystemSettings={() => handleSystemSettings(system)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Shield className="w-8 h-8 text-gray-400" />
+        {/* Safety Systems */}
+        {safetySystems.length > 0 ? (
+          <div className="space-y-4">
+            {safetySystems.map((system) => (
+              <SafetyPanel
+                key={system.id}
+                system={system}
+                onManualOverride={handleManualOverride}
+                onSystemSettings={() => handleSystemSettings(system)}
+              />
+            ))}
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 font-inter mb-2">No safety systems configured</h3>
-          <p className="text-gray-600 font-inter mb-4">
-            Add fire detection and rain sensors to monitor your home
-          </p>
-          <Button onClick={() => setShowAddModal(true)} className="bg-red-600 hover:bg-red-700 font-inter">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Safety System
-          </Button>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 font-inter mb-2">No safety systems configured</h3>
+            <p className="text-gray-600 font-inter mb-4">
+              Add fire detection and rain sensors to monitor your home
+            </p>
+            <Button onClick={() => setShowAddModal(true)} className="bg-red-600 hover:bg-red-700 font-inter">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Safety System
+            </Button>
+          </div>
+        )}
 
-      <AddSafetySystemModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSave={handleAddSystem}
-        rooms={rooms}
-      />
-      {selectedSystem && (
-        <SafetySystemSettingsModal
-            isOpen={showSettingsModal}
-            onClose={() => {
-                setShowSettingsModal(false);
-                setSelectedSystem(null);
-            }}
-            system={selectedSystem}
-            onSave={handleSaveSystemSettings}
-            onDelete={handleDeleteSystem}
+        <AddSafetySystemModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAddSystem}
+          rooms={rooms}
         />
-      )}
+        {selectedSystem && (
+          <SafetySystemSettingsModal
+              isOpen={showSettingsModal}
+              onClose={() => {
+                  setShowSettingsModal(false);
+                  setSelectedSystem(null);
+              }}
+              system={selectedSystem}
+              onSave={handleSaveSystemSettings}
+              onDelete={handleDeleteSystem}
+          />
+        )}
+      </div>
     </div>
   );
 }

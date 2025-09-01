@@ -52,7 +52,14 @@ export default function Feedback() {
   };
 
   return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-4 pb-24">
+        <div className="max-w-[1280px] mx-auto space-y-6">
+        <Link to={createPageUrl('Settings')}>
+          <Button variant="outline" className="font-inter">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Settings
+          </Button>
+        </Link>
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <MessageSquare className="w-8 h-8 text-primary" />
@@ -187,5 +194,6 @@ export default function Feedback() {
           </CardContent>
         </Card>
       </div>
+    </div>
   );
 }
