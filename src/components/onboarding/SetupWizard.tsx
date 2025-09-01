@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import SystemIdStep from "./SystemIdStep";
 import { 
   Home, 
   Sun, 
@@ -19,7 +19,9 @@ import {
   School,
   Briefcase,
   HeartPulse,
-  Hotel 
+  Hotel,
+  Grid3x3,
+  WifiOff
 } from "lucide-react";
 import solarcore from '../../assets/SolarCore-1.svg';
 
@@ -33,9 +35,10 @@ const BUILDING_TYPES = [
 ];
 
 const ENERGY_SOURCES = [
-  { id: "solar", name: "Solar Only", icon: Sun, color: "bg-yellow-500" },
-  { id: "grid", name: "National Grid", icon: Zap, color: "bg-blue-500" },
-  { id: "mixed", name: "Solar + Grid", icon: Battery, color: "bg-green-500" }
+  { id: "solar_only", name: "Solar Only", icon: Sun, color: "bg-yellow-500" },
+  { id: "grid_only", name: "Grid Only", icon: Grid3x3, color: "bg-blue-500" },
+  { id: "solar_grid", name: "Solar + Grid", icon: Battery, color: "bg-green-500" },
+  { id: "no_digital", name: "No Digital Connection", icon: WifiOff, color: "bg-gray-500" }
 ];
 
 export default function SetupWizard({ onComplete }) {
@@ -44,7 +47,10 @@ export default function SetupWizard({ onComplete }) {
     buildingType: "home",
     buildingName: "",
     rooms: [],
-    energySource: "mixed",
+    energySource: "",
+    solarSystemId: "",
+    gridMeterId: "",
+    solarProvider: "SolarCore",
   });
 
   const [newRoom, setNewRoom] = useState("");
@@ -52,7 +58,9 @@ export default function SetupWizard({ onComplete }) {
   const steps = [
     { title: "Building Type", icon: Building },
     { title: "Room Setup", icon: Home },
-    { title: "Energy Source", icon: Battery }
+    { title: "Energy Source", icon: Battery },
+    { title: "System Configuration", icon: Zap },
+    { title: "Complete Setup", icon: CheckCircle }
   ];
 
   const progress = ((currentStep + 1) / steps.length) * 100;
@@ -76,7 +84,9 @@ export default function SetupWizard({ onComplete }) {
   };
 
   const nextStep = () => {
-    if (currentStep < steps.length - 1) {
+    if (currentStep === 2 && setupData.energySource === 'no_digital') {
+      setCurrentStep(4); // Skip to complete
+    } else if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       onComplete(setupData);
@@ -94,6 +104,8 @@ export default function SetupWizard({ onComplete }) {
       case 0: return setupData.buildingType && (setupData.buildingType !== 'other' || setupData.buildingName);
       case 1: return setupData.rooms.length > 0;
       case 2: return setupData.energySource;
+      case 3: return true; // Handled by SystemIdStep
+      case 4: return true;
       default: return true;
     }
   };
@@ -124,139 +136,160 @@ export default function SetupWizard({ onComplete }) {
         </div>
 
         {/* Step Content */}
-        <Card className="glass-card shadow-xl border-0 mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-lg font-inter">
-              <StepIcon className="w-6 h-6 text-yellow-600" />
-              {steps[currentStep].title}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {currentStep === 0 && (
+        {currentStep !== 3 ? (
+          <Card className="glass-card shadow-xl border-0 mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-lg font-inter">
+                <StepIcon className="w-6 h-6 text-yellow-600" />
+                {steps[currentStep].title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {currentStep === 0 && (
+                  <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-3">
+                          {BUILDING_TYPES.map((type) => (
+                          <button
+                              key={type.id}
+                              onClick={() => setSetupData(prev => ({ ...prev, buildingType: type.id, buildingName: type.id !== 'other' ? type.name : '' }))}
+                              className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
+                              setupData.buildingType === type.id
+                                  ? 'border-yellow-500 bg-yellow-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                          >
+                              <type.icon className="w-6 h-6 text-gray-600" />
+                              <span className="font-medium text-sm font-inter text-center">{type.name}</span>
+                          </button>
+                          ))}
+                      </div>
+                      {setupData.buildingType === "other" && (
+                          <div>
+                              <Label htmlFor="buildingName" className="text-sm font-medium text-gray-700 font-inter">
+                                  Building Name
+                              </Label>
+                              <Input
+                                  id="buildingName"
+                                  placeholder="e.g., My Apartment Complex"
+                                  value={setupData.buildingName}
+                                  onChange={(e) => setSetupData(prev => ({...prev, buildingName: e.target.value}))}
+                                  className="mt-2 font-inter"
+                              />
+                          </div>
+                      )}
+                  </div>
+              )}
+
+              {currentStep === 1 && (
                 <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-3">
-                        {BUILDING_TYPES.map((type) => (
-                        <button
-                            key={type.id}
-                            onClick={() => setSetupData(prev => ({ ...prev, buildingType: type.id, buildingName: type.id !== 'other' ? type.name : '' }))}
-                            className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
-                            setupData.buildingType === type.id
-                                ? 'border-yellow-500 bg-yellow-50'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter room name (e.g., Living Room)"
+                      value={newRoom}
+                      onChange={(e) => setNewRoom(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addRoom()}
+                      className="font-inter"
+                    />
+                    <Button onClick={addRoom} size="icon" className="bg-yellow-500 hover:bg-yellow-600">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800 font-inter">
+                      💡 You can add, edit, or delete rooms anytime from the Automation tab.
+                    </p>
+                  </div>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {setupData.rooms.map((room) => (
+                      <div key={room.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Home className="w-4 h-4 text-gray-500" />
+                          <span className="font-medium font-inter">{room.name}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeRoom(room.id)}
+                          className="text-red-500 hover:text-red-700"
                         >
-                            <type.icon className="w-6 h-6 text-gray-600" />
-                            <span className="font-medium text-sm font-inter text-center">{type.name}</span>
-                        </button>
-                        ))}
-                    </div>
-                    {setupData.buildingType === "other" && (
-                        <div>
-                            <Label htmlFor="buildingName" className="text-sm font-medium text-gray-700 font-inter">
-                                Building Name
-                            </Label>
-                            <Input
-                                id="buildingName"
-                                placeholder="e.g., My Apartment Complex"
-                                value={setupData.buildingName}
-                                onChange={(e) => setSetupData(prev => ({...prev, buildingName: e.target.value}))}
-                                className="mt-2 font-inter"
-                            />
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {currentStep === 1 && (
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Enter room name (e.g., Living Room)"
-                    value={newRoom}
-                    onChange={(e) => setNewRoom(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addRoom()}
-                    className="font-inter"
-                  />
-                  <Button onClick={addRoom} size="icon" className="bg-yellow-500 hover:bg-yellow-600">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800 font-inter">
-                    💡 You can add, edit, or delete rooms anytime from the Automation tab.
-                  </p>
-                </div>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {setupData.rooms.map((room) => (
-                    <div key={room.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Home className="w-4 h-4 text-gray-500" />
-                        <span className="font-medium font-inter">{room.name}</span>
+                          <X className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeRoom(room.id)}
-                        className="text-red-500 hover:text-red-700"
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 2 && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    {ENERGY_SOURCES.map((source) => (
+                      <button
+                        key={source.id}
+                        onClick={() => setSetupData(prev => ({ ...prev, energySource: source.id }))}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          setupData.energySource === source.id
+                            ? 'border-yellow-500 bg-yellow-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
                       >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                <div className="grid gap-3">
-                  {ENERGY_SOURCES.map((source) => (
-                    <button
-                      key={source.id}
-                      onClick={() => setSetupData(prev => ({ ...prev, energySource: source.id }))}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        setupData.energySource === source.id
-                          ? 'border-yellow-500 bg-yellow-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 ${source.color} rounded-lg flex items-center justify-center`}>
-                          <source.icon className="w-5 h-5 text-white" />
+                        <div className="flex flex-col items-center gap-2">
+                          <div className={`w-10 h-10 ${source.color} rounded-lg flex items-center justify-center`}>
+                            <source.icon className="w-5 h-5 text-white" />
+                          </div>
+                          <span className="font-medium font-inter text-sm">{source.name}</span>
                         </div>
-                        <span className="font-medium font-inter">{source.name}</span>
-                        {setupData.energySource === source.id && (
-                          <CheckCircle className="w-5 h-5 text-yellow-600 ml-auto" />
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+
+              {currentStep === 4 && (
+                <div className="text-center space-y-4">
+                  <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
+                  <h3 className="text-xl font-semibold">Setup Complete!</h3>
+                  <p className="text-gray-600">Your smart home system is ready to use.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <SystemIdStep
+            powerSource={setupData.energySource}
+            solarSystemId={setupData.solarSystemId}
+            gridMeterId={setupData.gridMeterId}
+            solarProvider={setupData.solarProvider}
+            onSolarSystemIdChange={(value) => setSetupData({ ...setupData, solarSystemId: value })}
+            onGridMeterIdChange={(value) => setSetupData({ ...setupData, gridMeterId: value })}
+            onSolarProviderChange={(value) => setSetupData({ ...setupData, solarProvider: value })}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
+        )}
 
         {/* Navigation */}
-        <div className="flex justify-between gap-4">
-          <Button
-            variant="outline"
-            onClick={prevStep}
-            disabled={currentStep === 0}
-            className="flex items-center gap-2 font-inter"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
-          <Button
-            onClick={nextStep}
-            disabled={!canProceed()}
-            className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 font-inter"
-          >
-            {currentStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </div>
+        {currentStep !== 3 && (
+          <div className="flex justify-between gap-4">
+            <Button
+              variant="outline"
+              onClick={prevStep}
+              disabled={currentStep === 0}
+              className="flex items-center gap-2 font-inter"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <Button
+              onClick={nextStep}
+              disabled={!canProceed()}
+              className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 font-inter"
+            >
+              {currentStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

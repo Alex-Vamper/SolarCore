@@ -29,6 +29,9 @@ export interface UserSettings {
   stripe_customer_id?: string;
   ander_device_id?: string;
   ander_button_position?: any;
+  power_source?: 'solar_only' | 'grid_only' | 'solar_grid' | 'no_digital';
+  solar_system_id?: string;
+  grid_meter_id?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -63,6 +66,7 @@ export class UserSettingsService {
       return {
         ...data,
         building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
+        power_source: data.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
         notification_preferences: typeof (data as any).notification_preferences === 'object' ? (data as any).notification_preferences : {},
         emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {},
         ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 }
@@ -87,6 +91,7 @@ export class UserSettingsService {
       return (data || []).map(item => ({
         ...item,
         building_type: item.building_type as "home" | "school" | "office" | "hospital" | "other",
+        power_source: item.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
         notification_preferences: typeof (item as any).notification_preferences === 'object' ? (item as any).notification_preferences : {},
         emergency_contacts: typeof (item as any).emergency_contacts === 'object' ? (item as any).emergency_contacts : {}
       }));
@@ -116,6 +121,7 @@ export class UserSettingsService {
       return {
         ...data,
         building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
+        power_source: data.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
         notification_preferences: typeof (data as any).notification_preferences === 'object' ? (data as any).notification_preferences : {},
         emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {},
         ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 }
@@ -147,6 +153,7 @@ export class UserSettingsService {
       return {
         ...data,
         building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
+        power_source: data.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
         notification_preferences: typeof (data as any).notification_preferences === 'object' ? (data as any).notification_preferences : {},
         emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {},
         ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 }
