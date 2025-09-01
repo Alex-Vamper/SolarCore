@@ -52,13 +52,13 @@ export default function ApplianceUsage({ rooms }) {
             ...appliance,
             room_name: room.name,
             room_id: room.id,
-            // Simulate realistic usage data based on device type and power consumption
-            daily_usage: (appliance.power_usage || 50) * (appliance.status ? Math.random() * 8 : 0) / 1000, // Convert to kWh
-            weekly_usage: (appliance.power_usage || 50) * (appliance.status ? Math.random() * 56 : 0) / 1000,
-            monthly_usage: (appliance.power_usage || 50) * (appliance.status ? Math.random() * 240 : 0) / 1000,
-            daily_cost: ((appliance.power_usage || 50) * (appliance.status ? Math.random() * 8 : 0) / 1000) * 80, // ₦80 per kWh
-            weekly_cost: ((appliance.power_usage || 50) * (appliance.status ? Math.random() * 56 : 0) / 1000) * 80,
-            monthly_cost: ((appliance.power_usage || 50) * (appliance.status ? Math.random() * 240 : 0) / 1000) * 80
+            // Default all usage data to 0 until real backend data is available
+            daily_usage: 0, // kWh
+            weekly_usage: 0,
+            monthly_usage: 0,
+            daily_cost: 0, // Will be calculated from actual usage when available
+            weekly_cost: 0,
+            monthly_cost: 0
           });
         });
       }

@@ -17,8 +17,8 @@ export default function EnergyOverview({ energyData }) {
   
   const data = energyData || {
     solar_percentage: 0,
-    grid_percentage: 100,
-    battery_level: 50,
+    grid_percentage: 0,
+    battery_level: 0,
     current_usage: 0,
     daily_usage: 0,
     cost_savings: 0

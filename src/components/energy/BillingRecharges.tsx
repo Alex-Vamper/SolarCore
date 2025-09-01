@@ -17,24 +17,20 @@ import {
 } from "lucide-react";
 
 export default function BillingRecharges({ energyData }) {
-  const [unitsRemaining, setUnitsRemaining] = useState(245.5); // kWh units
-  const [rechargeHistory, setRechargeHistory] = useState([
-    { id: 1, amount: 2000, date: "2024-01-15", method: "Card", units: 25, balance: 15000 },
-    { id: 2, amount: 1500, date: "2024-01-10", method: "Transfer", units: 18.75, balance: 13000 },
-    { id: 3, amount: 2500, date: "2024-01-05", method: "Card", units: 31.25, balance: 11500 }
-  ]);
+  const [unitsRemaining, setUnitsRemaining] = useState(0); // kWh units - defaults to 0
+  const [rechargeHistory, setRechargeHistory] = useState([]); // No hard-coded history
 
   const [newRecharge, setNewRecharge] = useState({
     amount: "",
     method: "card"
   });
 
-  const currentUnitRate = 80; // ₦80 per kWh
+  const currentUnitRate = 0; // ₦ per kWh - will be set from backend when available
   const data = energyData || { daily_usage: 0, current_usage: 0 };
   const estimatedDaysLeft = data.daily_usage > 0 ? Math.round(unitsRemaining / data.daily_usage) : 0;
 
   const handleAddRecharge = () => {
-    if (newRecharge.amount) {
+    if (newRecharge.amount && currentUnitRate > 0) {
       const units = parseFloat(newRecharge.amount) / currentUnitRate;
       const recharge = {
         id: Date.now(),
@@ -129,7 +125,7 @@ export default function BillingRecharges({ energyData }) {
                 className="h-auto p-3 flex flex-col gap-1 font-inter"
               >
                 <span className="font-bold">₦{amount.toLocaleString()}</span>
-                <span className="text-xs text-gray-500">{(amount / currentUnitRate).toFixed(1)} kWh</span>
+                <span className="text-xs text-gray-500">{currentUnitRate > 0 ? (amount / currentUnitRate).toFixed(1) : '0.0'} kWh</span>
               </Button>
             ))}
           </div>
@@ -144,7 +140,7 @@ export default function BillingRecharges({ energyData }) {
                 onChange={(e) => setNewRecharge(prev => ({ ...prev, amount: e.target.value }))}
                 className="mt-1 font-inter"
               />
-              {newRecharge.amount && (
+              {newRecharge.amount && currentUnitRate > 0 && (
                 <p className="text-xs text-gray-500 mt-1 font-inter">
                   = {(parseFloat(newRecharge.amount) / currentUnitRate).toFixed(2)} kWh units
                 </p>
