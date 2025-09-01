@@ -56,11 +56,63 @@ export type Database = {
         }
         Relationships: []
       }
+      launch_splash_seen: {
+        Row: {
+          day_key: string
+          id: number
+          seen_at: string | null
+          user_id: string
+        }
+        Insert: {
+          day_key: string
+          id?: number
+          seen_at?: string | null
+          user_id: string
+        }
+        Update: {
+          day_key?: string
+          id?: number
+          seen_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      power_systems: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          provider: string
+          system_id: string
+          system_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          provider: string
+          system_id: string
+          system_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          provider?: string
+          system_id?: string
+          system_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
           full_name: string | null
           id: string
+          onboarded: boolean | null
           updated_at: string | null
           user_id: string
         }
@@ -68,6 +120,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          onboarded?: boolean | null
           updated_at?: string | null
           user_id: string
         }
@@ -75,6 +128,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          onboarded?: boolean | null
           updated_at?: string | null
           user_id?: string
         }
@@ -167,6 +221,8 @@ export type Database = {
       user_settings: {
         Row: {
           address: string | null
+          ander_button_position: Json | null
+          ander_device_id: string | null
           ander_enabled: boolean | null
           building_name: string | null
           building_type: string | null
@@ -174,14 +230,22 @@ export type Database = {
           created_at: string | null
           emergency_contacts: Json | null
           energy_mode: string | null
+          grid_meter_id: string | null
           id: string
           notifications_enabled: boolean | null
+          power_source: string | null
           preferred_email: string | null
           preferred_email_enabled: boolean | null
           preferred_whatsapp: string | null
           preferred_whatsapp_enabled: boolean | null
           security_settings: Json | null
           setup_completed: boolean | null
+          solar_system_id: string | null
+          stripe_customer_id: string | null
+          subscription_end_date: string | null
+          subscription_plan: string | null
+          subscription_start_date: string | null
+          subscription_status: string | null
           total_domes: number | null
           total_rooms: number | null
           updated_at: string | null
@@ -190,6 +254,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          ander_button_position?: Json | null
+          ander_device_id?: string | null
           ander_enabled?: boolean | null
           building_name?: string | null
           building_type?: string | null
@@ -197,14 +263,22 @@ export type Database = {
           created_at?: string | null
           emergency_contacts?: Json | null
           energy_mode?: string | null
+          grid_meter_id?: string | null
           id?: string
           notifications_enabled?: boolean | null
+          power_source?: string | null
           preferred_email?: string | null
           preferred_email_enabled?: boolean | null
           preferred_whatsapp?: string | null
           preferred_whatsapp_enabled?: boolean | null
           security_settings?: Json | null
           setup_completed?: boolean | null
+          solar_system_id?: string | null
+          stripe_customer_id?: string | null
+          subscription_end_date?: string | null
+          subscription_plan?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
           total_domes?: number | null
           total_rooms?: number | null
           updated_at?: string | null
@@ -213,6 +287,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          ander_button_position?: Json | null
+          ander_device_id?: string | null
           ander_enabled?: boolean | null
           building_name?: string | null
           building_type?: string | null
@@ -220,14 +296,22 @@ export type Database = {
           created_at?: string | null
           emergency_contacts?: Json | null
           energy_mode?: string | null
+          grid_meter_id?: string | null
           id?: string
           notifications_enabled?: boolean | null
+          power_source?: string | null
           preferred_email?: string | null
           preferred_email_enabled?: boolean | null
           preferred_whatsapp?: string | null
           preferred_whatsapp_enabled?: boolean | null
           security_settings?: Json | null
           setup_completed?: boolean | null
+          solar_system_id?: string | null
+          stripe_customer_id?: string | null
+          subscription_end_date?: string | null
+          subscription_plan?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
           total_domes?: number | null
           total_rooms?: number | null
           updated_at?: string | null
@@ -239,11 +323,13 @@ export type Database = {
       voice_commands: {
         Row: {
           action_type: string | null
+          audio_url: string | null
           command_category: string
           command_name: string
           created_at: string
           enabled: boolean
           id: string
+          is_global: boolean | null
           keywords: string[]
           response: string
           updated_at: string
@@ -251,11 +337,13 @@ export type Database = {
         }
         Insert: {
           action_type?: string | null
+          audio_url?: string | null
           command_category: string
           command_name: string
           created_at?: string
           enabled?: boolean
           id?: string
+          is_global?: boolean | null
           keywords?: string[]
           response: string
           updated_at?: string
@@ -263,11 +351,13 @@ export type Database = {
         }
         Update: {
           action_type?: string | null
+          audio_url?: string | null
           command_category?: string
           command_name?: string
           created_at?: string
           enabled?: boolean
           id?: string
+          is_global?: boolean | null
           keywords?: string[]
           response?: string
           updated_at?: string
@@ -316,6 +406,13 @@ export type Database = {
           voice_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_voice_response_audios_command_id"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "voice_commands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "voice_response_audios_command_id_fkey"
             columns: ["command_id"]
