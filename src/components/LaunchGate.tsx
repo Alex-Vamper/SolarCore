@@ -180,7 +180,7 @@ export default function LaunchGate({
         </p>
 
         {/* Countdown boxes */}
-        <div className="flex justify-center gap-4 text-white font-mono text-3xl mb-8">
+        <div className="app-text flex justify-center gap-4 text-white font-mono text-3xl mb-8">
           {[{ label: "Days", val: d }, { label: "Hours", val: h }, { label: "Min", val: m }, { label: "Sec", val: s }].map((unit) => (
             <motion.div
               key={unit.label}
@@ -189,7 +189,7 @@ export default function LaunchGate({
               transition={{ duration: 1, repeat: Infinity }}
             >
               <div>{unit.val}</div>
-              <div className="text-xs uppercase text-orange-100">{unit.label}</div>
+              <div className="app-text uppercase text-orange-100">{unit.label}</div>
             </motion.div>
           ))}
         </div>
@@ -203,7 +203,7 @@ export default function LaunchGate({
         </button>
 
         {/* Extra idea: Not you? Log out */}
-        <p className="mt-2 text-sm text-gray-700">
+        <p className="app-text mt-2 text-gray-700">
           Not you?{" "}
           <button
             onClick={handleLogout}

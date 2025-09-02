@@ -133,15 +133,15 @@ export default function RoomBox({ room, dragHandleProps }) {
             </div>
             
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 font-inter group-hover:text-blue-600 transition-colors">
+              <h3 className="app-text font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                 {currentRoom.name}
               </h3>
               <div className="flex items-center gap-3 mt-1">
-                <span className={`text-sm font-medium ${getDeviceStatusColor()} font-inter`}>
+                <span className={`app-text font-medium ${getDeviceStatusColor()}`}>
                   {activeDevices.length} of {totalDevices} devices active
                 </span>
                 {currentRoom.occupancy_status && (
-                  <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                  <Badge className="app-text bg-green-100 text-green-800 border-green-200">
                     Occupied
                   </Badge>
                 )}
@@ -158,7 +158,7 @@ export default function RoomBox({ room, dragHandleProps }) {
                     style={{ width: `${(activeDevices.length / totalDevices) * 100}%` }}
                   ></div>
                 </div>
-                <div className="text-xs text-gray-500 mt-1 font-inter">
+                <div className="app-text text-gray-500 mt-1">
                   {Math.round((activeDevices.length / totalDevices) * 100)}% active
                 </div>
               </div>

@@ -135,11 +135,11 @@ export default function PostLaunchSplash({
             showing ? "opacity-100 scale-100" : "opacity-0 scale-95"
           }`}
         >
-          <h2 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg mb-4">
+          <h2 className="app-text text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg mb-4">
             SolarCore has launched 🎉
           </h2>
 
-          <p className="text-sm md:text-base text-white/90 mb-6">
+          <p className="app-text md:text-base text-white/90 mb-6">
             {timeSince.hours > 0
               ? `SolarCore launched ${timeSince.hours} hour${
                   timeSince.hours > 1 ? "s" : ""
@@ -163,7 +163,7 @@ export default function PostLaunchSplash({
                 setShowing(false);
                 setTimeout(() => setVisible(false), 500);
               }}
-              className="px-6 py-3 rounded-lg bg-white/90 text-gray-900 font-semibold shadow hover:scale-[1.02] transition"
+              className="app-text px-6 py-3 rounded-lg bg-white/90 text-gray-900 font-semibold shadow hover:scale-[1.02] transition"
             >
               Proceed to Dashboard
             </button>
@@ -181,7 +181,7 @@ export default function PostLaunchSplash({
                   navigate("/");
                 }, 500);
               }}
-              className="px-6 py-3 rounded-lg bg-transparent border border-white/30 text-white hover:bg-white/10 transition"
+              className="app-text px-6 py-3 rounded-lg bg-transparent border border-white/30 text-white hover:bg-white/10 transition"
             >
               Back to Landing
             </button>

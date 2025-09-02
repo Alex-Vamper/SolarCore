@@ -17,8 +17,8 @@ export default function Navbar({ onGetStarted }: NavbarProps) {
             className="h-14 w-auto"
           />
           <div className="flex flex-col leading-tight">
-            <span className="text-xl font-bold text-bg-[#0B111F]">SolarCore</span>
-            <span className="text-sm text-gray-800">Smart Home Control</span>
+            <span className="app-text text-xl font-bold text-bg-[#0B111F]">SolarCore</span>
+            <span className="app-text text-gray-800">Smart Home Control</span>
           </div>
         </a>
 

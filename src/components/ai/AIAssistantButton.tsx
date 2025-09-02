@@ -257,7 +257,7 @@ export default function AIAssistantButton() {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        className="fixed z-50 bg-white text-black p-3 rounded-lg shadow-xl text-sm max-w-xs font-inter border border-gray-200"
+                        className="app-text fixed z-50 bg-white text-black p-3 rounded-lg shadow-xl max-w-xs border border-gray-200"
                         style={getTextBoxPosition()}
                     >
                         {responseMessage}

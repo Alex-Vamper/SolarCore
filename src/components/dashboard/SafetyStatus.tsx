@@ -38,7 +38,7 @@ export default function SafetyStatus({ safetyData }) {
       {/* Fire Safety */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
+          <CardTitle className="app-text flex items-center gap-2 text-lg">
             <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
               <Flame className="w-4 h-4 text-white" />
             </div>
@@ -52,8 +52,8 @@ export default function SafetyStatus({ safetyData }) {
                 <div className="flex items-center gap-3">
                   {getStatusIcon(system.status)}
                   <div>
-                    <div className="font-medium font-inter">{system.room_name}</div>
-                    <div className="text-sm text-gray-500 font-inter">
+                    <div className="app-text font-medium">{system.room_name}</div>
+                    <div className="app-text text-gray-500">
                       Smoke: {system.sensor_readings?.smoke_level || 0}% | 
                       Temp: {system.sensor_readings?.temperature || 25}°C
                     </div>
@@ -67,7 +67,7 @@ export default function SafetyStatus({ safetyData }) {
           ) : (
             <div className="text-center py-6 text-gray-500">
               <Shield className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-              <p className="font-inter">No fire detection systems configured</p>
+              <p className="app-text">No fire detection systems configured</p>
             </div>
           )}
         </CardContent>
@@ -76,7 +76,7 @@ export default function SafetyStatus({ safetyData }) {
       {/* Rain Detection */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
+          <CardTitle className="app-text flex items-center gap-2 text-lg">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
               <Droplets className="w-4 h-4 text-white" />
             </div>
@@ -90,8 +90,8 @@ export default function SafetyStatus({ safetyData }) {
                 <div className="flex items-center gap-3">
                   {getStatusIcon(system.status)}
                   <div>
-                    <div className="font-medium font-inter">{system.room_name}</div>
-                    <div className="text-sm text-gray-500 font-inter">
+                    <div className="app-text font-medium">{system.room_name}</div>
+                    <div className="app-text text-gray-500">
                       Window: {system.sensor_readings?.window_status || "closed"} | 
                       Rain: {system.sensor_readings?.rain_detected ? "Yes" : "No"}
                     </div>
@@ -105,7 +105,7 @@ export default function SafetyStatus({ safetyData }) {
           ) : (
             <div className="text-center py-6 text-gray-500">
               <Droplets className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-              <p className="font-inter">No rain detection systems configured</p>
+              <p className="app-text">No rain detection systems configured</p>
             </div>
           )}
         </CardContent>

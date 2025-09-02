@@ -38,7 +38,7 @@ const Testimonials = () => {
     <section className="py-16 px-4">
       {/* Headings */}
       <div className="text-center mb-12">
-        <h1 className="text-3xl font-bold mb-3">
+        <h1 className="app-text text-3xl font-bold mb-3">
           A Smarter Home is a Better Home
         </h1>
         <p className="text-gray-600">

@@ -7,7 +7,7 @@ const Steps = () => {
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center">
         {/* Left: Steps */}
         <div className="w-full md:w-1/2 mb-12 md:mb-0 md:pr-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-8">
+          <h2 className="app-text text-3xl md:text-4xl font-bold mb-8">
             Simple Steps to Intelligent Home
           </h2>
 

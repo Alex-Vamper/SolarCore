@@ -78,7 +78,7 @@ export default function Hero({ onGetStarted }: HeroProps) {
         </div>
         <button
           onClick={onGetStarted}
-          className="bg-[#0B111F] text-white px-20 py-3 rounded-lg hover:bg-[#0B111F] transition text-base md:text-lg"
+          className="app-text bg-[#0B111F] text-white px-20 py-3 rounded-lg hover:bg-[#0B111F] transition md:text-lg"
         >
           Begin Your Smart Journey
         </button>
@@ -87,7 +87,7 @@ export default function Hero({ onGetStarted }: HeroProps) {
       {/* Mobile Layout */}
       <div className="relative z-30 flex flex-col items-center justify-center h-full text-center px-6 text-white md:hidden">
         <h1 className="text-5xl font-extrabold mb-2">SolarCore</h1>
-        <h2 className="text-3xl font-bold mb-4">
+        <h2 className="app-text text-3xl font-bold mb-4">
           Powering Tomorrow,<br />Today.
         </h2>
         <p className="text-2x1 leading-relaxed mb-1">
@@ -100,7 +100,7 @@ export default function Hero({ onGetStarted }: HeroProps) {
         </p>
         <button
           onClick={onGetStarted}
-          className="bg-[#0B111F] text-white px-20 py-3 rounded-lg hover:bg-[#0B111F] transition text-sm"
+          className="app-text bg-[#0B111F] text-white px-20 py-3 rounded-lg hover:bg-[#0B111F] transition"
         >
           Begin Your Smart Journey
         </button>

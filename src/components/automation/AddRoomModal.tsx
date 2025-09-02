@@ -33,7 +33,7 @@ export default function AddRoomModal({ isOpen, onClose, onSave }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl font-inter">
+          <DialogTitle className="app-text flex items-center gap-2 text-xl">
             <Home className="w-6 h-6 text-blue-600" />
             Add New Room
           </DialogTitle>
@@ -42,7 +42,7 @@ export default function AddRoomModal({ isOpen, onClose, onSave }) {
         <div className="space-y-6">
           {/* Room Name */}
           <div>
-            <Label className="text-sm font-medium text-gray-700 font-inter">
+            <Label className="app-text font-medium text-gray-700">
               Room Name
             </Label>
             <Input
@@ -51,7 +51,7 @@ export default function AddRoomModal({ isOpen, onClose, onSave }) {
               onChange={(e) =>
                 setRoomData((prev) => ({ ...prev, name: e.target.value }))
               }
-              className="mt-1 font-inter"
+              className="app-text mt-1"
             />
           </div>
 

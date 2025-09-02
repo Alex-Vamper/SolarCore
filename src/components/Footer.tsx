@@ -36,7 +36,7 @@ export default function Footer() {
                 href="https://wa.me/2349137998820?text=Hello!%20I%20want%20to%20get%20started%20with%20SolarCore." // 🔗 replace with your WhatsApp number in international format
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center space-x-2 bg-yellow-500 text-black text-sm font-semibold py-1 px-4 rounded-full hover:bg-yellow-600 transition transform hover:scale-105"
+                className="app-text flex items-center space-x-2 bg-yellow-500 text-black font-semibold py-1 px-4 rounded-full hover:bg-yellow-600 transition transform hover:scale-105"
               >
                 <FaWhatsapp />
                 <span>WhatsApp</span>
@@ -45,7 +45,7 @@ export default function Footer() {
                 href="https://t.me/fifthweaver?text=Hello!%20I%20want%20to%20get%20started%20with%20SolarCore." // 🔗 replace with your Telegram username
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center space-x-2 bg-yellow-500 text-black text-sm font-semibold py-1 px-4 rounded-full hover:bg-yellow-600 transition transform hover:scale-105"
+                className="app-text flex items-center space-x-2 bg-yellow-500 text-black font-semibold py-1 px-4 rounded-full hover:bg-yellow-600 transition transform hover:scale-105"
               >
                 <FaTelegramPlane />
                 <span>Telegram</span>
@@ -57,7 +57,7 @@ export default function Footer() {
           {/* Products */}
           <div>
             <h4 className="text-yellow-600 font-semibold mb-4">Products</h4>
-            <ul className="space-y-2 text-sm">
+            <ul className="app-text space-y-2">
               <li>
                 <a
                   href="https://solar-core-powered-living.vercel.app/products"
@@ -119,7 +119,7 @@ export default function Footer() {
           {/* Solutions */}
           <div>
             <h4 className="text-yellow-600 font-semibold mb-4">Solutions</h4>
-            <ul className="space-y-2 text-sm">
+            <ul className="app-text space-y-2">
               <li>
                 <a
                   href="https://solar-core-powered-living.vercel.app/solutions"
@@ -171,7 +171,7 @@ export default function Footer() {
         {/* Support */}
         <div>
           <h4 className="text-yellow-600 font-semibold mb-4">Support</h4>
-          <ul className="space-y-2 text-sm">
+          <ul className="app-text space-y-2">
             <li><a href="/faq" className="hover:text-yellow-400">FAQs</a></li>
           </ul>
         </div>
@@ -179,7 +179,7 @@ export default function Footer() {
         {/* About */}
         <div>
           <h4 className="text-yellow-600 font-semibold mb-4">About</h4>
-          <ul className="space-y-2 text-sm">
+          <ul className="app-text space-y-2">
             <li><a href="#" className="hover:text-yellow-400">About SolarCore</a></li>
             <li><a href="mailto:samuelalexander005@gmail.com" className="hover:text-yellow-400">Contact Us</a></li>
           </ul>
@@ -198,7 +198,7 @@ export default function Footer() {
           </div>
 
           {/* Copyright */}
-          <p className="text-xs text-gray-400">
+          <p className="app-text text-gray-400">
             © {new Date().getFullYear()} SolarCore. All rights reserved.
           </p>
         </div>

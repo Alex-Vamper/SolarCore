@@ -162,7 +162,7 @@ export default function QuickActions({ onAction }) {
   return (
     <Card className="glass-card border-0 shadow-lg">
       <CardContent className="p-4">
-        <h3 className="font-semibold text-gray-900 font-inter mb-4">Quick Actions</h3>
+        <h3 className="app-text font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 gap-3">
           {actions.map((action) => (
             <Button
@@ -181,8 +181,8 @@ export default function QuickActions({ onAction }) {
                   <action.icon className="w-5 h-5 md:w-4 md:h-4" />
                 )}
                 <div className="text-center leading-tight">
-                  <div className="text-sm md:text-xs font-medium">{action.title}</div>
-                  <div className="text-xs md:text-[10px] opacity-80">{action.description}</div>
+                  <div className="app-text md:text-xs font-medium">{action.title}</div>
+                  <div className="app-text md:text-[10px] opacity-80">{action.description}</div>
                 </div>
               </Button>
           ))}
