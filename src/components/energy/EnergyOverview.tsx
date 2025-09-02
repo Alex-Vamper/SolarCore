@@ -84,9 +84,9 @@ export default function EnergyOverview({ energyData }) {
             variant={timeFilter === filter.id ? "default" : "outline"}
             size="sm"
             onClick={() => setTimeFilter(filter.id)}
-            className="flex items-center gap-2 whitespace-nowrap"
+            className="app-text flex items-center gap-2 whitespace-nowrap"
           >
-            <filter.icon className="w-3 h-3" />
+            <filter.icon className="app-icon" />
             {filter.label}
           </Button>
         ))}
@@ -95,31 +95,31 @@ export default function EnergyOverview({ energyData }) {
       {/* Usage Summary */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <TrendingUp className="w-5 h-5 text-blue-600" />
+          <CardTitle className="app-heading flex items-center gap-2">
+            <TrendingUp className="app-icon text-blue-600" />
             Energy Usage - {timeFilter.charAt(0).toUpperCase() + timeFilter.slice(1)}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center mb-4">
-            <div className="text-4xl font-bold text-gray-900 font-inter">
+            <div className="app-heading font-bold text-gray-900">
               {getUsageByFilter().toFixed(1)} kWh
             </div>
-            <p className="text-sm text-gray-500 font-inter">Total consumption</p>
+            <p className="app-text text-gray-500">Total consumption</p>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center p-3 bg-green-50 rounded-lg">
-              <div className="text-lg font-semibold text-green-700 font-inter">
+              <div className="app-text font-semibold text-green-700">
                 ₦{data.cost_savings?.toFixed(0) || '0'}
               </div>
-              <div className="text-sm text-gray-600 font-inter">Savings</div>
+              <div className="app-text text-gray-600">Savings</div>
             </div>
             <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <div className="text-lg font-semibold text-blue-700 font-inter">
+              <div className="app-text font-semibold text-blue-700">
                 {data.current_usage?.toFixed(1) || '0.0'} kW
               </div>
-              <div className="text-sm text-gray-600 font-inter">Current</div>
+              <div className="app-text text-gray-600">Current</div>
             </div>
           </div>
         </CardContent>
@@ -129,8 +129,8 @@ export default function EnergyOverview({ energyData }) {
       {powerSource !== 'no_digital' ? (
         <Card className="glass-card border-0 shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg font-inter">
-              <Sun className="w-5 h-5 text-yellow-600" />
+            <CardTitle className="app-heading flex items-center gap-2">
+              <Sun className="app-icon text-yellow-600" />
               Power Source Split
             </CardTitle>
           </CardHeader>
@@ -138,12 +138,12 @@ export default function EnergyOverview({ energyData }) {
             {/* Show warnings for missing system IDs */}
             {powerSource !== 'grid_only' && !hasSolarId && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
-                <p className="text-sm text-yellow-800 font-inter flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
+                <p className="app-text text-yellow-800 flex items-center gap-2">
+                  <AlertCircle className="app-icon" />
                   Solar System ID not configured. 
                   <Button 
                     variant="link" 
-                    className="p-0 h-auto text-yellow-800 underline" 
+                    className="app-text p-0 h-auto text-yellow-800 underline" 
                     onClick={() => navigate('/app/settings')}
                   >
                     Configure in settings
@@ -153,12 +153,12 @@ export default function EnergyOverview({ energyData }) {
             )}
             {powerSource !== 'solar_only' && !hasGridId && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
-                <p className="text-sm text-yellow-800 font-inter flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
+                <p className="app-text text-yellow-800 flex items-center gap-2">
+                  <AlertCircle className="app-icon" />
                   Grid Meter ID not configured. 
                   <Button 
                     variant="link" 
-                    className="p-0 h-auto text-yellow-800 underline" 
+                    className="app-text p-0 h-auto text-yellow-800 underline" 
                     onClick={() => navigate('/app/settings')}
                   >
                     Configure in settings
@@ -172,8 +172,8 @@ export default function EnergyOverview({ energyData }) {
               {powerSource !== 'grid_only' && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Sun className="w-4 h-4 text-yellow-500" />
-                    <span className="font-medium font-inter">Solar</span>
+                    <Sun className="app-icon text-yellow-500" />
+                    <span className="app-text font-medium">Solar</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-20 bg-gray-200 rounded-full h-2">
@@ -182,7 +182,7 @@ export default function EnergyOverview({ energyData }) {
                         style={{ width: `${adjustedData.solar_percentage}%` }}
                       />
                     </div>
-                    <span className="text-sm font-bold text-yellow-600 w-12 text-right">
+                    <span className="app-text text-sm font-bold text-yellow-600 w-12 text-right">
                       {adjustedData.solar_percentage}%
                     </span>
                   </div>
@@ -193,8 +193,8 @@ export default function EnergyOverview({ energyData }) {
               {powerSource !== 'solar_only' && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-blue-500" />
-                    <span className="font-medium font-inter">Grid</span>
+                    <Zap className="app-icon text-blue-500" />
+                    <span className="app-text font-medium">Grid</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-20 bg-gray-200 rounded-full h-2">
@@ -203,7 +203,7 @@ export default function EnergyOverview({ energyData }) {
                         style={{ width: `${adjustedData.grid_percentage}%` }}
                       />
                     </div>
-                    <span className="text-sm font-bold text-blue-600 w-12 text-right">
+                    <span className="app-text text-sm font-bold text-blue-600 w-12 text-right">
                       {adjustedData.grid_percentage}%
                     </span>
                   </div>
@@ -214,8 +214,8 @@ export default function EnergyOverview({ energyData }) {
               {powerSource !== 'grid_only' && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Battery className="w-4 h-4 text-green-500" />
-                    <span className="font-medium font-inter">Battery</span>
+                    <Battery className="app-icon text-green-500" />
+                    <span className="app-text font-medium">Battery</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-20 bg-gray-200 rounded-full h-2">
@@ -224,7 +224,7 @@ export default function EnergyOverview({ energyData }) {
                         style={{ width: `${adjustedData.battery_level}%` }}
                       />
                     </div>
-                    <span className="text-sm font-bold text-green-600 w-12 text-right">
+                    <span className="app-text text-sm font-bold text-green-600 w-12 text-right">
                       {adjustedData.battery_level}%
                     </span>
                   </div>
@@ -236,17 +236,17 @@ export default function EnergyOverview({ energyData }) {
       ) : (
         <Card className="glass-card border-0 shadow-lg">
           <CardContent className="p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-900 font-inter mb-2">No Digital Energy System</h3>
-            <p className="text-sm text-gray-600 font-inter mb-4">
+            <AlertCircle className="app-icon text-yellow-500 mx-auto mb-4" />
+            <h3 className="app-text font-semibold text-gray-900 mb-2">No Digital Energy System</h3>
+            <p className="app-text text-gray-600 mb-4">
               Digital energy monitoring is not available for your setup.
             </p>
             <Button 
               variant="outline" 
-              className="flex items-center gap-2"
+              className="app-text flex items-center gap-2"
               onClick={() => navigate('/app/settings')}
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="app-icon" />
               Configure Power Source
             </Button>
           </CardContent>
@@ -256,8 +256,8 @@ export default function EnergyOverview({ energyData }) {
       {/* Usage Alerts */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <AlertTriangle className="w-5 h-5 text-orange-600" />
+          <CardTitle className="app-heading flex items-center gap-2">
+            <AlertTriangle className="app-icon text-orange-600" />
             Usage Alerts
           </CardTitle>
         </CardHeader>
@@ -266,10 +266,10 @@ export default function EnergyOverview({ energyData }) {
             {data.current_usage > 2 ? (
               <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-1">
-                  <AlertTriangle className="w-4 h-4 text-orange-600" />
-                  <span className="font-medium text-orange-800 font-inter">High Usage Alert</span>
+                  <AlertTriangle className="app-icon text-orange-600" />
+                  <span className="app-text font-medium text-orange-800">High Usage Alert</span>
                 </div>
-                <p className="text-sm text-orange-700 font-inter">
+                <p className="app-text text-orange-700">
                   Current usage is {data.current_usage.toFixed(1)} kW - consider reducing load
                 </p>
               </div>
@@ -277,11 +277,11 @@ export default function EnergyOverview({ energyData }) {
               <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-1">
                   <Badge className="bg-green-100 text-green-800 border-green-200">
-                    Normal
+                    <p className="app-text">Normal</p>
                   </Badge>
-                  <span className="font-medium text-green-800 font-inter">Usage Normal</span>
+                  <span className="app-text font-medium text-green-800">Usage Normal</span>
                 </div>
-                <p className="text-sm text-green-700 font-inter">
+                <p className="app-text text-green-700">
                   Your energy consumption is within normal ranges
                 </p>
               </div>
@@ -290,10 +290,10 @@ export default function EnergyOverview({ energyData }) {
             {data.solar_percentage > 70 && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center gap-2 mb-1">
-                  <Sun className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium text-blue-800 font-inter">Optimal Solar Time</span>
+                  <Sun className="app-icon text-blue-600" />
+                  <span className="app-text font-medium text-blue-800">Optimal Solar Time</span>
                 </div>
-                <p className="text-sm text-blue-700 font-inter">
+                <p className="app-text text-blue-700">
                   Great time to run heavy appliances - you're on {data.solar_percentage}% solar power
                 </p>
               </div>

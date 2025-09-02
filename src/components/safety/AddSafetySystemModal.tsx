@@ -28,32 +28,32 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl font-inter">
-            <Shield className="w-6 h-6 text-red-600" />
+          <DialogTitle className="app-heading flex items-center gap-2">
+            <Shield className="app-icon text-red-600" />
             Add Safety System
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           <div>
-            <Label className="text-sm font-medium text-gray-700 font-inter flex items-center gap-1">
-              <Key className="w-3 h-3" /> System ID
+            <Label className="app-text font-medium text-gray-700 flex items-center gap-1">
+              <Key className="app-icon" /> System ID
             </Label>
             <Input
               placeholder="Enter unique hardware ID"
               value={systemData.system_id}
               onChange={(e) => setSystemData(prev => ({ ...prev, system_id: e.target.value }))}
-              className="mt-1 font-inter"
+              className="app-text mt-1"
             />
-             <p className="text-xs text-gray-500 mt-1">This ID links the physical device to your account.</p>
+            <p className="app-text text-xs text-gray-500 mt-1">This ID links the physical device to your account.</p>
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-gray-700 font-inter">System Type</Label>
+            <Label className="app-text font-medium text-gray-700">System Type</Label>
             <select
               value={systemData.system_type}
               onChange={(e) => setSystemData(prev => ({ ...prev, system_type: e.target.value }))}
-              className="w-full mt-1 p-2 border border-gray-300 rounded-lg font-inter"
+              className="app-text w-full mt-1 p-2 border border-gray-300 rounded-lg"
             >
               <option value="fire_detection">Fire Detection</option>
               <option value="window_rain">Rain Detection</option>
@@ -63,11 +63,11 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
           </div>
 
           <div>
-            <Label className="text-sm font-medium text-gray-700 font-inter">Assign to Room</Label>
+            <Label className="app-text font-medium text-gray-700">Assign to Room</Label>
             <select
               value={systemData.room_name}
               onChange={(e) => setSystemData(prev => ({ ...prev, room_name: e.target.value }))}
-              className="w-full mt-1 p-2 border border-gray-300 rounded-lg font-inter"
+              className="app-text w-full mt-1 p-2 border border-gray-300 rounded-lg"
             >
               <option value="">Select a room</option>
               {rooms.map(room => (
@@ -79,13 +79,13 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onClose} className="font-inter">
+          <Button variant="outline" onClick={onClose} className="app-text">
             Cancel
           </Button>
           <Button 
             onClick={handleSave} 
             disabled={!systemData.room_name || !systemData.system_id}
-            className="bg-red-600 hover:bg-red-700 font-inter"
+            className="app-text bg-red-600 hover:bg-red-700"
           >
             Add System
           </Button>

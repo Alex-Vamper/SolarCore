@@ -124,12 +124,12 @@ export default function RoomBox({ room, dragHandleProps }) {
           <div className="flex items-center gap-4">
             {dragHandleProps && (
               <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
-                <GripVertical className="w-5 h-5 text-gray-400" />
+                <GripVertical className="app-icon text-gray-400" />
               </div>
             )}
             
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
-              <RoomIcon className="w-6 h-6 text-white" />
+              <RoomIcon className="app-icon text-white" />
             </div>
             
             <div className="flex-1">

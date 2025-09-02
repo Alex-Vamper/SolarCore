@@ -129,8 +129,8 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl p-8 max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-center mb-6">
-          <DialogTitle className="text-3xl font-bold font-inter">Ander AI Pricing</DialogTitle>
-          <DialogDescription className="text-lg text-gray-600 font-inter">
+          <DialogTitle className="app-heading text-3xl font-bold">Ander AI Pricing</DialogTitle>
+          <DialogDescription className="app-text text-lg text-gray-600">
             Choose a plan to unlock the full potential of your smart home assistant.
           </DialogDescription>
         </DialogHeader>
@@ -145,22 +145,22 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan }) {
               {plan.isPopular && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <div className="bg-yellow-500 text-white text-xs font-bold uppercase tracking-wider py-1 px-4 rounded-full flex items-center gap-1">
-                    <Star className="w-3 h-3"/>
+                    <Star className="app-icon" />
                     Most Popular
                   </div>
                 </div>
               )}
               <CardHeader className="text-center pt-6">
-                <CardTitle className="text-xl font-inter">{plan.name}</CardTitle>
-                <p className="text-sm text-gray-600 font-inter">{plan.subtitle}</p>
-                <p className="text-2xl font-bold text-gray-800 font-inter mt-2">{plan.price}</p>
+                <CardTitle className="app-text text-xl">{plan.name}</CardTitle>
+                <p className="app-text text-sm text-gray-600">{plan.subtitle}</p>
+                <p className="app-text text-2xl font-bold text-gray-800 mt-2">{plan.price}</p>
               </CardHeader>
               <CardContent className="flex-1">
                 <ul className="space-y-3">
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-start gap-3">
-                      <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-600 font-inter">{feature}</span>
+                      <Check className="app-icon text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="app-text text-sm text-gray-600">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -168,7 +168,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan }) {
               <CardFooter className="pt-4">
                 <Button
                   onClick={() => handlePlanSelect(plan.planId)}
-                  className={`w-full font-inter text-white ${ // Added text-white here
+                  className={`w-full app-text text-white ${ // Added text-white here
                     plan.isPopular
                       ? 'bg-yellow-500 hover:bg-yellow-600'
                       : plan.planId === 'free' // Updated logic for 'free' plan button
@@ -178,7 +178,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan }) {
                       : 'bg-gray-600 hover:bg-gray-700' // Fallback, though all plans now have specific styles
                   }`}
                 >
-                  {plan.planId === 'premium' && <CreditCard className="w-4 h-4 mr-2" />}
+                  {plan.planId === 'premium' && <CreditCard className="app-icon mr-2" />}
                   {plan.buttonText}
                 </Button>
               </CardFooter>
@@ -186,7 +186,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan }) {
           ))}
         </div>
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500 font-inter">
+          <p className="app-text text-sm text-gray-500">
             All plans include a 30-day money-back guarantee. Cancel anytime.
           </p>
         </div>

@@ -166,25 +166,25 @@ export default function QuickActions({ onAction }) {
         <div className="grid grid-cols-2 gap-3">
           {actions.map((action) => (
             <Button
-                key={action.id}
-                variant="outline"
-                className={`${action.color} text-white border-0 h-auto 
-                            p-3 md:p-2 
-                            flex flex-col items-center gap-2 md:gap-1.5 
-                            transition-all duration-200 hover:scale-105 hover:shadow-md`}
-                onClick={() => handleAction(action.id)}
-                disabled={isLoading === action.id}
-              >
-                {isLoading === action.id ? (
-                  <div className="w-5 h-5 md:w-4 md:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <action.icon className="w-5 h-5 md:w-4 md:h-4" />
-                )}
-                <div className="text-center leading-tight">
-                  <div className="app-text md:text-xs font-medium">{action.title}</div>
-                  <div className="app-text md:text-[10px] opacity-80">{action.description}</div>
-                </div>
-              </Button>
+              key={action.id}
+              variant="outline"
+              className={`${action.color} text-white border-0 h-auto 
+                          p-3 md:p-2 
+                          flex flex-col items-center gap-2 md:gap-1.5 
+                          transition-all duration-200 hover:scale-105 hover:shadow-md`}
+              onClick={() => handleAction(action.id)}
+              disabled={isLoading === action.id}
+            >
+              {isLoading === action.id ? (
+                <div className="app-icon border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <action.icon className="app-icon" />
+              )}
+              <div className="text-center leading-tight">
+                <div className="app-text font-medium">{action.title}</div>
+                <div className="app-text opacity-80">{action.description}</div>
+              </div>
+            </Button>
           ))}
         </div>
       </CardContent>

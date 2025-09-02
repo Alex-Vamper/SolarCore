@@ -79,13 +79,13 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-3 text-lg font-inter">
+            <CardTitle className="app-heading flex items-center gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${meta.color}`}>
-                <SystemIcon className="w-5 h-5 text-white" />
+                <SystemIcon className="app-icon text-white" />
               </div>
               <div>
                 <div className="font-semibold">{system.room_name}</div>
-                <div className="text-sm text-gray-500 font-normal">
+                <div className="app-text text-gray-500 font-normal">
                   {meta.name}
                 </div>
               </div>
@@ -100,7 +100,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                 onClick={onSystemSettings}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <Settings className="w-4 h-4" />
+                <Settings className="app-icon" />
               </Button>
             </div>
           </div>
@@ -110,9 +110,9 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-2">
               {getStatusIcon(system.status)}
-              <span className="text-sm font-medium text-gray-700 font-inter">System Status</span>
+              <span className="app-text font-medium text-gray-700">System Status</span>
             </div>
-            <span className={`text-sm font-bold ${
+            <span className={`app-text font-bold ${
               system.status === "safe" ? 'text-green-600' : 
               system.status === "alert" ? 'text-yellow-600' : 'text-red-600'
             }`}>
@@ -126,8 +126,8 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Flame className="w-4 h-4 text-red-500" />
-                    <span className="text-sm font-medium text-gray-700 font-inter">Flame</span>
+                    <Flame className="app-icon text-red-500" />
+                    <span className="app-text font-medium text-gray-700">Flame</span>
                   </div>
                   <Badge className={
                     system.sensor_readings?.flame_detected 
@@ -139,10 +139,10 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Thermometer className="w-4 h-4 text-orange-500" />
-                    <span className="text-sm font-medium text-gray-700 font-inter">Temperature</span>
+                    <Thermometer className="app-icon text-orange-500" />
+                    <span className="app-text font-medium text-gray-700">Temperature</span>
                   </div>
-                  <span className="text-sm font-bold text-gray-900 font-inter">
+                  <span className="app-text font-bold text-gray-900">
                     {system.sensor_readings?.temperature || 25}°C
                   </span>
                 </div>
@@ -150,8 +150,8 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
               
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 font-inter">Smoke Level</span>
-                  <span className="text-sm font-bold text-gray-900 font-inter">
+                  <span className="app-text font-medium text-gray-700">Smoke Level</span>
+                  <span className="app-text font-bold text-gray-900">
                     {system.sensor_readings?.smoke_level || 0}%
                   </span>
                 </div>
@@ -166,12 +166,12 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                   <Button
                     onClick={() => handleOverride("activate_suppression")}
                     disabled={isOverriding}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-inter"
+                    className="w-full bg-red-600 hover:bg-red-700 text-white app-text"
                   >
                     {isOverriding ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                     ) : (
-                      <Shield className="w-4 h-4 mr-2" />
+                      <Shield className="app-icon mr-2" />
                     )}
                     Manual Fire Suppression
                   </Button>
@@ -186,8 +186,8 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Droplets className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm font-medium text-gray-700 font-inter">Rain</span>
+                    <Droplets className="app-icon text-blue-500" />
+                    <span className="app-text font-medium text-gray-700">Rain</span>
                   </div>
                   <Badge className={
                     system.sensor_readings?.rain_detected 
@@ -199,8 +199,8 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Activity className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700 font-inter">Window</span>
+                    <Activity className="app-icon text-gray-500" />
+                    <span className="app-text font-medium text-gray-700">Window</span>
                   </div>
                   <Badge className={
                     system.sensor_readings?.window_status === "open"
@@ -217,7 +217,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                   onClick={() => handleOverride("close_window")}
                   disabled={isOverriding}
                   variant="outline"
-                  className="flex-1 font-inter"
+                  className="flex-1 app-text"
                 >
                   {isOverriding && <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />}
                   Close Window
@@ -226,7 +226,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                   onClick={() => handleOverride("open_window")}
                   disabled={isOverriding}
                   variant="outline"
-                  className="flex-1 font-inter"
+                  className="flex-1 app-text"
                 >
                   Open Window
                 </Button>
@@ -237,12 +237,12 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
           {/* Gas Leakage Specific */}
           {system.system_type === "gas_leak" && (
             <div className="space-y-3">
-               <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Wind className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700 font-inter">Gas Level</span>
+                    <Wind className="app-icon text-gray-500" />
+                    <span className="app-text font-medium text-gray-700">Gas Level</span>
                   </div>
-                  <span className="text-lg font-bold text-gray-900 font-inter">
+                  <span className="app-text font-bold text-gray-900">
                     {system.sensor_readings?.gas_level || 0} ppm
                   </span>
                   <Progress value={(system.sensor_readings?.gas_level || 0) / 10} className="h-2 mt-2" />
@@ -253,15 +253,15 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
           {/* Water Level Specific */}
           {system.system_type === "water_overflow" && (
             <div className="space-y-3">
-               <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Waves className="w-4 h-4 text-teal-500" />
-                    <span className="text-sm font-medium text-gray-700 font-inter">Tank Water Level</span>
+                    <Waves className="app-icon text-teal-500" />
+                    <span className="app-text font-medium text-gray-700">Tank Water Level</span>
                   </div>
-                  <span className="text-lg font-bold text-gray-900 font-inter">
+                  <span className="app-text font-bold text-gray-900">
                     {system.sensor_readings?.water_level || 0}%
                   </span>
-                   <Progress value={system.sensor_readings?.water_level || 0} className="h-2 mt-2" />
+                  <Progress value={system.sensor_readings?.water_level || 0} className="h-2 mt-2" />
                 </div>
             </div>
           )}
@@ -269,7 +269,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
           {/* Last Triggered */}
           {system.last_triggered && (
             <div className="text-center pt-3 border-t">
-              <p className="text-xs text-gray-500 font-inter">
+              <p className="app-text text-xs text-gray-500">
                 Last triggered: {new Date(system.last_triggered).toLocaleString()}
               </p>
             </div>

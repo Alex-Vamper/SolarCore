@@ -89,9 +89,9 @@ export default function EnergyOverview({ energyData }) {
       {(powerSource === 'solar_only' || powerSource === 'solar_grid') && (
         <Card className="glass-card border-0 shadow-lg">
           <CardHeader className="pb-3">
-            <CardTitle className="app-text flex items-center gap-2 text-lg">
+            <CardTitle className="app-heading flex items-center gap-2">
               <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-                <Sun className="w-4 h-4 text-white" />
+                <Sun className="app-icon text-white" />
               </div>
               Power Status
             </CardTitle>
@@ -100,7 +100,7 @@ export default function EnergyOverview({ energyData }) {
             {!hasSolarId && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
                 <p className="app-text text-yellow-800 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
+                  <AlertCircle className="app-icon" />
                   Solar System ID not configured. Please add it in settings for accurate monitoring.
                 </p>
               </div>
@@ -145,14 +145,14 @@ export default function EnergyOverview({ energyData }) {
       {/* Energy Usage */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader className="pb-3">
-          <CardTitle className="app-text flex items-center gap-2 text-lg">
-            <Zap className="w-5 h-5 text-blue-500" />
+          <CardTitle className="app-heading flex items-center gap-2">
+            <Zap className="app-icon text-blue-500" />
             Energy Usage
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-center">
-            <div className="app-text text-3xl font-bold text-gray-900">
+            <div className="app-heading font-bold text-gray-900">
               {data.current_usage?.toFixed(1) || '0.0'} kWh
             </div>
             <p className="app-text text-gray-500">Current usage</p>
@@ -160,13 +160,13 @@ export default function EnergyOverview({ energyData }) {
           
           <div className="grid grid-cols-2 gap-4 pt-4 border-t">
             <div className="text-center">
-              <div className="app-text text-lg font-semibold text-gray-700">
+              <div className="app-text font-semibold text-gray-700">
                 {data.daily_usage?.toFixed(1) || '0.0'}
               </div>
               <p className="app-text text-gray-500">Daily kWh</p>
             </div>
             <div className="text-center">
-              <div className="app-text text-lg font-semibold text-green-600">
+              <div className="app-text font-semibold text-green-600">
                 ₦{data.cost_savings?.toFixed(0) || '0'}
               </div>
               <p className="app-text text-gray-500">Savings today</p>
@@ -180,7 +180,7 @@ export default function EnergyOverview({ energyData }) {
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Leaf className="w-4 h-4 text-white" />
+              <Leaf className="app-icon text-white" />
             </div>
             <div>
               <h3 className="app-text font-semibold text-gray-900 mb-1">Energy Tip</h3>

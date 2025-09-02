@@ -103,13 +103,13 @@ export default function AddDeviceModal({ isOpen, onClose, onSave, roomName }) {
           <div className="flex items-center gap-2">
             {selectedType && (
               <Button variant="ghost" size="icon" className="mr-2" onClick={() => setSelectedType(null)}>
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="app-icon" />
               </Button>
             )}
-            <DialogTitle className="text-xl font-inter">Add New Device to {roomName}</DialogTitle>
+            <DialogTitle className="app-heading">Add New Device to {roomName}</DialogTitle>
           </div>
           {selectedType && (
-            <DialogDescription>
+            <DialogDescription className="app-text">
               Configuring a new {activeCatalogEntry?.name}
             </DialogDescription>
           )}
@@ -124,51 +124,51 @@ export default function AddDeviceModal({ isOpen, onClose, onSave, roomName }) {
                   onClick={() => handleTypeSelect(device.id)}
                   className="p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-2 text-center"
                 >
-                  <device.icon className="w-8 h-8 text-gray-600" />
-                  <span className="font-medium text-sm font-inter">{device.name}</span>
+                  <device.icon className="app-icon text-gray-600" />
+                  <span className="app-text font-medium">{device.name}</span>
                 </button>
               ))}
             </div>
           ) : (
             <div className="space-y-4">
               <div>
-                <Label htmlFor="device-name" className="text-sm font-medium text-gray-700 font-inter">Device Name</Label>
+                <Label htmlFor="device-name" className="app-text font-medium text-gray-700">Device Name</Label>
                 <Input
                   id="device-name"
                   placeholder="e.g., Main Ceiling Light"
                   value={deviceData.name}
                   onChange={(e) => setDeviceData(prev => ({ ...prev, name: e.target.value }))}
-                  className="mt-1 font-inter"
+                  className="app-text mt-1"
                 />
               </div>
 
               {activeCatalogEntry?.series.length > 0 && (
-                 <div>
-                    <Label htmlFor="device-series" className="text-sm font-medium text-gray-700 font-inter">Series</Label>
-                    <Select
-                        value={deviceData.series}
-                        onValueChange={(value) => setDeviceData(prev => ({ ...prev, series: value }))}
-                    >
-                        <SelectTrigger id="device-series" className="w-full mt-1 font-inter">
-                            <SelectValue placeholder="Select a series" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {activeCatalogEntry.series.map(s => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                 </div>
-              )}
-             
+                  <div>
+                      <Label htmlFor="device-series" className="app-text font-medium text-gray-700">Series</Label>
+                      <Select
+                          value={deviceData.series}
+                          onValueChange={(value) => setDeviceData(prev => ({ ...prev, series: value }))}
+                      >
+                          <SelectTrigger id="device-series" className="app-text w-full mt-1">
+                              <SelectValue placeholder="Select a series" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {activeCatalogEntry.series.map(s => (
+                                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+                )}
+                
               <div>
-                <Label htmlFor="device-id" className="text-sm font-medium text-gray-700 font-inter">Device ID</Label>
+                <Label htmlFor="device-id" className="app-text font-medium text-gray-700">Device ID</Label>
                 <Input
                   id="device-id"
                   placeholder="Enter hardware device ID"
                   value={deviceData.device_id}
                   onChange={(e) => setDeviceData(prev => ({ ...prev, device_id: e.target.value }))}
-                  className="mt-1 font-inter"
+                  className="app-text mt-1"
                 />
               </div>
             </div>
@@ -177,13 +177,13 @@ export default function AddDeviceModal({ isOpen, onClose, onSave, roomName }) {
 
         {selectedType && (
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={handleClose} className="font-inter">
+            <Button variant="outline" onClick={handleClose} className="app-text">
               Cancel
             </Button>
             <Button 
               onClick={handleSave} 
               disabled={!deviceData.name || !deviceData.device_id || (activeCatalogEntry?.series.length > 0 && !deviceData.series)}
-              className="bg-blue-600 hover:bg-blue-700 font-inter"
+              className="app-text bg-blue-600 hover:bg-blue-700"
             >
               Add Device
             </Button>

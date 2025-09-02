@@ -66,40 +66,40 @@ export default function BillingRecharges({ energyData }) {
       {/* Units Status */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <Zap className="w-5 h-5 text-blue-600" />
+          <CardTitle className="app-heading flex items-center gap-2">
+            <Zap className="app-icon text-blue-600" />
             Electricity Units Status
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className={`text-3xl font-bold ${getUnitsColor()} font-inter`}>
+              <div className={`app-heading font-bold ${getUnitsColor()}`}>
                 {unitsRemaining.toFixed(1)}
               </div>
-              <div className="text-sm text-gray-600 font-inter">Units Remaining (kWh)</div>
+              <div className="app-text text-gray-600">Units Remaining (kWh)</div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-3xl font-bold text-purple-700 font-inter">
+              <div className="app-heading font-bold text-purple-700">
                 {estimatedDaysLeft}
               </div>
-              <div className="text-sm text-gray-600 font-inter">Days Left</div>
+              <div className="app-text text-gray-600">Days Left</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-3xl font-bold text-green-700 font-inter">
+              <div className="app-heading font-bold text-green-700">
                 ₦{currentUnitRate}
               </div>
-              <div className="text-sm text-gray-600 font-inter">Per kWh</div>
+              <div className="app-text text-gray-600">Per kWh</div>
             </div>
           </div>
           
           {unitsRemaining < 50 && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2 text-red-800">
-                <Battery className="w-4 h-4" />
-                <span className="font-medium font-inter">Low Units Warning</span>
+                <Battery className="app-icon" />
+                <span className="app-text font-medium">Low Units Warning</span>
               </div>
-              <p className="text-sm text-red-700 font-inter mt-1">
+              <p className="app-text text-red-700 mt-1">
                 You have {unitsRemaining.toFixed(1)} kWh left. Consider recharging soon to avoid power interruption.
               </p>
             </div>
@@ -110,8 +110,8 @@ export default function BillingRecharges({ energyData }) {
       {/* Quick Recharge */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <Plus className="w-5 h-5 text-blue-600" />
+          <CardTitle className="app-heading flex items-center gap-2">
+            <Plus className="app-icon text-blue-600" />
             Quick Recharge
           </CardTitle>
         </CardHeader>
@@ -122,36 +122,36 @@ export default function BillingRecharges({ energyData }) {
                 key={amount}
                 variant="outline"
                 onClick={() => setNewRecharge(prev => ({ ...prev, amount: amount.toString() }))}
-                className="h-auto p-2 flex flex-col gap-1 font-inter"
+                className="app-text h-auto p-2 flex flex-col gap-1"
               >
-                <span className="font-bold">₦{amount.toLocaleString()}</span>
-                <span className="text-xs text-gray-500">{currentUnitRate > 0 ? (amount / currentUnitRate).toFixed(1) : '0.0'} kWh</span>
+                <span className="app-text font-bold">₦{amount.toLocaleString()}</span>
+                <span className="app-text text-gray-500">{currentUnitRate > 0 ? (amount / currentUnitRate).toFixed(1) : '0.0'} kWh</span>
               </Button>
             ))}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-sm font-medium text-gray-700 font-inter">Custom Amount (₦)</Label>
+              <Label className="app-text font-medium text-gray-700">Custom Amount (₦)</Label>
               <Input
                 type="number"
                 placeholder="Enter amount"
                 value={newRecharge.amount}
                 onChange={(e) => setNewRecharge(prev => ({ ...prev, amount: e.target.value }))}
-                className="mt-1 font-inter"
+                className="app-text mt-1"
               />
               {newRecharge.amount && currentUnitRate > 0 && (
-                <p className="text-xs text-gray-500 mt-1 font-inter">
+                <p className="app-text text-gray-500 mt-1">
                   = {(parseFloat(newRecharge.amount) / currentUnitRate).toFixed(2)} kWh units
                 </p>
               )}
             </div>
             <div>
-              <Label className="text-sm font-medium text-gray-700 font-inter">Payment Method</Label>
+              <Label className="app-text font-medium text-gray-700">Payment Method</Label>
               <select
                 value={newRecharge.method}
                 onChange={(e) => setNewRecharge(prev => ({ ...prev, method: e.target.value }))}
-                className="w-full mt-1 p-2 border border-gray-300 rounded-lg font-inter"
+                className="app-text w-full mt-1 p-2 border border-gray-300 rounded-lg"
               >
                 <option value="card">Debit/Credit Card</option>
                 <option value="transfer">Bank Transfer</option>
@@ -164,16 +164,16 @@ export default function BillingRecharges({ energyData }) {
             <Button 
               onClick={handleAddRecharge}
               disabled={!newRecharge.amount}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 font-inter"
+              className="app-text flex-1 bg-blue-600 hover:bg-blue-700"
             >
-              <CreditCard className="w-4 h-4 mr-2" />
+              <CreditCard className="app-icon mr-2" />
               Buy Units
             </Button>
             <Button 
               variant="outline" 
-              className="flex items-center gap-2 font-inter"
+              className="app-text flex items-center gap-2"
             >
-              <Scan className="w-4 h-4" />
+              <Scan className="app-icon" />
               Scan Card
             </Button>
           </div>
@@ -183,8 +183,8 @@ export default function BillingRecharges({ energyData }) {
       {/* Recharge History */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <Receipt className="w-5 h-5 text-purple-600" />
+          <CardTitle className="app-heading flex items-center gap-2">
+            <Receipt className="app-icon text-purple-600" />
             Recharge History
           </CardTitle>
         </CardHeader>
@@ -194,18 +194,18 @@ export default function BillingRecharges({ energyData }) {
               <div key={recharge.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                    <CreditCard className="w-4 h-4 text-white" />
+                    <CreditCard className="app-icon text-white" />
                   </div>
                   <div>
-                    <div className="font-medium font-inter">₦{recharge.amount.toLocaleString()}</div>
-                    <div className="text-sm text-gray-500 font-inter">
+                    <div className="app-text font-medium">₦{recharge.amount.toLocaleString()}</div>
+                    <div className="app-text text-gray-500">
                       {new Date(recharge.date).toLocaleDateString()} • {recharge.method} • {recharge.units} kWh
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                    Units: {recharge.units.toFixed(1)}
+                    <p className="app-text">Units: {recharge.units.toFixed(1)}</p>
                   </Badge>
                 </div>
               </div>
@@ -217,8 +217,8 @@ export default function BillingRecharges({ energyData }) {
       {/* Usage Insights */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <TrendingUp className="w-5 h-5 text-orange-600" />
+          <CardTitle className="app-heading flex items-center gap-2">
+            <TrendingUp className="app-icon text-orange-600" />
             Usage Insights
           </CardTitle>
         </CardHeader>
@@ -226,10 +226,10 @@ export default function BillingRecharges({ energyData }) {
           <div className="space-y-4">
             <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-4 h-4 text-orange-600" />
-                <span className="font-medium text-orange-800 font-inter">Usage Pattern</span>
+                <Clock className="app-icon text-orange-600" />
+                <span className="app-text font-medium text-orange-800">Usage Pattern</span>
               </div>
-              <p className="text-sm text-orange-700 font-inter">
+              <p className="app-text text-orange-700">
                 You typically use {data.daily_usage?.toFixed(1) || '0.0'} kWh daily. 
                 At this rate, your units will last {estimatedDaysLeft} days.
               </p>
@@ -237,26 +237,26 @@ export default function BillingRecharges({ energyData }) {
             
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-                <span className="font-medium text-blue-800 font-inter">Cost Optimization</span>
+                <TrendingUp className="app-icon text-blue-600" />
+                <span className="app-text font-medium text-blue-800">Cost Optimization</span>
               </div>
-              <p className="text-sm text-blue-700 font-inter">
+              <p className="app-text text-blue-700">
                 Using more solar power during peak hours could extend your units by up to 15%.
               </p>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <div className="text-lg font-semibold text-gray-700 font-inter">
+                <div className="app-text font-semibold text-gray-700">
                   ₦{getTotalRecharges().toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-600 font-inter">Total Recharged</div>
+                <div className="app-text text-gray-600">Total Recharged</div>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <div className="text-lg font-semibold text-gray-700 font-inter">
+                <div className="app-text font-semibold text-gray-700">
                   {rechargeHistory.length}
                 </div>
-                <div className="text-sm text-gray-600 font-inter">Transactions</div>
+                <div className="app-text text-gray-600">Transactions</div>
               </div>
             </div>
           </div>

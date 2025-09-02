@@ -88,11 +88,11 @@ export default function ApplianceUsage({ rooms }) {
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-2">
         <select
           value={selectedRoom}
           onChange={(e) => setSelectedRoom(e.target.value)}
-          className="flex-1 p-2 border border-gray-300 rounded-lg bg-white font-inter"
+          className="app-text p-2 border border-gray-300 rounded-lg bg-white"
         >
           <option value="all">All Rooms</option>
           {rooms.map(room => (
@@ -103,7 +103,7 @@ export default function ApplianceUsage({ rooms }) {
         <select
           value={timeFilter}
           onChange={(e) => setTimeFilter(e.target.value)}
-          className="flex-1 p-2 border border-gray-300 rounded-lg bg-white font-inter"
+          className="app-text p-2 border border-gray-300 rounded-lg bg-white"
         >
           <option value="daily">Daily</option>
           <option value="weekly">Weekly</option>
@@ -113,7 +113,7 @@ export default function ApplianceUsage({ rooms }) {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className="flex-1 p-2 border border-gray-300 rounded-lg bg-white font-inter"
+          className="app-text p-2 border border-gray-300 rounded-lg bg-white"
         >
           <option value="usage">Sort by Usage</option>
           <option value="alphabetical">Sort A-Z</option>
@@ -129,19 +129,19 @@ export default function ApplianceUsage({ rooms }) {
             
             return (
               <Card key={`${appliance.room_id}-${appliance.name}-${index}`} className="glass-card border-0 shadow-sm">
-                <CardContent className="p-4">
+                <CardContent className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                         appliance.status ? 'bg-yellow-50' : 'bg-gray-50'
                       }`}>
-                        <IconComponent className={`w-5 h-5 ${
+                        <IconComponent className={`app-icon ${
                           appliance.status ? 'text-yellow-600' : iconColor
                         }`} />
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium font-inter">{appliance.name}</div>
-                        <div className="text-sm text-gray-500 font-inter">
+                        <div className="app-text font-medium">{appliance.name}</div>
+                        <div className="app-text text-gray-500">
                           {appliance.room_name} • {appliance.series}
                         </div>
                       </div>
@@ -149,10 +149,10 @@ export default function ApplianceUsage({ rooms }) {
                     
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <div className="font-semibold text-gray-900 font-inter">
+                        <div className="app-text font-semibold text-gray-900">
                           {getUsageValue(appliance).toFixed(2)} kWh
                         </div>
-                        <div className="text-sm text-gray-500 font-inter">
+                        <div className="app-text text-gray-500">
                           ₦{getCostValue(appliance).toFixed(0)}
                         </div>
                       </div>
@@ -162,13 +162,13 @@ export default function ApplianceUsage({ rooms }) {
                         onClick={() => {
                           console.log(`Toggle ${appliance.name} in ${appliance.room_name}`);
                         }}
-                        className={`transition-all duration-300 rounded-full w-8 h-8 ${
+                        className={`transition-all duration-300 rounded-full w-8 h-8 app-icon ${
                           appliance.status
                             ? 'bg-yellow-400 text-white shadow-lg shadow-yellow-400/50'
                             : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                         }`}
                       >
-                        <Power className="w-4 h-4" />
+                        <Power className="app-icon" />
                       </Button>
                     </div>
                   </div>
@@ -176,8 +176,8 @@ export default function ApplianceUsage({ rooms }) {
                   {appliance.status && (
                     <div className="mt-3 pt-3 border-t border-gray-100">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Power className="w-3 h-3" />
-                        <span className="font-inter">Currently using {appliance.power_usage || 0}W</span>
+                        <Power className="app-icon" />
+                        <span className="app-text">Currently using {appliance.power_usage || 0}W</span>
                       </div>
                     </div>
                   )}
@@ -187,8 +187,8 @@ export default function ApplianceUsage({ rooms }) {
           })
         ) : (
           <div className="text-center py-12">
-            <Home className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p className="text-gray-500 font-inter">No appliances found in selected room</p>
+            <Home className="app-icon mx-auto mb-4 text-gray-300" />
+            <p className="app-text text-gray-500">No appliances found in selected room</p>
           </div>
         )}
       </div>
