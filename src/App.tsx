@@ -1,3 +1,4 @@
+import React from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/toaster";
@@ -22,8 +23,6 @@ import Feedback from "@/pages/Feedback";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Ander from "@/pages/Ander";
 import OnboardingChecker from "@/components/onboarding/OnboardingChecker";
-
-const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -135,12 +134,16 @@ function AppContent() {
   );
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [queryClient] = React.useState(() => new QueryClient());
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
