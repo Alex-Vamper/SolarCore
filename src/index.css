@@ -123,6 +123,14 @@
     @apply text-xs sm:text-sm font-inter;
   }
   
+  .app-icon {
+    font-size: var(--icon-size);
+  }
+
+  .app-heading {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+
   .glass-card {
     backdrop-filter: blur(20px);
     background: var(--glass-background);

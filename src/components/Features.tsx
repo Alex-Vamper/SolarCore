@@ -36,10 +36,10 @@ const features = [
 const SmartHomeFeatures = () => {
   return (
     <div className="bg-white py-16 px-4 text-center">
-      <h2 className="app-text text-4xl md:text-3xl font-bold mb-4">
+      <h2 className="app-heading font-bold mb-4">
         A Smarter Home is a Better Home
       </h2>
-      <p className="app-text max-w-2xl mx-auto text-2x1 mb-10">
+      <p className="app-text max-w-2xl mx-auto mb-10">
         At SolarCore, we bring Advanced technology to your fingertips. Our system
         integrates cutting-edge energy management, robust security protocols, and
         personalized automation to transform your house into an intelligent home
@@ -55,11 +55,11 @@ const SmartHomeFeatures = () => {
             <div className="bg-[#001F3F] w-10 h-10 flex items-center justify-center rounded-full mb-4 ">
               {feature.icon}
             </div>
-            <h3 className="app-text font-semibold text-lg mb-2">
-              {feature.title}
+            <h3 className="app-text font-semibold mb-2">
+                {feature.title}
             </h3>
             <p className="app-text text-gray-500">
-              {feature.description}
+                {feature.description}
             </p>
           </div>
         ))}

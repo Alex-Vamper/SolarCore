@@ -38,10 +38,10 @@ const Testimonials = () => {
     <section className="py-16 px-4">
       {/* Headings */}
       <div className="text-center mb-12">
-        <h1 className="app-text text-3xl font-bold mb-3">
+        <h1 className="app-heading font-bold mb-3">
           A Smarter Home is a Better Home
         </h1>
-        <p className="text-gray-600">
+        <p className="app-text text-gray-600">
           Hear what our clients have to say about their SolarCore experience.
         </p>
       </div>
@@ -59,14 +59,14 @@ const Testimonials = () => {
           </div>
 
           {/* Quote */}
-          <p className="text-gray-700 mb-4 leading-relaxed">
+          <p className="app-text text-gray-700 mb-4 leading-relaxed">
             {active.quote}
           </p>
 
           {/* Author + Location */}
           <div>
-            <p className="font-bold text-gray-900">{active.author}</p>
-            <p className="text-gray-600 text-sm">{active.location}</p>
+            <p className="app-text font-bold text-gray-900">{active.author}</p>
+            <p className="app-text text-gray-600">{active.location}</p>
           </div>
         </div>
       </div>

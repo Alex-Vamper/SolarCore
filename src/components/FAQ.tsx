@@ -28,7 +28,7 @@ const FAQ = () => {
 
   return (
     <div className="bg-gray-200 flex flex-col items-center px-4 py-10">
-      <h1 className="app-text text-2xl font-bold mb-8">Frequently Asked Questions</h1>
+      <h1 className="app-text app-heading font-bold mb-8">Frequently Asked Questions</h1>
 
       <div className="w-full max-w-4xl space-y-5">
         {faqs.map((faq, index) => (
@@ -44,7 +44,7 @@ const FAQ = () => {
               onClick={() => toggleFAQ(index)}
             >
               <span>{faq.question}</span>
-              <span className="app-text text-gray-500 text-lg">{expandedIndex === index ? '−' : '+'}</span>
+              <span className="app-text text-gray-500">{expandedIndex === index ? '−' : '+'}</span>
             </button>
 
             {expandedIndex === index && (
