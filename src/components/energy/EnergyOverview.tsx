@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { UserSettings } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +10,30 @@ import {
   Zap, 
   Battery,
   Calendar,
-  Clock
+  Clock,
+  AlertCircle,
+  Settings
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function EnergyOverview({ energyData }) {
   const [timeFilter, setTimeFilter] = useState("today");
+  const [userSettings, setUserSettings] = useState(null);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      try {
+        const settings = await UserSettings.list();
+        if (settings && settings.length > 0) {
+          setUserSettings(settings[0]);
+        }
+      } catch (error) {
+        console.error('Error loading user settings:', error);
+      }
+    };
+    loadUserSettings();
+  }, []);
   
   const data = energyData || {
     solar_percentage: 0,
@@ -22,6 +42,19 @@ export default function EnergyOverview({ energyData }) {
     current_usage: 0,
     daily_usage: 0,
     cost_savings: 0
+  };
+
+  const powerSource = userSettings?.power_source || 'grid_only';
+  const hasSolarId = userSettings?.solar_system_id;
+  const hasGridId = userSettings?.grid_meter_id;
+  
+  // Adjust data based on power source configuration
+  const adjustedData = {
+    ...data,
+    solar_percentage: powerSource === 'grid_only' ? 0 : data.solar_percentage,
+    grid_percentage: powerSource === 'solar_only' ? 0 : data.grid_percentage,
+    battery_level: powerSource === 'grid_only' ? 0 : data.battery_level,
+    cost_savings: powerSource === 'grid_only' ? 0 : data.cost_savings
   };
 
   const getUsageByFilter = () => {
@@ -92,72 +125,133 @@ export default function EnergyOverview({ energyData }) {
         </CardContent>
       </Card>
 
-      {/* Power Source Split */}
-      <Card className="glass-card border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <Sun className="w-5 h-5 text-yellow-600" />
-            Power Source Split
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sun className="w-4 h-4 text-yellow-500" />
-                <span className="font-medium font-inter">Solar</span>
+      {/* Power Source Split - Only show relevant sources */}
+      {powerSource !== 'no_digital' ? (
+        <Card className="glass-card border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg font-inter">
+              <Sun className="w-5 h-5 text-yellow-600" />
+              Power Source Split
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Show warnings for missing system IDs */}
+            {powerSource !== 'grid_only' && !hasSolarId && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+                <p className="text-sm text-yellow-800 font-inter flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  Solar System ID not configured. 
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto text-yellow-800 underline" 
+                    onClick={() => navigate('/app/settings')}
+                  >
+                    Configure in settings
+                  </Button>
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-20 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${data.solar_percentage}%` }}
-                  />
+            )}
+            {powerSource !== 'solar_only' && !hasGridId && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+                <p className="text-sm text-yellow-800 font-inter flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  Grid Meter ID not configured. 
+                  <Button 
+                    variant="link" 
+                    className="p-0 h-auto text-yellow-800 underline" 
+                    onClick={() => navigate('/app/settings')}
+                  >
+                    Configure in settings
+                  </Button>
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {/* Only show solar if not grid-only */}
+              {powerSource !== 'grid_only' && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sun className="w-4 h-4 text-yellow-500" />
+                    <span className="font-medium font-inter">Solar</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${adjustedData.solar_percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-yellow-600 w-12 text-right">
+                      {adjustedData.solar_percentage}%
+                    </span>
+                  </div>
                 </div>
-                <span className="text-sm font-bold text-yellow-600 w-12 text-right">
-                  {data.solar_percentage}%
-                </span>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-blue-500" />
-                <span className="font-medium font-inter">Grid</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-20 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${data.grid_percentage}%` }}
-                  />
+              )}
+              
+              {/* Only show grid if not solar-only */}
+              {powerSource !== 'solar_only' && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-blue-500" />
+                    <span className="font-medium font-inter">Grid</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${adjustedData.grid_percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-blue-600 w-12 text-right">
+                      {adjustedData.grid_percentage}%
+                    </span>
+                  </div>
                 </div>
-                <span className="text-sm font-bold text-blue-600 w-12 text-right">
-                  {data.grid_percentage}%
-                </span>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Battery className="w-4 h-4 text-green-500" />
-                <span className="font-medium font-inter">Battery</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-20 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${data.battery_level}%` }}
-                  />
+              )}
+              
+              {/* Only show battery if not grid-only */}
+              {powerSource !== 'grid_only' && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Battery className="w-4 h-4 text-green-500" />
+                    <span className="font-medium font-inter">Battery</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${adjustedData.battery_level}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-bold text-green-600 w-12 text-right">
+                      {adjustedData.battery_level}%
+                    </span>
+                  </div>
                 </div>
-                <span className="text-sm font-bold text-green-600 w-12 text-right">
-                  {data.battery_level}%
-                </span>
-              </div>
+              )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="glass-card border-0 shadow-lg">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+            <h3 className="font-semibold text-gray-900 font-inter mb-2">No Digital Energy System</h3>
+            <p className="text-sm text-gray-600 font-inter mb-4">
+              Digital energy monitoring is not available for your setup.
+            </p>
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={() => navigate('/app/settings')}
+            >
+              <Settings className="w-4 h-4" />
+              Configure Power Source
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Usage Alerts */}
       <Card className="glass-card border-0 shadow-lg">

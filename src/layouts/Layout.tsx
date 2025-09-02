@@ -1,5 +1,6 @@
 //src/layouts/Layout.tsx
 import * as React from "react";
+import { useEffect } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,8 @@ import AIAssistantButton from "@/components/ai/AIAssistantButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import LaunchGate from "@/components/LaunchGate";
 import PostLaunchSplash from "@/components/PostLaunchSplash";  // 👈 import splash
+import { useSecurityState } from "@/hooks/useSecurityState";
+import { useCrossSystemSync } from "@/hooks/useCrossSystemSync";
 import solarcore from "../assets/SolarCore-1.svg";
 
 const navigationItems = [
@@ -178,6 +181,10 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
+  // Initialize global hooks
+  useSecurityState(); // Initialize security state listener globally
+  useCrossSystemSync(); // Initialize cross-system synchronization
+  
   // LaunchGate config
   const launchIso =
     import.meta.env.VITE_LAUNCH_DATE ?? "2025-09-27T00:00:00+01:00";

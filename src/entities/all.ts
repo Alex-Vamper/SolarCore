@@ -6,3 +6,4 @@ export { SafetySystem } from './SafetySystem';
 export { Room } from './Room';
 export { VoiceCommand } from './VoiceCommand';
 export { VoiceResponseAudio } from './VoiceResponseAudio';
+export { PowerSystem } from './PowerSystem';

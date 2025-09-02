@@ -1,5 +1,6 @@
 import * as React from "react";
-
+import { useState, useEffect } from "react";
+import { UserSettings } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +10,28 @@ import {
   Battery, 
   TrendingUp, 
   Leaf,
-  DollarSign
+  DollarSign,
+  AlertCircle
 } from "lucide-react";
 
 export default function EnergyOverview({ energyData }) {
+  const [userSettings, setUserSettings] = useState(null);
+  
+  // Load user settings to check power source
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      try {
+        const settings = await UserSettings.list();
+        if (settings && settings.length > 0) {
+          setUserSettings(settings[0]);
+        }
+      } catch (error) {
+        console.error('Error loading user settings:', error);
+      }
+    };
+    loadUserSettings();
+  }, []);
+
   // Provide default values if energyData is null or undefined
   const defaultEnergyData = {
     solar_percentage: 0,
@@ -24,6 +43,18 @@ export default function EnergyOverview({ energyData }) {
   };
 
   const data = energyData || defaultEnergyData;
+  const powerSource = userSettings?.power_source || 'grid_only';
+  const hasSolarId = userSettings?.solar_system_id;
+  const hasGridId = userSettings?.grid_meter_id;
+  
+  // Adjust data based on power source
+  const adjustedData = {
+    ...data,
+    solar_percentage: powerSource === 'grid_only' ? 0 : data.solar_percentage,
+    grid_percentage: powerSource === 'solar_only' ? 0 : data.grid_percentage,
+    battery_level: powerSource === 'grid_only' ? 0 : data.battery_level,
+    cost_savings: powerSource === 'grid_only' ? 0 : data.cost_savings
+  };
 
   const getSolarColor = (percentage) => {
     if (percentage >= 70) return "text-green-600";
@@ -37,48 +68,79 @@ export default function EnergyOverview({ energyData }) {
     return "bg-red-500";
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Power Source Status */}
+  // Don't show energy dashboard if no digital power source
+  if (powerSource === 'no_digital') {
+    return (
       <Card className="glass-card border-0 shadow-lg">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-              <Sun className="w-4 h-4 text-white" />
-            </div>
-            Power Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-600 font-inter">Solar</span>
-                <span className={`text-sm font-bold ${getSolarColor(data.solar_percentage)}`}>
-                  {data.solar_percentage}%
-                </span>
-              </div>
-              <Progress value={data.solar_percentage} className="h-2 bg-gray-200" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-600 font-inter">Grid</span>
-                <span className="text-sm font-bold text-blue-600">
-                  {data.grid_percentage}%
-                </span>
-              </div>
-              <Progress value={data.grid_percentage} className="h-2 bg-gray-200" />
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 pt-2">
-            <div className={`w-3 h-3 rounded-full ${getBatteryColor(data.battery_level)}`}></div>
-            <span className="text-sm font-medium text-gray-600 font-inter">
-              Battery: {data.battery_level}%
-            </span>
-          </div>
+        <CardContent className="p-6 text-center">
+          <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+          <h3 className="font-semibold text-gray-900 font-inter mb-2">No Digital Energy System</h3>
+          <p className="text-sm text-gray-600 font-inter">
+            Digital energy monitoring is not available for your setup. Please configure your power source in settings to enable energy tracking.
+          </p>
         </CardContent>
       </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Power Source Status - Only show if has solar or mixed */}
+      {(powerSource === 'solar_only' || powerSource === 'solar_grid') && (
+        <Card className="glass-card border-0 shadow-lg">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg font-inter">
+              <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                <Sun className="w-4 h-4 text-white" />
+              </div>
+              Power Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!hasSolarId && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+                <p className="text-sm text-yellow-800 font-inter flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  Solar System ID not configured. Please add it in settings for accurate monitoring.
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              {powerSource !== 'grid_only' && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-600 font-inter">Solar</span>
+                    <span className={`text-sm font-bold ${getSolarColor(adjustedData.solar_percentage)}`}>
+                      {adjustedData.solar_percentage}%
+                    </span>
+                  </div>
+                  <Progress value={adjustedData.solar_percentage} className="h-2 bg-gray-200" />
+                </div>
+              )}
+              {powerSource !== 'solar_only' && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-600 font-inter">Grid</span>
+                    <span className="text-sm font-bold text-blue-600">
+                      {adjustedData.grid_percentage}%
+                    </span>
+                  </div>
+                  <Progress value={adjustedData.grid_percentage} className="h-2 bg-gray-200" />
+                </div>
+              )}
+            </div>
+            
+            {powerSource !== 'grid_only' && (
+              <div className="flex items-center gap-2 pt-2">
+                <div className={`w-3 h-3 rounded-full ${getBatteryColor(adjustedData.battery_level)}`}></div>
+                <span className="text-sm font-medium text-gray-600 font-inter">
+                  Battery: {adjustedData.battery_level}%
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Energy Usage */}
       <Card className="glass-card border-0 shadow-lg">
