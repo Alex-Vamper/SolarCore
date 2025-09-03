@@ -166,31 +166,16 @@ export default function Settings() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="app-text font-medium text-gray-700">Total Rooms</Label>
-                <div className="app-text text-2xl font-bold text-gray-900">
-                  {userSettings?.total_rooms || 0}
-                </div>
-              </div>
-              <div>
-                <Label className="app-text font-medium text-gray-700">Solar Domes</Label>
-                <div className="app-text text-2xl font-bold text-gray-900">
-                  {userSettings?.total_domes || 0}
-                </div>
-              </div>
-            </div>
-            <div>
-              <Label className="app-text font-medium text-gray-700">Energy Mode</Label>
-              <select
-                value={userSettings?.energy_mode || "auto_switch"}
-                onChange={(e) => handleSaveSettings({ energy_mode: e.target.value })}
-                className="w-full mt-1 p-2 border border-gray-300 rounded-lg bg-white app-text"
-              >
-                <option value="solar_only">Solar Only</option>
-                <option value="grid_only">Grid Only</option>
-                <option value="auto_switch">Auto Switch</option>
-              </select>
+            <Button
+              onClick={() => navigate("/app/advanced-system-settings")}
+              className="w-full app-text"
+            >
+              Advanced System Settings
+            </Button>
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <p className="app-text text-blue-800">
+                Configure your power source type, system IDs, and energy settings.
+              </p>
             </div>
           </CardContent>
         </Card>

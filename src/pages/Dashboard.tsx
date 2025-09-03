@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
 import EnergyOverview from "../components/dashboard/EnergyOverview";
+import PowerStatus from "../components/dashboard/PowerStatus";
 import QuickActions from "../components/dashboard/QuickActions";
 import SafetyStatus from "../components/dashboard/SafetyStatus";
 import RoomBox from "../components/automation/RoomBox";
@@ -11,6 +12,7 @@ import RoomBox from "../components/automation/RoomBox";
 export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [userSettings, setUserSettings] = useState(null);
   const [energyData, setEnergyData] = useState(null);
   const [safetyData, setSafetyData] = useState([]);
   const [quickAccessRooms, setQuickAccessRooms] = useState([]);
@@ -26,15 +28,17 @@ export default function Dashboard() {
       const currentUser = await User.me();
       setUser(currentUser);
 
-      const [energyResult, safetyResult, roomsResult] = await Promise.all([
+      const [energyResult, safetyResult, roomsResult, settingsResult] = await Promise.all([
         EnergySystem.filter({ created_by: currentUser.email }),
         SafetySystem.filter({ created_by: currentUser.email }),
-        Room.filter({ created_by: currentUser.email }, 'created_at', 'desc')
+        Room.filter({ created_by: currentUser.email }, 'created_at', 'desc'),
+        UserSettings.list()
       ]);
       
       setEnergyData(energyResult[0] || null);
       setSafetyData(safetyResult);
       setQuickAccessRooms(roomsResult.slice(0, 3)); // Show top 3 rooms for quick access
+      setUserSettings(settingsResult && settingsResult.length > 0 ? settingsResult[0] : null);
       
     } catch (error) {
       console.error("Error loading data:", error);
@@ -76,13 +80,16 @@ export default function Dashboard() {
       <div className="max-w-[1280px] mx-auto space-y-6">
         {/* Welcome Header */}
         <div className="text-center py-6">
-          <h1 className="text-2xl font-bold text-gray-900 font-inter">
+          <h1 className="app-heading text-2xl font-bold text-gray-900">
             Welcome back, {user?.full_name?.split(' ')[0] || 'User'}!
           </h1>
-          <p className="text-gray-600 font-inter mt-1">
+          <p className="app-text text-gray-600 mt-1">
             Your smart home is running smoothly
           </p>
         </div>
+
+        {/* Power Status Card */}
+        <PowerStatus userSettings={userSettings} energyData={energyData} />
 
         {/* Energy Overview */}
         <EnergyOverview energyData={energyData} />
@@ -93,7 +100,7 @@ export default function Dashboard() {
         {/* Quick Access Rooms */}
         {quickAccessRooms.length > 0 && (
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 font-inter">Quick Access Rooms</h3>
+            <h3 className="app-text font-semibold text-gray-900">Quick Access Rooms</h3>
             <div className="space-y-3">
               {quickAccessRooms.map((room: any) => (
                 <RoomBox key={room.id} room={room} dragHandleProps={null} />

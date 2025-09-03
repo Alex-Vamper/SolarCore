@@ -21,6 +21,7 @@ import ContactSupport from "@/pages/ContactSupport";
 import Feedback from "@/pages/Feedback";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Ander from "@/pages/Ander";
+import AdvancedSystemSettings from "@/pages/AdvancedSystemSettings";
 import OnboardingChecker from "@/components/onboarding/OnboardingChecker";
 
 const queryClient = new QueryClient();
@@ -116,6 +117,10 @@ const router = createBrowserRouter([
       {
         path: "ander",
         element: <Ander />
+      },
+      {
+        path: "advanced-system-settings",
+        element: <AdvancedSystemSettings />
       }
     ]
   },
