@@ -10,7 +10,6 @@ export interface UserSettings {
   voice_response_enabled?: boolean;
   energy_mode?: string;
   security_level?: string;
-  notification_preferences?: any;
   timezone?: string;
   theme_preference?: string;
   language?: string;
@@ -51,7 +50,6 @@ export class UserSettingsService {
         .upsert({
            ...settings,
            user_id: user.id,
-           notification_preferences: settings.notification_preferences as Json,
            emergency_contacts: settings.emergency_contacts as Json,
            ander_button_position: settings.ander_button_position as Json,
            // Set default ander_enabled to false for new users
@@ -67,7 +65,6 @@ export class UserSettingsService {
         ...data,
         building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
         power_source: data.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
-        notification_preferences: typeof (data as any).notification_preferences === 'object' ? (data as any).notification_preferences : {},
         emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {},
         ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 }
       };
@@ -92,7 +89,6 @@ export class UserSettingsService {
         ...item,
         building_type: item.building_type as "home" | "school" | "office" | "hospital" | "other",
         power_source: item.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
-        notification_preferences: typeof (item as any).notification_preferences === 'object' ? (item as any).notification_preferences : {},
         emergency_contacts: typeof (item as any).emergency_contacts === 'object' ? (item as any).emergency_contacts : {}
       }));
     } catch (error) {
@@ -111,7 +107,6 @@ export class UserSettingsService {
         .insert({
           ...settings,
           user_id: user.id,
-          notification_preferences: settings.notification_preferences as Json,
           emergency_contacts: settings.emergency_contacts as Json
         })
         .select()
@@ -122,7 +117,6 @@ export class UserSettingsService {
         ...data,
         building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
         power_source: data.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
-        notification_preferences: typeof (data as any).notification_preferences === 'object' ? (data as any).notification_preferences : {},
         emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {},
         ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 }
       };
@@ -135,9 +129,6 @@ export class UserSettingsService {
   static async update(id: string, settings: Partial<UserSettings>): Promise<UserSettings> {
     try {
       const updateData: any = { ...settings };
-      if (settings.notification_preferences) {
-        updateData.notification_preferences = settings.notification_preferences as Json;
-      }
       if (settings.emergency_contacts) {
         updateData.emergency_contacts = settings.emergency_contacts as Json;
       }
@@ -154,7 +145,6 @@ export class UserSettingsService {
         ...data,
         building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
         power_source: data.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
-        notification_preferences: typeof (data as any).notification_preferences === 'object' ? (data as any).notification_preferences : {},
         emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {},
         ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 }
       };

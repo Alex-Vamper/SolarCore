@@ -14,6 +14,288 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_ander_commands: {
+        Row: {
+          command_category: string
+          command_name: string
+          command_text: string
+          created_by: string
+          created_date: string
+          id: string
+          is_active: boolean
+          last_used: string | null
+          response_text: string
+          updated_date: string
+          usage_count: number
+        }
+        Insert: {
+          command_category?: string
+          command_name: string
+          command_text: string
+          created_by: string
+          created_date?: string
+          id?: string
+          is_active?: boolean
+          last_used?: string | null
+          response_text: string
+          updated_date?: string
+          usage_count?: number
+        }
+        Update: {
+          command_category?: string
+          command_name?: string
+          command_text?: string
+          created_by?: string
+          created_date?: string
+          id?: string
+          is_active?: boolean
+          last_used?: string | null
+          response_text?: string
+          updated_date?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
+      admin_credentials: {
+        Row: {
+          admin_name: string
+          created_by_name: string
+          created_date: string
+          id: string
+          keycode: string
+          uid: string
+          updated_date: string
+        }
+        Insert: {
+          admin_name: string
+          created_by_name: string
+          created_date?: string
+          id?: string
+          keycode: string
+          uid: string
+          updated_date?: string
+        }
+        Update: {
+          admin_name?: string
+          created_by_name?: string
+          created_date?: string
+          id?: string
+          keycode?: string
+          uid?: string
+          updated_date?: string
+        }
+        Relationships: []
+      }
+      admin_devices: {
+        Row: {
+          building_name: string | null
+          created_by: string
+          created_date: string
+          device_class: string
+          device_id: string
+          device_name: string
+          device_type: string
+          flag_reason: string | null
+          flagged_at: string | null
+          flagged_by: string | null
+          id: string
+          is_flagged: boolean
+          room_name: string | null
+          status: string
+          updated_date: string
+          user_id: string | null
+        }
+        Insert: {
+          building_name?: string | null
+          created_by: string
+          created_date?: string
+          device_class: string
+          device_id: string
+          device_name: string
+          device_type: string
+          flag_reason?: string | null
+          flagged_at?: string | null
+          flagged_by?: string | null
+          id?: string
+          is_flagged?: boolean
+          room_name?: string | null
+          status?: string
+          updated_date?: string
+          user_id?: string | null
+        }
+        Update: {
+          building_name?: string | null
+          created_by?: string
+          created_date?: string
+          device_class?: string
+          device_id?: string
+          device_name?: string
+          device_type?: string
+          flag_reason?: string | null
+          flagged_at?: string | null
+          flagged_by?: string | null
+          id?: string
+          is_flagged?: boolean
+          room_name?: string | null
+          status?: string
+          updated_date?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      admin_flags: {
+        Row: {
+          created_by: string
+          created_date: string
+          description: string | null
+          flag_type: string
+          id: string
+          reason: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          target_id: string
+          updated_date: string
+        }
+        Insert: {
+          created_by: string
+          created_date?: string
+          description?: string | null
+          flag_type: string
+          id?: string
+          reason: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_id: string
+          updated_date?: string
+        }
+        Update: {
+          created_by?: string
+          created_date?: string
+          description?: string | null
+          flag_type?: string
+          id?: string
+          reason?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          target_id?: string
+          updated_date?: string
+        }
+        Relationships: []
+      }
+      admin_notifications: {
+        Row: {
+          created_by: string
+          created_date: string
+          delivery_status: string
+          id: string
+          message: string
+          notification_type: string
+          scheduled_at: string | null
+          sent_at: string | null
+          sent_count: number
+          target_audience: string
+          title: string
+          updated_date: string
+        }
+        Insert: {
+          created_by: string
+          created_date?: string
+          delivery_status?: string
+          id?: string
+          message: string
+          notification_type?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          target_audience?: string
+          title: string
+          updated_date?: string
+        }
+        Update: {
+          created_by?: string
+          created_date?: string
+          delivery_status?: string
+          id?: string
+          message?: string
+          notification_type?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          target_audience?: string
+          title?: string
+          updated_date?: string
+        }
+        Relationships: []
+      }
+      admin_users: {
+        Row: {
+          created_date: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          role: string
+          updated_date: string
+          user_id: string
+        }
+        Insert: {
+          created_date?: string
+          email: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_date?: string
+          user_id: string
+        }
+        Update: {
+          created_date?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          role?: string
+          updated_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      app_users: {
+        Row: {
+          created_date: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          subscription_plan: string
+          updated_date: string
+          user_id: string
+        }
+        Insert: {
+          created_date?: string
+          email: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          subscription_plan?: string
+          updated_date?: string
+          user_id: string
+        }
+        Update: {
+          created_date?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          subscription_plan?: string
+          updated_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       energy_systems: {
         Row: {
           battery_level: number | null
@@ -427,7 +709,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_superadmin: {
+        Args: { user_email: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

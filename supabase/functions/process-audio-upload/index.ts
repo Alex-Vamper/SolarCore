@@ -31,8 +31,24 @@ serve(async (req) => {
       );
     }
 
-    // Verify admin password if admin mode
-    if (isAdmin && adminPassword !== 'Alex-Ander-1.05') {
+    // Get authenticated user to check if they're a superadmin
+    const authHeader = req.headers.get('Authorization');
+    let isSuperAdmin = false;
+    let userEmail = '';
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabaseClient.auth.getUser(token);
+      
+      if (user) {
+        userEmail = user.email || '';
+        // Check if user is a superadmin
+        isSuperAdmin = ['samuelalexander005@gmail.com', 'samuelalexander851@gmail.com', 'ghostrevamper@gmail.com'].includes(userEmail);
+      }
+    }
+
+    // Verify admin password if admin mode (legacy support)
+    if (isAdmin && adminPassword !== 'Alex-Ander-1.05' && !isSuperAdmin) {
       return new Response(
         JSON.stringify({ error: 'Invalid admin password' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -87,9 +103,9 @@ serve(async (req) => {
       );
     }
 
-    // If admin upload, propagate to all users (global effect)
-    if (isAdmin) {
-      console.log('Admin upload detected, propagating globally...');
+    // If superadmin upload, propagate to all users (global effect)
+    if (isAdmin || isSuperAdmin) {
+      console.log('Superadmin upload detected, propagating globally...');
       
       // Get the command details
       const { data: commandData, error: commandError } = await supabaseClient
@@ -102,14 +118,14 @@ serve(async (req) => {
         // Update all matching commands across all users
         const { error: globalUpdateError } = await supabaseClient
           .from('voice_commands')
-          .update({ audio_url: audioUrl })
+          .update({ audio_url: audioUrl, is_global: true })
           .eq('command_category', commandData.command_category)
           .eq('command_name', commandData.command_name);
 
         if (globalUpdateError) {
           console.error('Global update error:', globalUpdateError);
         } else {
-          console.log('Successfully propagated audio to all users');
+          console.log('Successfully propagated audio to all users from superadmin:', userEmail);
         }
       }
     }

@@ -4,11 +4,17 @@ export default class VoiceCommandProcessor {
   private recognition: any;
   private isListening: boolean;
   private currentAudio: HTMLAudioElement | null;
+  private commands: VoiceCommand[];
 
-  constructor() {
+  constructor(commands: VoiceCommand[] = []) {
     this.recognition = null;
     this.isListening = false;
     this.currentAudio = null;
+    this.commands = commands;
+  }
+
+  setCommands(commands: VoiceCommand[]) {
+    this.commands = commands;
   }
 
   startListening(timeoutMs = 8000) {
@@ -68,7 +74,8 @@ export default class VoiceCommandProcessor {
 
   async processCommand(transcript) {
     try {
-      const commands = await VoiceCommand.list();
+      // Use commands from constructor or fetch if not provided
+      const commands = this.commands.length > 0 ? this.commands : await VoiceCommand.list();
       const matchedCommand = this.findBestMatch(transcript.toLowerCase(), commands);
       
       if (matchedCommand) {

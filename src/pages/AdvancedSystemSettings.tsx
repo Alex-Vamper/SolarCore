@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle, Zap, Grid3x3, CheckCircle, Sun, Battery, WifiOff, ArrowLeft, Save } from "lucide-react";
 import { PowerSystem } from "@/entities/PowerSystem";
-import { UserSettings } from "@/entities/all";
+import { UserSettingsService } from "@/entities/UserSettings";
 import { toast } from "sonner";
 
 const ENERGY_SOURCES = [
@@ -48,7 +48,7 @@ export default function AdvancedSystemSettings() {
   const loadSettings = async () => {
     setIsLoading(true);
     try {
-      const settings = await UserSettings.list();
+      const settings = await UserSettingsService.list();
       if (settings && settings.length > 0) {
         const userSetting = settings[0];
         setUserSettings(userSetting);
@@ -122,7 +122,7 @@ export default function AdvancedSystemSettings() {
         grid_meter_id: skipGrid ? null : gridMeterId,
       };
 
-      await UserSettings.update(userSettings.id, updatedSettings);
+      await UserSettingsService.update(userSettings.id, updatedSettings);
       
       // Show appropriate warnings
       if (skipSolar && (energySource === 'solar_only' || energySource === 'solar_grid')) {
