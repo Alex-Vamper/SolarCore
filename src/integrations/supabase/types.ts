@@ -810,6 +810,92 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_account: {
+        Args: {
+          account_name: string
+          account_uid: string
+          creator_id: string
+          creator_name: string
+        }
+        Returns: {
+          admin_name: string
+          created_at: string
+          created_by: string
+          created_by_name: string
+          id: string
+          status: string
+          uid: string
+          updated_at: string
+        }[]
+      }
+      admin_delete_account: {
+        Args: { account_id: string }
+        Returns: boolean
+      }
+      admin_get_account_status: {
+        Args: { account_uid: string }
+        Returns: string
+      }
+      admin_get_audit_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          action: string
+          created_at: string
+          details: Json
+          id: string
+          performed_by: string
+          performed_by_name: string
+          target_id: string
+          target_identifier: string
+          target_type: string
+        }[]
+      }
+      admin_get_superadmin_id: {
+        Args: { superadmin_email: string }
+        Returns: string
+      }
+      admin_list_accounts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          admin_name: string
+          created_at: string
+          created_by: string
+          created_by_name: string
+          id: string
+          status: string
+          uid: string
+          updated_at: string
+        }[]
+      }
+      admin_log_action: {
+        Args: {
+          log_action: string
+          log_details?: Json
+          log_performed_by?: string
+          log_performed_by_name?: string
+          log_target_id?: string
+          log_target_identifier?: string
+          log_target_type: string
+        }
+        Returns: boolean
+      }
+      admin_reset_keycode: {
+        Args: { account_id: string; new_keycode: string }
+        Returns: boolean
+      }
+      admin_update_account_status: {
+        Args: { account_id: string; new_status: string }
+        Returns: {
+          admin_name: string
+          created_at: string
+          created_by: string
+          created_by_name: string
+          id: string
+          status: string
+          uid: string
+          updated_at: string
+        }[]
+      }
       claim_parent_device: {
         Args: { p_esp_id: string }
         Returns: Json
