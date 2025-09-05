@@ -145,7 +145,6 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
 
   const renderSimplifiedLight = () => {
     const moods = getMoodsForSeries(appliance.series);
-    const ApplianceIcon = getApplianceIcon(appliance.type);
     
     const getCurrentMoodId = () => {
       if (!appliance.status) return "off";
@@ -165,17 +164,9 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
                 <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
                     <GripVertical className="w-5 h-5 text-gray-400" />
                 </div>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  appliance.status ? 'bg-blue-100' : 'bg-gray-200'
-                }`}>
-                  <ApplianceIcon className={`w-5 h-5 ${appliance.status ? 'text-blue-600' : 'text-gray-500'}`} />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-inter">
+                <CardTitle className="flex items-center gap-3 text-lg font-inter">
                     <div className="font-semibold">{appliance.name}</div>
-                  </CardTitle>
-                  <p className="text-sm text-gray-500 font-inter">{appliance.series}</p>
-                </div>
+                </CardTitle>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -199,6 +190,7 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
               </AlertDialogContent>
             </AlertDialog>
           </div>
+           <p className="text-sm text-gray-500 font-inter ml-11 -mt-2">{appliance.series}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
