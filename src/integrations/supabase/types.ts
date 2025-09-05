@@ -823,6 +823,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_device_types: {
+        Args: Record<PropertyKey, never>
+        Returns: unknown[]
+      }
       is_owner_parent: {
         Args: { parent_uuid: string }
         Returns: boolean

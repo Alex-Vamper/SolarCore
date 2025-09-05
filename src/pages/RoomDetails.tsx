@@ -504,6 +504,7 @@ export default function RoomDetails() {
             onClose={() => setShowAddDeviceModal(false)}
             onSave={handleAddDevice}
             roomName={room.name}
+            roomId={room.id}
           />
         </div>
       </div>

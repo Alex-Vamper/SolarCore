@@ -61,14 +61,14 @@ export default function AddDeviceModal({ isOpen, onClose, onSave, roomName, room
   useEffect(() => {
     const loadDeviceTypes = async () => {
       // Direct query to admin.device_types table
-      const { data, error } = await supabase.rpc('get_device_types');
+      const { data, error } = await supabase.rpc('get_device_types') as any;
 
       if (error) {
         console.error('Error loading device types:', error);
         // Fallback to hardcoded types if RPC fails
         setDeviceTypes([]);
       } else {
-        setDeviceTypes(data || []);
+        setDeviceTypes(Array.isArray(data) ? data : []);
       }
     };
 
@@ -92,16 +92,16 @@ export default function AddDeviceModal({ isOpen, onClose, onSave, roomName, room
       // Step 1: Claim the parent device (or get existing)
       const { data: claimResult } = await supabase.rpc('claim_parent_device', {
         p_esp_id: deviceData.esp_id.trim()
-      });
+      }) as any;
 
-      if (!claimResult.success) {
-        if (claimResult.code === 'UNREGISTERED_DEVICE') {
+      if (!claimResult?.success) {
+        if (claimResult?.code === 'UNREGISTERED_DEVICE') {
           toast({
             title: "Unregistered Device",
             description: "This device ID is not registered. Please contact support.",
             variant: "destructive",
           });
-        } else if (claimResult.code === 'ALREADY_CLAIMED') {
+        } else if (claimResult?.code === 'ALREADY_CLAIMED') {
           toast({
             title: "Device Already Claimed",
             description: "This device is already claimed by another account.",
@@ -117,14 +117,13 @@ export default function AddDeviceModal({ isOpen, onClose, onSave, roomName, room
         p_parent_id: claimResult.parent_id,
         p_device_type_id: deviceData.device_type_id,
         p_device_name: deviceData.name.trim(),
-        p_room_id: roomId,
         p_initial_state: { power: 'off' }
-      });
+      }) as any;
 
-      if (!childResult.success) {
+      if (!childResult?.success) {
         toast({
           title: "Error Creating Device",
-          description: childResult.message,
+          description: childResult?.message || "Failed to create device",
           variant: "destructive",
         });
         setIsLoading(false);
