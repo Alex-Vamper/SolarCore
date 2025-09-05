@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { User, UserSettings, VoiceCommand } from "@/entities/all";
+import { supabase } from '@/integrations/supabase/client';
 import SubscriptionModal from '../components/subscriptions/SubscriptionModal';
 import AdminPasswordModal from '../components/voice/AdminPasswordModal';
 import AudioUploadModal from '../components/voice/AudioUploadModal';
@@ -72,6 +73,8 @@ export default function Ander() {
   const [showCommandEditor, setShowCommandEditor] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const logoClickTimer = useRef(null);
+  const [isValidatingDeviceId, setIsValidatingDeviceId] = useState(false);
+  const [deviceIdError, setDeviceIdError] = useState('');
 
   const loadAllCommands = async () => {
     try {
@@ -314,6 +317,36 @@ export default function Ander() {
     }
   };
 
+  const validateAndUpdateDeviceId = async (deviceId: string) => {
+    const upperDeviceId = deviceId.toUpperCase();
+    setAnderDeviceId(upperDeviceId);
+    
+    if (!upperDeviceId) {
+      setDeviceIdError('');
+      await handleSettingUpdate({ ander_device_id: '' });
+      return;
+    }
+
+    // Simple validation for Ander IA device format
+    if (!upperDeviceId.startsWith('SC-GID-')) {
+      setDeviceIdError('Invalid format. Ander IA device IDs start with SC-GID-');
+      return;
+    }
+
+    // Extract the number part and validate it's in range
+    const numberPart = upperDeviceId.replace('SC-GID-', '');
+    const deviceNumber = parseInt(numberPart, 10);
+    
+    if (isNaN(deviceNumber) || deviceNumber < 1 || deviceNumber > 100 || numberPart.length !== 4) {
+      setDeviceIdError('Invalid device ID. Use format SC-GID-0001 to SC-GID-0100');
+      return;
+    }
+
+    setDeviceIdError('');
+    await handleSettingUpdate({ ander_device_id: upperDeviceId });
+    toast.success('Device ID validated successfully');
+  };
+
   const handleVoiceResponseToggle = async (enabled) => {
     setVoiceResponseEnabled(enabled);
     await handleSettingUpdate({ voice_response_enabled: enabled });
@@ -498,18 +531,25 @@ export default function Ander() {
           </CardHeader>
           <CardContent>
               <div>
-                <Label htmlFor="anderDeviceId" className="font-inter">Ander Device ID</Label>
+                <Label htmlFor="anderDeviceId" className="font-inter">Ander ESP ID (e.g., SC-GID-0001)</Label>
                 <Input
                   id="anderDeviceId"
-                  placeholder="Enter your physical device ID"
+                  placeholder="Enter your Ander IA device ID"
                   value={anderDeviceId}
-                  onChange={(e) => {
-                      setAnderDeviceId(e.target.value);
-                      handleSettingUpdate({ ander_device_id: e.target.value });
-                  }}
-                  className="mt-1 font-inter"
+                  onChange={(e) => validateAndUpdateDeviceId(e.target.value)}
+                  className="mt-1 font-inter uppercase"
+                  disabled={isValidatingDeviceId}
                 />
-                <p className="text-xs text-gray-500 mt-2 font-inter">This ID connects the app to your SolarCore hardware.</p>
+                {deviceIdError && (
+                  <p className="text-xs text-red-600 mt-1 font-inter flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {deviceIdError}
+                  </p>
+                )}
+                {isValidatingDeviceId && (
+                  <p className="text-xs text-blue-600 mt-1 font-inter">Validating ESP ID...</p>
+                )}
+                <p className="text-xs text-gray-500 mt-2 font-inter">This ESP ID connects the app to your Ander IA hardware device.</p>
               </div>
           </CardContent>
         </Card>
