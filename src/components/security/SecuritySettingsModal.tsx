@@ -11,18 +11,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { User, Room, SafetySystem } from "@/entities/all";
 import {
   Shield,
   Settings,
   Power,
   Clock,
-  Trash2
+  Trash2,
+  AlertCircle
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
   const [securitySettings, setSecuritySettings] = useState({
     door_security_id: "",
+    door_security_series: "",
     auto_shutdown_enabled: false,
     shutdown_exceptions: [],
     schedule_enabled: false,
@@ -32,6 +43,8 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
   const [userDevices, setUserDevices] = useState([]);
   const [userSafetySystems, setUserSafetySystems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isValidating, setIsValidating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
@@ -111,15 +124,38 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="app-text text-blue-800 flex items-center gap-2">
+                    <AlertCircle className="app-icon" />
+                    Enter the ESP ID (e.g., SC-GID-0001) to claim your security device
+                  </p>
+                </div>
+
                 <div>
-                  <Label className="app-text text-sm font-medium text-gray-700">Door Security ID</Label>
+                  <Label className="app-text text-sm font-medium text-gray-700">ESP Device ID</Label>
                   <Input
-                    placeholder="Enter hardware ID for door lock system"
+                    placeholder="e.g., SC-GID-0001"
                     value={securitySettings.door_security_id}
-                    onChange={(e) => setSecuritySettings(prev => ({ ...prev, door_security_id: e.target.value }))}
+                    onChange={(e) => setSecuritySettings(prev => ({ ...prev, door_security_id: e.target.value.toUpperCase() }))}
                     className="app-text mt-1"
                   />
-                  <p className="app-text text-xs text-gray-500 mt-1">Hardware identifier for the main door security system</p>
+                </div>
+
+                <div>
+                  <Label className="app-text text-sm font-medium text-gray-700">Security Model</Label>
+                  <Select
+                    value={securitySettings.door_security_series}
+                    onValueChange={(value) => setSecuritySettings(prev => ({ ...prev, door_security_series: value }))}
+                  >
+                    <SelectTrigger className="app-text w-full mt-1">
+                      <SelectValue placeholder="Select security model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="S-Core Lite">S-Core Lite</SelectItem>
+                      <SelectItem value="S-Core Bio">S-Core Bio (Fingerprint)</SelectItem>
+                      <SelectItem value="S-Core Ultra">S-Core Ultra (Face Recognition)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex items-center justify-between">

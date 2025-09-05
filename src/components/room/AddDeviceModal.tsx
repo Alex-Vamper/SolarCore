@@ -35,14 +35,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const DEVICE_CATALOG = [
-  { id: 'lighting', name: 'Smart Lighting', icon: Lightbulb },
-  { id: 'socket', name: 'Smart Socket', icon: Zap },
+  { id: 'smart_lighting', name: 'Smart Lighting', icon: Lightbulb },
+  { id: 'smart_socket', name: 'Smart Socket', icon: Zap },
   { id: 'security', name: 'Smart Lock', icon: Lock },
-  { id: 'climate', name: 'Smart HVAC', icon: Snowflake },
-  { id: 'fan', name: 'Smart Fan', icon: Fan },
-  { id: 'curtain', name: 'Smart Shading', icon: Layers },
-  { id: 'sensor', name: 'Sensors', icon: Thermometer },
-  { id: 'ai', name: 'AI Assistant', icon: Mic },
+  { id: 'smart_hvac', name: 'Smart HVAC', icon: Snowflake },
+  { id: 'smart_shading', name: 'Smart Shading', icon: Layers },
+  { id: 'smart_camera', name: 'Smart Camera', icon: Camera },
+  { id: 'motion_sensor', name: 'Motion Sensor', icon: Move },
+  { id: 'air_quality', name: 'Air Quality', icon: Wind },
 ];
 
 export default function AddDeviceModal({ isOpen, onClose, onSave, roomName, roomId }) {
