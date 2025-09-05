@@ -296,6 +296,77 @@ export type Database = {
         }
         Relationships: []
       }
+      child_devices: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          device_name: string | null
+          device_type_id: string
+          id: string
+          parent_id: string | null
+          state: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          device_name?: string | null
+          device_type_id: string
+          id?: string
+          parent_id?: string | null
+          state?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          device_name?: string | null
+          device_type_id?: string
+          id?: string
+          parent_id?: string | null
+          state?: Json
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "child_devices_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "parent_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          entity_id: string
+          entity_type: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       energy_systems: {
         Row: {
           battery_level: number | null
@@ -356,6 +427,36 @@ export type Database = {
           id?: number
           seen_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      parent_devices: {
+        Row: {
+          created_at: string | null
+          esp_id: string
+          id: string
+          is_demo: boolean | null
+          owner_account: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          esp_id: string
+          id?: string
+          is_demo?: boolean | null
+          owner_account: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          esp_id?: string
+          id?: string
+          is_demo?: boolean | null
+          owner_account?: string
+          status?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -709,9 +810,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_parent_device: {
+        Args: { p_esp_id: string }
+        Returns: Json
+      }
+      create_child_device: {
+        Args: {
+          p_device_name?: string
+          p_device_type_id: string
+          p_initial_state?: Json
+          p_parent_id: string
+        }
+        Returns: Json
+      }
+      is_owner_parent: {
+        Args: { parent_uuid: string }
+        Returns: boolean
+      }
       is_superadmin: {
         Args: { user_email: string }
         Returns: boolean
+      }
+      migrate_parent_to_production: {
+        Args: { p_canonical_child_id: string; p_parent_id: string }
+        Returns: Json
+      }
+      set_demo_mode: {
+        Args: { p_is_demo: boolean; p_parent_id: string }
+        Returns: Json
+      }
+      transfer_parent_ownership: {
+        Args: { p_new_owner: string; p_parent_id: string }
+        Returns: Json
+      }
+      update_child_state: {
+        Args: { p_child_id: string; p_new_state: Json }
+        Returns: Json
       }
     }
     Enums: {
