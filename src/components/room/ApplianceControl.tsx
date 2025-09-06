@@ -31,7 +31,8 @@ import {
   Power
 } from "lucide-react";
 
-const getApplianceIcon = (type) => {
+const getApplianceIcon = (type, name = '') => {
+  // Check by type first
   switch (type) {
     case 'smart_lighting': return Lightbulb;
     case 'smart_hvac': return Snowflake;
@@ -40,8 +41,20 @@ const getApplianceIcon = (type) => {
     case 'smart_camera': return Camera;
     case 'motion_sensor': return Move;
     case 'air_quality': return Wind;
-    default: return Lightbulb;
+    case 'smart_fan': return Fan;
   }
+  
+  // Check by name patterns
+  const nameLower = name.toLowerCase();
+  if (nameLower.includes('light') || nameLower.includes('lamp')) return Lightbulb;
+  if (nameLower.includes('fan')) return Fan;
+  if (nameLower.includes('ac') || nameLower.includes('air') || nameLower.includes('hvac')) return Snowflake;
+  if (nameLower.includes('shade') || nameLower.includes('blind') || nameLower.includes('curtain')) return Layers;
+  if (nameLower.includes('socket') || nameLower.includes('plug')) return Zap;
+  if (nameLower.includes('camera')) return Camera;
+  if (nameLower.includes('motion') || nameLower.includes('sensor')) return Move;
+  
+  return Lightbulb; // Default
 };
 
 const SIMPLIFIED_LIGHT_SERIES = [
@@ -81,7 +94,7 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
   };
 
   const renderStandardDevice = () => {
-    const ApplianceIcon = getApplianceIcon(appliance.type);
+    const ApplianceIcon = getApplianceIcon(appliance.type, appliance.name);
     return (
       <Card className="glass-card border-0 shadow-lg">
         <CardContent className="p-4">

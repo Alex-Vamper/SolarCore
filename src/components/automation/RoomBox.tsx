@@ -168,23 +168,6 @@ export default function RoomBox({ room, dragHandleProps }) {
                 )}
               </div>
               
-              {/* Show device details */}
-              {currentRoom.appliances && currentRoom.appliances.length > 0 && (
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  {currentRoom.appliances.slice(0, 3).map((device) => {
-                    const DeviceIcon = getDeviceIcon(device.type);
-                    return (
-                      <div key={device.id} className="flex items-center gap-1 text-xs text-gray-600">
-                        <DeviceIcon className="w-3 h-3" />
-                        <span>{device.series}</span>
-                      </div>
-                    );
-                  })}
-                  {currentRoom.appliances.length > 3 && (
-                    <span className="text-xs text-gray-500">+{currentRoom.appliances.length - 3} more</span>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
