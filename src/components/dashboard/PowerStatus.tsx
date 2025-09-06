@@ -116,7 +116,7 @@ export default function PowerStatus({ userSettings, energyData }: PowerStatusPro
               Battery: {adjustedData.battery_level}%
             </span>
             <div className="flex-1">
-              <Progress value={adjustedData.battery_level} className={`h-2 ${getBatteryColor(adjustedData.battery_level)}`} />
+              {/* The progress bar is now gone */}
             </div>
           </div>
         )}
