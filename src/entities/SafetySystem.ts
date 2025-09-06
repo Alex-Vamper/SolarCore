@@ -8,6 +8,9 @@ export interface SafetySystem {
   system_type: 'fire_detection' | 'window_rain' | 'gas_leak' | 'water_overflow';
   room_name: string;
   status?: string;
+  flame_status?: string;  // For fire detection: 'clear' or 'flames'
+  temperature_value?: number;  // Numerical temperature readings
+  smoke_percentage?: number;  // 0-100 percentage for smoke level
   last_triggered?: string;
   sensor_readings?: any;
   automation_settings?: any;
@@ -20,6 +23,25 @@ export class SafetySystemService {
     return this.list();
   }
 
+  static async get(id: string): Promise<SafetySystem | null> {
+    try {
+      const { data, error } = await supabase
+        .from('safety_systems')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return {
+        ...data,
+        system_type: data.system_type as "fire_detection" | "window_rain" | "gas_leak" | "water_overflow"
+      };
+    } catch (error) {
+      console.error('Error fetching safety system:', error);
+      return null;
+    }
+  }
+
   static async list(): Promise<SafetySystem[]> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -28,15 +50,16 @@ export class SafetySystemService {
       const { data, error } = await supabase
         .from('safety_systems')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data || []).map(item => ({
+      return data?.map(item => ({
         ...item,
         system_type: item.system_type as "fire_detection" | "window_rain" | "gas_leak" | "water_overflow",
         sensor_readings: typeof item.sensor_readings === 'object' ? item.sensor_readings : {},
         automation_settings: typeof item.automation_settings === 'object' ? item.automation_settings : {}
-      }));
+      })) || [];
     } catch (error) {
       console.error('Error fetching safety systems:', error);
       return [];
@@ -53,6 +76,9 @@ export class SafetySystemService {
         .insert({
           ...safetySystem,
           user_id: user.id,
+          flame_status: safetySystem.flame_status || 'clear',
+          temperature_value: safetySystem.temperature_value || 25,
+          smoke_percentage: safetySystem.smoke_percentage || 0,
           sensor_readings: safetySystem.sensor_readings as Json,
           automation_settings: safetySystem.automation_settings as Json
         })
@@ -115,7 +141,15 @@ export class SafetySystemService {
       throw error;
     }
   }
+
+  static async upsert(safetySystem: SafetySystem): Promise<SafetySystem> {
+    if (safetySystem.id) {
+      return this.update(safetySystem.id, safetySystem);
+    } else {
+      return this.create(safetySystem);
+    }
+  }
 }
 
-// Keep backward compatibility
+// Backwards compatibility
 export const SafetySystem = SafetySystemService;

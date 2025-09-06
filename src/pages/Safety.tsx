@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { User, SafetySystem, Room, UserSettings } from "@/entities/all";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Shield, AlertTriangle, CheckCircle } from "lucide-react";
@@ -39,11 +40,25 @@ export default function Safety() {
 
   const handleAddSystem = async (systemData) => {
     try {
-        await SafetySystem.create(systemData);
-        await loadData(); // Make sure to await loadData
-        setShowAddModal(false); // Close modal after successful creation
+        const newSystem = await SafetySystem.create(systemData);
+        await loadData();
+        setShowAddModal(false);
+        toast({
+          title: "Success",
+          description: `Safety system ${systemData.system_id} added successfully`,
+        });
+        
+        // Trigger event for synchronization
+        window.dispatchEvent(new CustomEvent('safetyStateChanged', { 
+          detail: { safetySystemId: newSystem.id } 
+        }));
     } catch(error) {
-        console.error("Error adding safety system", error)
+        console.error("Error adding safety system", error);
+        toast({
+          title: "Error",
+          description: "Failed to add safety system",
+          variant: "destructive"
+        });
     }
   }
 

@@ -563,39 +563,48 @@ export type Database = {
         Row: {
           automation_settings: Json | null
           created_at: string | null
+          flame_status: string | null
           id: string
           last_triggered: string | null
           room_name: string
           sensor_readings: Json | null
+          smoke_percentage: number | null
           status: string | null
           system_id: string
           system_type: string
+          temperature_value: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           automation_settings?: Json | null
           created_at?: string | null
+          flame_status?: string | null
           id?: string
           last_triggered?: string | null
           room_name: string
           sensor_readings?: Json | null
+          smoke_percentage?: number | null
           status?: string | null
           system_id: string
           system_type: string
+          temperature_value?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           automation_settings?: Json | null
           created_at?: string | null
+          flame_status?: string | null
           id?: string
           last_triggered?: string | null
           room_name?: string
           sensor_readings?: Json | null
+          smoke_percentage?: number | null
           status?: string | null
           system_id?: string
           system_type?: string
+          temperature_value?: number | null
           updated_at?: string | null
           user_id?: string
         }
