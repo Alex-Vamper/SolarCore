@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, SafetySystem, Room } from "@/entities/all";
+import { User, SafetySystem, Room, UserSettings } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Shield, AlertTriangle, CheckCircle } from "lucide-react";
@@ -40,7 +40,8 @@ export default function Safety() {
   const handleAddSystem = async (systemData) => {
     try {
         await SafetySystem.create(systemData);
-        loadData();
+        await loadData(); // Make sure to await loadData
+        setShowAddModal(false); // Close modal after successful creation
     } catch(error) {
         console.error("Error adding safety system", error)
     }
@@ -110,9 +111,26 @@ export default function Safety() {
     await new Promise(resolve => setTimeout(resolve, 2000));
   };
 
-  const handleSecuritySettings = () => {
-    console.log("Open security settings");
-    // Future: Open GlobalSecuritySettingsModal
+  const handleSecuritySettings = async (settings) => {
+    try {
+      // Save security settings to user settings
+      await UserSettings.upsert({
+        security_settings: {
+          ...settings,
+          door_security_id: settings.door_security_id || '',
+          door_security_series: settings.door_security_series || ''
+        }
+      });
+      
+      console.log("Security settings saved:", settings);
+      
+      // Trigger event for synchronization
+      window.dispatchEvent(new CustomEvent('securityModeChanged', { 
+        detail: { settings } 
+      }));
+    } catch (error) {
+      console.error("Error saving security settings:", error);
+    }
   };
 
   const getOverallStatus = () => {

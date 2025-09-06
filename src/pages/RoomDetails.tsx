@@ -295,6 +295,11 @@ export default function RoomDetails() {
 
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
+      
+      // Trigger update event for synchronization
+      window.dispatchEvent(new CustomEvent('applianceStateChanged', { 
+        detail: { roomId: room.id, applianceId } 
+      }));
     } catch (error) {
       console.error("Error updating appliance:", error);
     }

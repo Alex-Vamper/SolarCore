@@ -31,6 +31,7 @@ export interface UserSettings {
   power_source?: 'solar_only' | 'grid_only' | 'solar_grid' | 'no_digital';
   solar_system_id?: string;
   grid_meter_id?: string;
+  security_settings?: any;
   created_at?: string;
   updated_at?: string;
 }
@@ -52,6 +53,7 @@ export class UserSettingsService {
            user_id: user.id,
            emergency_contacts: settings.emergency_contacts as Json,
            ander_button_position: settings.ander_button_position as Json,
+           security_settings: settings.security_settings as Json,
            // Set default ander_enabled to false for new users
            ander_enabled: settings.ander_enabled ?? false
          }, {
@@ -131,6 +133,9 @@ export class UserSettingsService {
       const updateData: any = { ...settings };
       if (settings.emergency_contacts) {
         updateData.emergency_contacts = settings.emergency_contacts as Json;
+      }
+      if (settings.security_settings) {
+        updateData.security_settings = settings.security_settings as Json;
       }
 
       const { data, error } = await supabase

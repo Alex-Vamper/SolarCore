@@ -83,9 +83,47 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
     setIsLoading(false);
   };
 
-  const handleSave = () => {
-    onSave(securitySettings);
-    onClose();
+  const handleSave = async () => {
+    try {
+      // Validate ESP ID if provided
+      if (securitySettings.door_security_id) {
+        const { data: claimResult } = await supabase.rpc('claim_parent_device', {
+          p_esp_id: securitySettings.door_security_id.trim()
+        }) as any;
+
+        if (!claimResult?.success) {
+          if (claimResult?.code === 'UNREGISTERED_DEVICE') {
+            toast({
+              title: "Invalid Device ID",
+              description: "This device ID is not registered. Please check the ID and try again.",
+              variant: "destructive",
+            });
+            return;
+          } else if (claimResult?.code === 'ALREADY_CLAIMED' && claimResult?.message !== 'Device already claimed by you') {
+            toast({
+              title: "Device Already Claimed",
+              description: "This device is already claimed by another user.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      }
+      
+      await onSave(securitySettings);
+      toast({
+        title: "Success",
+        description: "Security settings saved successfully",
+      });
+      onClose();
+    } catch (error) {
+      console.error("Error saving security settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save security settings",
+        variant: "destructive",
+      });
+    }
   };
 
   const toggleDeviceException = (deviceId) => {

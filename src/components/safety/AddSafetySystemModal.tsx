@@ -61,7 +61,19 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
       }
 
       // If valid, proceed with saving
-      onSave(systemData);
+      await onSave(systemData);
+      toast({
+        title: "Success",
+        description: "Safety system added successfully",
+      });
+      
+      // Reset form
+      setSystemData({
+        system_id: "",
+        room_name: "",
+        system_type: "fire_detection",
+      });
+      
       onClose();
     } catch (error) {
       console.error("Error validating device:", error);

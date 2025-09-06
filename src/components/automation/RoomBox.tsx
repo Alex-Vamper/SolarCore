@@ -27,7 +27,15 @@ import {
   Wrench,
   Shield,
   Server,
-  Archive
+  Archive,
+  Lightbulb,
+  Fan,
+  Zap,
+  Snowflake,
+  Camera,
+  Wind,
+  Layers,
+  Move
 } from "lucide-react";
 
 const getRoomIcon = (roomName) => {
@@ -60,6 +68,19 @@ const getRoomIcon = (roomName) => {
   if (name.includes('archive') || name.includes('file') || name.includes('document')) return Archive;
   
   return Home; // Default icon
+};
+
+const getDeviceIcon = (type) => {
+  switch (type) {
+    case 'smart_lighting': return Lightbulb;
+    case 'smart_hvac': return Snowflake;
+    case 'smart_shading': return Layers;
+    case 'smart_socket': return Zap;
+    case 'smart_camera': return Camera;
+    case 'motion_sensor': return Move;
+    case 'air_quality': return Wind;
+    default: return Lightbulb;
+  }
 };
 
 export default function RoomBox({ room, dragHandleProps }) {
@@ -146,6 +167,24 @@ export default function RoomBox({ room, dragHandleProps }) {
                   </Badge>
                 )}
               </div>
+              
+              {/* Show device details */}
+              {currentRoom.appliances && currentRoom.appliances.length > 0 && (
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {currentRoom.appliances.slice(0, 3).map((device) => {
+                    const DeviceIcon = getDeviceIcon(device.type);
+                    return (
+                      <div key={device.id} className="flex items-center gap-1 text-xs text-gray-600">
+                        <DeviceIcon className="w-3 h-3" />
+                        <span>{device.series}</span>
+                      </div>
+                    );
+                  })}
+                  {currentRoom.appliances.length > 3 && (
+                    <span className="text-xs text-gray-500">+{currentRoom.appliances.length - 3} more</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
