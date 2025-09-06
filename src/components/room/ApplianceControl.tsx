@@ -28,11 +28,12 @@ import {
   Layers,
   Move,
   GripVertical,
-  Power
+  Power,
+  Lock
 } from "lucide-react";
 
 const getApplianceIcon = (type, name = '') => {
-  // Check by type first
+  // Check by type first - exact match to device catalog types
   switch (type) {
     case 'smart_lighting': return Lightbulb;
     case 'smart_hvac': return Snowflake;
@@ -41,10 +42,11 @@ const getApplianceIcon = (type, name = '') => {
     case 'smart_camera': return Camera;
     case 'motion_sensor': return Move;
     case 'air_quality': return Wind;
+    case 'security': return Lock;
     case 'smart_fan': return Fan;
   }
   
-  // Check by name patterns
+  // Check by name patterns as fallback
   const nameLower = name.toLowerCase();
   if (nameLower.includes('light') || nameLower.includes('lamp')) return Lightbulb;
   if (nameLower.includes('fan')) return Fan;
@@ -53,6 +55,7 @@ const getApplianceIcon = (type, name = '') => {
   if (nameLower.includes('socket') || nameLower.includes('plug')) return Zap;
   if (nameLower.includes('camera')) return Camera;
   if (nameLower.includes('motion') || nameLower.includes('sensor')) return Move;
+  if (nameLower.includes('lock') || nameLower.includes('door')) return Lock;
   
   return Lightbulb; // Default
 };
@@ -110,9 +113,11 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
               </div>
               <div>
                 <div className="font-semibold text-gray-900 font-inter">{appliance.name}</div>
-                <div className="text-sm text-gray-500 font-inter flex items-center gap-1">
-                  <span>{appliance.series}</span>
-                </div>
+                {appliance.series && (
+                  <div className="text-xs text-gray-500 font-inter">
+                    {appliance.series}
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -187,7 +192,9 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
                   <CardTitle className="text-lg font-inter">
                     <div className="font-semibold">{appliance.name}</div>
                   </CardTitle>
-                  <p className="text-sm text-gray-500 font-inter">{appliance.series}</p>
+                  {appliance.series && (
+                    <p className="text-xs text-gray-500 font-inter">{appliance.series}</p>
+                  )}
                 </div>
             </div>
             <AlertDialog>

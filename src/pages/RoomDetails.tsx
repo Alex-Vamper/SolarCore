@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { User, Room } from "@/entities/all";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -213,6 +215,7 @@ const getRoomImage = (roomName) => {
 
 export default function RoomDetails() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [room, setRoom] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false);
@@ -236,6 +239,42 @@ export default function RoomDetails() {
       if (!foundRoom) {
         navigate(createPageUrl("Automation"));
         return;
+      }
+
+      // If appliances have child_device_ids, sync their states from backend
+      if (foundRoom.appliances && foundRoom.appliances.length > 0) {
+        const appliancesWithChildIds = foundRoom.appliances.filter(app => app.child_device_id);
+        
+        if (appliancesWithChildIds.length > 0) {
+          const childIds = appliancesWithChildIds.map(app => app.child_device_id);
+          
+          // Fetch child device states from backend
+          const { data: childDevices, error } = await supabase
+            .from('child_devices')
+            .select('id, state')
+            .in('id', childIds);
+
+          if (!error && childDevices) {
+            // Update appliances with backend states
+            foundRoom.appliances = foundRoom.appliances.map(app => {
+              if (app.child_device_id) {
+                const childDevice = childDevices.find(cd => cd.id === app.child_device_id);
+                if (childDevice && childDevice.state) {
+                  const state = childDevice.state as any;
+                  return {
+                    ...app,
+                    status: state.status || false,
+                    intensity: state.intensity || app.intensity,
+                    color_tint: state.color_tint || app.color_tint,
+                    auto_mode: state.auto_mode || app.auto_mode,
+                    power_usage: state.power_usage || app.power_usage
+                  };
+                }
+              }
+              return app;
+            });
+          }
+        }
       }
 
       setRoom(foundRoom);
@@ -289,6 +328,40 @@ export default function RoomDetails() {
     if (!room) return;
 
     try {
+      // Find the appliance to update
+      const appliance = room.appliances.find(app => app.id === applianceId);
+      
+      // Update in child_devices table if it has a child_device_id
+      if (appliance?.child_device_id) {
+        // Build state object with all properties
+        const newState = {
+          status: updates.status !== undefined ? updates.status : appliance.status,
+          intensity: updates.intensity !== undefined ? updates.intensity : appliance.intensity,
+          color_tint: updates.color_tint !== undefined ? updates.color_tint : appliance.color_tint,
+          auto_mode: updates.auto_mode !== undefined ? updates.auto_mode : appliance.auto_mode,
+          power_usage: updates.power_usage !== undefined ? updates.power_usage : appliance.power_usage,
+        };
+
+        // Update the child_device state in the backend
+        const { error } = await supabase
+          .from('child_devices')
+          .update({ 
+            state: newState
+          })
+          .eq('id', appliance.child_device_id);
+
+        if (error) {
+          console.error("Error updating child device:", error);
+          toast({
+            title: "Update Failed",
+            description: "Failed to sync device state with backend.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Update locally in room appliances
       const updatedAppliances = room.appliances.map(app =>
         app.id === applianceId ? { ...app, ...updates } : app
       );
@@ -302,6 +375,11 @@ export default function RoomDetails() {
       }));
     } catch (error) {
       console.error("Error updating appliance:", error);
+      toast({
+        title: "Update Failed", 
+        description: "Failed to update device state.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -321,19 +399,37 @@ export default function RoomDetails() {
     if (!room) return;
 
     try {
+      // Map the device data to appliance format
       const newDevice = {
-        id: `device_${Date.now()}`,
-        ...deviceData,
+        id: deviceData.id || `device_${Date.now()}`,
+        child_device_id: deviceData.id, // Store the child_device_id for backend sync
+        name: deviceData.name,
+        type: deviceData.device_class, // Use device_class as the type
+        series: deviceData.device_series, // Store the series/model
+        device_id: deviceData.esp_id,
         status: false,
-        power_usage: 0
+        power_usage: 0,
+        intensity: 100,
+        color_tint: 'white',
+        auto_mode: false
       };
 
       const updatedAppliances = [...(room.appliances || []), newDevice];
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
       setShowAddDeviceModal(false);
+      
+      toast({
+        title: "Device Added",
+        description: `${newDevice.name} has been added successfully.`,
+      });
     } catch (error) {
       console.error("Error adding device:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add device. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
