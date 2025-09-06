@@ -342,19 +342,17 @@ export default function RoomDetails() {
           power_usage: updates.power_usage !== undefined ? updates.power_usage : appliance.power_usage,
         };
 
-        // Update the child_device state in the backend
-        const { error } = await supabase
-          .from('child_devices')
-          .update({ 
-            state: newState
-          })
-          .eq('id', appliance.child_device_id);
+        // Update the child_device state in the backend using the update_child_state RPC
+        const { data: updateResult, error } = await supabase.rpc('update_child_state', {
+          p_child_id: appliance.child_device_id,
+          p_new_state: newState
+        }) as any;
 
-        if (error) {
-          console.error("Error updating child device:", error);
+        if (error || !updateResult?.success) {
+          console.error("Error updating child device:", error || updateResult);
           toast({
             title: "Update Failed",
-            description: "Failed to sync device state with backend.",
+            description: updateResult?.message || "Failed to sync device state with backend.",
             variant: "destructive"
           });
           return;
@@ -373,6 +371,11 @@ export default function RoomDetails() {
       window.dispatchEvent(new CustomEvent('applianceStateChanged', { 
         detail: { roomId: room.id, applianceId } 
       }));
+
+      toast({
+        title: "Device Updated",
+        description: "Device state has been synchronized.",
+      });
     } catch (error) {
       console.error("Error updating appliance:", error);
       toast({
@@ -387,11 +390,43 @@ export default function RoomDetails() {
     if (!room) return;
 
     try {
+      // Find the appliance to delete
+      const appliance = room.appliances.find(app => app.id === applianceId);
+      
+      // Delete from child_devices table if it has a child_device_id
+      if (appliance?.child_device_id) {
+        const { error } = await supabase
+          .from('child_devices')
+          .delete()
+          .eq('id', appliance.child_device_id);
+
+        if (error) {
+          console.error("Error deleting child device from backend:", error);
+          toast({
+            title: "Delete Failed",
+            description: "Failed to delete device from backend.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Update locally in room appliances
       const updatedAppliances = room.appliances.filter(app => app.id !== applianceId);
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
+      
+      toast({
+        title: "Device Deleted",
+        description: "Device has been removed successfully.",
+      });
     } catch (error) {
       console.error("Error deleting appliance:", error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete device.",
+        variant: "destructive"
+      });
     }
   };
 
