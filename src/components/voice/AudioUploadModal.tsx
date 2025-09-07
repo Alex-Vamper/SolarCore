@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, Link, Volume2, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { VoiceCommand } from '@/entities/all';
+import { GlobalVoiceCommand } from '@/entities/GlobalVoiceCommand';
 
 export default function AudioUploadModal({ isOpen, onClose, command }) {
   const [isUploading, setIsUploading] = useState(false);
@@ -97,7 +97,8 @@ export default function AudioUploadModal({ isOpen, onClose, command }) {
     setUploadStatus({ type: 'info', message: 'Saving audio URL...' });
 
     try {
-      await VoiceCommand.update(command.id, { audio_url: audioUrl });
+      // Update global command audio URL in admin_ander_commands
+      await GlobalVoiceCommand.updateAudioUrl(command.id, audioUrl);
       setUploadStatus({ type: 'success', message: 'Audio URL saved successfully!' });
       
       // Close modal after a short delay
@@ -117,7 +118,8 @@ export default function AudioUploadModal({ isOpen, onClose, command }) {
     setUploadStatus({ type: 'info', message: 'Removing audio...' });
 
     try {
-      await VoiceCommand.update(command.id, { audio_url: null });
+      // Remove audio URL from global command in admin_ander_commands
+      await GlobalVoiceCommand.updateAudioUrl(command.id, '');
       setAudioUrl('');
       setUploadStatus({ type: 'success', message: 'Audio removed successfully!' });
       

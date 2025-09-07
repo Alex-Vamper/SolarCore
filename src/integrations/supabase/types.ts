@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       admin_ander_commands: {
         Row: {
+          action_type: string | null
+          audio_url: string | null
           command_category: string
           command_name: string
           command_text: string
@@ -23,12 +25,15 @@ export type Database = {
           created_date: string
           id: string
           is_active: boolean
+          keywords: string[] | null
           last_used: string | null
           response_text: string
           updated_date: string
           usage_count: number
         }
         Insert: {
+          action_type?: string | null
+          audio_url?: string | null
           command_category?: string
           command_name: string
           command_text: string
@@ -36,12 +41,15 @@ export type Database = {
           created_date?: string
           id?: string
           is_active?: boolean
+          keywords?: string[] | null
           last_used?: string | null
           response_text: string
           updated_date?: string
           usage_count?: number
         }
         Update: {
+          action_type?: string | null
+          audio_url?: string | null
           command_category?: string
           command_name?: string
           command_text?: string
@@ -49,6 +57,7 @@ export type Database = {
           created_date?: string
           id?: string
           is_active?: boolean
+          keywords?: string[] | null
           last_used?: string | null
           response_text?: string
           updated_date?: string

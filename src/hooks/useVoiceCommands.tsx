@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { VoiceCommand } from '@/entities/VoiceCommand';
-import { supabase } from '@/integrations/supabase/client';
+import { GlobalVoiceCommand } from '@/entities/GlobalVoiceCommand';
 
 export function useVoiceCommands() {
-  const [commands, setCommands] = useState<VoiceCommand[]>([]);
+  const [commands, setCommands] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -12,40 +11,22 @@ export function useVoiceCommands() {
 
   const loadCommands = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Get user's own commands
-      const userCommands = await VoiceCommand.list();
+      // Fetch global commands from admin_ander_commands
+      const globalCommands = await GlobalVoiceCommand.list();
       
-      // Get any global commands that have audio URLs
-      const { data: globalCommands } = await supabase
-        .from('voice_commands')
-        .select('*')
-        .eq('is_global', true)
-        .not('audio_url', 'is', null);
-
-      if (globalCommands && globalCommands.length > 0) {
-        // Merge commands, preferring global audio
-        const mergedCommands = userCommands.map(cmd => {
-          const globalCmd = globalCommands.find(
-            gc => gc.command_category === cmd.command_category && 
-                 gc.command_name === cmd.command_name
-          );
-          
-          if (globalCmd && globalCmd.audio_url) {
-            return { ...cmd, audio_url: globalCmd.audio_url };
-          }
-          return cmd;
-        });
-        
-        setCommands(mergedCommands);
-      } else {
-        setCommands(userCommands);
-      }
+      // Transform to match expected format
+      const transformedCommands = globalCommands.map(cmd => ({
+        id: cmd.id,
+        command_category: cmd.command_category,
+        command_name: cmd.command_name,
+        keywords: cmd.keywords || [],
+        response: cmd.response_text,
+        audio_url: cmd.audio_url,
+        action_type: cmd.action_type,
+        enabled: cmd.is_active
+      }));
+      
+      setCommands(transformedCommands);
     } catch (error) {
       console.error('Error loading voice commands:', error);
       setCommands([]);

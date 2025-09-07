@@ -78,14 +78,34 @@ export default function Ander() {
 
   const loadAllCommands = async () => {
     try {
-      const allCommands = await VoiceCommand.list();
-      
-      // Separate commands into user-facing and admin-only
-      const regularCommands = allCommands.filter(c => c.command_category !== 'admin_commands');
-      const adminFallbackCommands = allCommands.filter(c => c.command_category === 'admin_commands');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      setUserCommands(regularCommands);
-      setAdminCommands(adminFallbackCommands);
+      // Fetch global commands from admin_ander_commands
+      const { data: allCommands, error } = await supabase
+        .from('admin_ander_commands')
+        .select('*')
+        .eq('is_active', true)
+        .order('command_category', { ascending: true })
+        .order('command_name', { ascending: true });
+
+      if (error) {
+        console.error('Error loading commands:', error);
+        return;
+      }
+
+      // Separate admin and user commands
+      const adminCmds = allCommands.filter(cmd => 
+        cmd.command_category === 'Admin' || 
+        cmd.command_category === 'Advanced'
+      );
+      const userCmds = allCommands.filter(cmd => 
+        cmd.command_category !== 'Admin' && 
+        cmd.command_category !== 'Advanced'
+      );
+
+      setAdminCommands(adminCmds);
+      setUserCommands(userCmds);
     } catch (error) {
       console.error("Error loading all commands:", error);
     }
@@ -617,8 +637,8 @@ export default function Ander() {
                           </div>
                         )}
                       </div>
-                      <p className="text-sm font-inter mb-1 italic text-gray-700">"{command.response}"</p>
-                      {command.keywords.length > 0 && (
+                      <p className="text-sm font-inter mb-1 italic text-gray-700">"{command.response_text || command.response}"</p>
+                      {command.keywords && command.keywords.length > 0 && (
                         <p className="text-xs text-gray-500 font-inter">Try saying: "{command.keywords[0]}"</p>
                       )}
                     </div>
@@ -654,7 +674,7 @@ export default function Ander() {
                         <button onClick={() => handleEditCommand(command)} title="Edit command" className="text-blue-600 hover:text-blue-700"><Pencil className="w-4 h-4" /></button>
                       </div>
                     </div>
-                    <p className="text-sm font-inter mb-1 italic text-orange-700">"{command.response}"</p>
+                    <p className="text-sm font-inter mb-1 italic text-orange-700">"{command.response_text || command.response}"</p>
                     <p className="text-xs text-orange-600 font-inter">System response for when this situation occurs</p>
                   </div>
                 ))}
