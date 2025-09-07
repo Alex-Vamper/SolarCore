@@ -371,11 +371,6 @@ export default function RoomDetails() {
       window.dispatchEvent(new CustomEvent('applianceStateChanged', { 
         detail: { roomId: room.id, applianceId } 
       }));
-
-      toast({
-        title: "Device Updated",
-        description: "Device state has been synchronized.",
-      });
     } catch (error) {
       console.error("Error updating appliance:", error);
       toast({
@@ -415,11 +410,6 @@ export default function RoomDetails() {
       const updatedAppliances = room.appliances.filter(app => app.id !== applianceId);
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
-      
-      toast({
-        title: "Device Deleted",
-        description: "Device has been removed successfully.",
-      });
     } catch (error) {
       console.error("Error deleting appliance:", error);
       toast({

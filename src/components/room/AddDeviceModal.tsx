@@ -145,11 +145,6 @@ export default function AddDeviceModal({ isOpen, onClose, onSave, roomName, room
         actions: deviceType?.actions
       });
 
-      toast({
-        title: "Device Added",
-        description: `${deviceData.name} has been added successfully.`,
-      });
-
       handleClose();
     } catch (error) {
       console.error('Error adding device:', error);
