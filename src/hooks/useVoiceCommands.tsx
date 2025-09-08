@@ -11,22 +11,11 @@ export function useVoiceCommands() {
 
   const loadCommands = async () => {
     try {
-      // Fetch global commands from admin_ander_commands
+      // Fetch global commands from admin_ander_commands table
       const globalCommands = await GlobalVoiceCommand.list();
       
-      // Transform to match expected format
-      const transformedCommands = globalCommands.map(cmd => ({
-        id: cmd.id,
-        command_category: cmd.command_category,
-        command_name: cmd.command_name,
-        keywords: cmd.keywords || [],
-        response: cmd.response_text,
-        audio_url: cmd.audio_url,
-        action_type: cmd.action_type,
-        enabled: cmd.is_active
-      }));
-      
-      setCommands(transformedCommands);
+      // Use the global commands directly - they are already in the correct format
+      setCommands(globalCommands);
     } catch (error) {
       console.error('Error loading voice commands:', error);
       setCommands([]);

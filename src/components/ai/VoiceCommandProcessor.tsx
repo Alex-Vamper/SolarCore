@@ -1,19 +1,19 @@
-import { VoiceCommand } from "@/entities/all";
+import { GlobalVoiceCommand } from "@/entities/GlobalVoiceCommand";
 
 export default class VoiceCommandProcessor {
   private recognition: any;
   private isListening: boolean;
   private currentAudio: HTMLAudioElement | null;
-  private commands: VoiceCommand[];
+  private commands: any[];
 
-  constructor(commands: VoiceCommand[] = []) {
+  constructor(commands: any[] = []) {
     this.recognition = null;
     this.isListening = false;
     this.currentAudio = null;
     this.commands = commands;
   }
 
-  setCommands(commands: VoiceCommand[]) {
+  setCommands(commands: any[]) {
     this.commands = commands;
   }
 
@@ -74,14 +74,14 @@ export default class VoiceCommandProcessor {
 
   async processCommand(transcript) {
     try {
-      // Use commands from constructor or fetch if not provided
-      const commands = this.commands.length > 0 ? this.commands : await VoiceCommand.list();
+      // Use commands from constructor or fetch global commands if not provided
+      const commands = this.commands.length > 0 ? this.commands : await GlobalVoiceCommand.list();
       const matchedCommand = this.findBestMatch(transcript.toLowerCase(), commands);
       
       if (matchedCommand) {
         return {
           command: matchedCommand,
-          response: matchedCommand.response,
+          response: matchedCommand.response_text || matchedCommand.response,
           audioUrl: matchedCommand.audio_url,
           matched: true
         };
