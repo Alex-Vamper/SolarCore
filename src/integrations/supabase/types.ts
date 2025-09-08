@@ -846,6 +846,14 @@ export type Database = {
           updated_at: string
         }[]
       }
+      admin_create_account_with_auth: {
+        Args: {
+          account_keycode: string
+          account_name: string
+          account_uid: string
+        }
+        Returns: Json
+      }
       admin_delete_account: {
         Args: { account_id: string }
         Returns: boolean
