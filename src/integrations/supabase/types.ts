@@ -947,6 +947,14 @@ export type Database = {
         Args: { user_email: string }
         Returns: boolean
       }
+      is_superadmin_uid: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
+      is_superadmin_user: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       migrate_parent_to_production: {
         Args: { p_canonical_child_id: string; p_parent_id: string }
         Returns: Json

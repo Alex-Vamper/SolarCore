@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, UserSettings, VoiceCommand } from "@/entities/all";
+import { User, UserSettings } from "@/entities/all";
+import { GlobalVoiceCommand } from "@/entities/GlobalVoiceCommand";
 import VoiceCommandProcessor from './VoiceCommandProcessor';
 import ActionExecutor from './ActionExecutor'; // Import the new executor
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
-
 const AILogoSVG = () => (
     <svg width="24" height="24" viewBox="0 0 100 100" className="w-8 h-8">
       <defs>
@@ -63,12 +63,13 @@ export default function AIAssistantButton() {
                 setAnderEnabled(false);
             }
             
-            const allCommands = await VoiceCommand.list();
+            const allCommands = await GlobalVoiceCommand.list();
+            const unrec = allCommands.find(c => c.command_name === '_admin_didnt_understand_') || null;
+            const devNotFound = allCommands.find(c => c.command_name === '_admin_device_not_found_') || null;
             systemFallbacksRef.current = {
-                unrecognized: allCommands.find(c => c.command_name === '_admin_didnt_understand_') || null,
-                device_not_found: allCommands.find(c => c.command_name === '_admin_device_not_found_') || null
+                unrecognized: unrec ? { ...unrec, response: unrec.response_text } : null,
+                device_not_found: devNotFound ? { ...devNotFound, response: devNotFound.response_text } : null
             };
-
         } catch (error) {
             setAnderEnabled(false); 
         }
@@ -174,9 +175,10 @@ export default function AIAssistantButton() {
                         finalResponseCommand = systemFallbacksRef.current.device_not_found;
                     }
 
-                    setResponseMessage(finalResponseCommand.response);
+                    const responseText = finalResponseCommand.response || finalResponseCommand.response_text || commandResult.response;
+                    setResponseMessage(responseText);
                     if (voiceResponseEnabled) {
-                        await voiceProcessor.current.speakResponse(finalResponseCommand.response, finalResponseCommand.audio_url);
+                        await voiceProcessor.current.speakResponse(responseText, finalResponseCommand.audio_url);
                     }
                 } else {
                     const fallback = systemFallbacksRef.current?.unrecognized;

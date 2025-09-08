@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { User, UserSettings, VoiceCommand } from "@/entities/all";
+import { User, UserSettings } from "@/entities/all";
 import { supabase } from '@/integrations/supabase/client';
 import SubscriptionModal from '../components/subscriptions/SubscriptionModal';
 import AdminPasswordModal from '../components/voice/AdminPasswordModal';
@@ -17,6 +17,7 @@ import AudioUploadModal from '../components/voice/AudioUploadModal';
 import CommandEditorModal from '../components/voice/CommandEditorModal';
 import { useVoiceCommandInitializer } from "@/components/ai/VoiceCommandInitializer";
 import { useCrossSystemSync } from "@/hooks/useCrossSystemSync";
+import { GlobalVoiceCommand } from "@/entities/GlobalVoiceCommand";
 
 const AILogoSVG = () => (
   <svg width="24" height="24" viewBox="0 0 100 100" className="w-6 h-6">
@@ -151,17 +152,11 @@ export default function Ander() {
 
   const initializeDefaultCommands = async () => {
     try {
-      // Check if any commands exist at all
-      const existingCommands = await VoiceCommand.list();
-      if (existingCommands.length === 0) {
-        await createInitialCommands();
-      }
       await loadAllCommands();
     } catch (error) {
       console.error("Error initializing voice commands:", error);
     }
   };
-
   const createInitialCommands = async () => {
     const initialCommands = [
         // Admin Commands (System Fallbacks) - Only visible in admin mode
@@ -251,7 +246,8 @@ export default function Ander() {
         { command_category: "information_interaction", command_name: "help", keywords: ["help", "what can you do", "commands"], response: "I can help you control lights, sockets, curtains, air conditioning, and security systems. Try saying 'turn on all lights' or 'lock front door'.", action_type: "help" }
     ];
     
-    await VoiceCommand.bulkCreate(initialCommands);
+// Seeding per-user commands deprecated; using global commands table
+    return;
   };
 
   const handleLogoClick = () => {
@@ -482,9 +478,9 @@ export default function Ander() {
                 New Command
               </Button>
               <Button onClick={async () => {
-                await VoiceCommand.deleteAll();
+                await GlobalVoiceCommand.clearCache();
                 await initializeDefaultCommands();
-                toast.success("Voice commands refreshed with current room configuration!");
+                toast.success("Global voice commands refreshed!");
               }} variant="outline" className="font-inter">
                 <AlertTriangle className="w-4 h-4 mr-2"/>
                 Refresh Commands
