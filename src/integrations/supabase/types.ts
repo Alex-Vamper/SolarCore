@@ -568,6 +568,39 @@ export type Database = {
         }
         Relationships: []
       }
+      safety_system_migration: {
+        Row: {
+          created_at: string | null
+          new_child_id: string | null
+          old_safety_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          new_child_id?: string | null
+          old_safety_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          new_child_id?: string | null
+          old_safety_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_system_migration_new_child_id_fkey"
+            columns: ["new_child_id"]
+            isOneToOne: false
+            referencedRelation: "child_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "safety_system_migration_old_safety_id_fkey"
+            columns: ["old_safety_id"]
+            isOneToOne: false
+            referencedRelation: "safety_systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safety_systems: {
         Row: {
           automation_settings: Json | null
