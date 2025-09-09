@@ -158,12 +158,16 @@ export class ChildDeviceService {
 
   static async delete(id: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('child_devices')
-        .delete()
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('delete_child_device', {
+        p_child_id: id
+      });
 
       if (error) throw error;
+      
+      const result = data as { success: boolean; message?: string };
+      if (!result?.success) {
+        throw new Error(result?.message || 'Failed to delete device');
+      }
     } catch (error) {
       console.error('Error deleting child device:', error);
       throw error;

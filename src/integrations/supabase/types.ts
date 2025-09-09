@@ -968,6 +968,10 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_child_device: {
+        Args: { p_child_id: string }
+        Returns: Json
+      }
       get_device_types: {
         Args: Record<PropertyKey, never>
         Returns: unknown[]
