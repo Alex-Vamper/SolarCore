@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
+import { ChildDeviceService, type ChildDevice, type DeviceType } from './ChildDevice';
 
 export interface SafetySystem {
   id?: string;
@@ -18,6 +19,45 @@ export interface SafetySystem {
   updated_at?: string;
 }
 
+// Convert ChildDevice to SafetySystem format for backwards compatibility
+const mapChildDeviceToSafetySystem = (device: ChildDevice): SafetySystem => {
+  return {
+    id: device.id,
+    user_id: device.created_by,
+    system_id: device.device_name || '',
+    system_type: device.device_type?.device_series as 'fire_detection' | 'window_rain' | 'gas_leak' | 'water_overflow',
+    room_name: device.state?.room_name || '',
+    status: device.state?.status || 'safe',
+    flame_status: device.state?.flame_status || 'clear',
+    temperature_value: device.state?.temperature || 25,
+    smoke_percentage: device.state?.smoke_percentage || 0,
+    last_triggered: device.state?.last_triggered,
+    sensor_readings: device.state?.sensor_readings || {},
+    automation_settings: device.state?.automation_settings || {},
+    created_at: device.created_at,
+    updated_at: device.updated_at
+  };
+};
+
+// Convert SafetySystem to ChildDevice format
+const mapSafetySystemToChildDevice = (safetySystem: SafetySystem, deviceTypeId?: string): Partial<ChildDevice> => {
+  return {
+    id: safetySystem.id,
+    device_type_id: deviceTypeId,
+    device_name: safetySystem.system_id,
+    state: {
+      room_name: safetySystem.room_name,
+      status: safetySystem.status || 'safe',
+      flame_status: safetySystem.flame_status || 'clear',
+      temperature: safetySystem.temperature_value || 25,
+      smoke_percentage: safetySystem.smoke_percentage || 0,
+      last_triggered: safetySystem.last_triggered,
+      sensor_readings: safetySystem.sensor_readings || {},
+      automation_settings: safetySystem.automation_settings || {}
+    }
+  };
+};
+
 export class SafetySystemService {
   static async filter(params?: any): Promise<SafetySystem[]> {
     return this.list();
@@ -25,17 +65,11 @@ export class SafetySystemService {
 
   static async get(id: string): Promise<SafetySystem | null> {
     try {
-      const { data, error } = await supabase
-        .from('safety_systems')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-      return {
-        ...data,
-        system_type: data.system_type as "fire_detection" | "window_rain" | "gas_leak" | "water_overflow"
-      };
+      const device = await ChildDeviceService.get(id);
+      if (!device || device.device_type?.device_class !== 'safety') {
+        return null;
+      }
+      return mapChildDeviceToSafetySystem(device);
     } catch (error) {
       console.error('Error fetching safety system:', error);
       return null;
@@ -44,22 +78,8 @@ export class SafetySystemService {
 
   static async list(): Promise<SafetySystem[]> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
-
-      const { data, error } = await supabase
-        .from('safety_systems')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data?.map(item => ({
-        ...item,
-        system_type: item.system_type as "fire_detection" | "window_rain" | "gas_leak" | "water_overflow",
-        sensor_readings: typeof item.sensor_readings === 'object' ? item.sensor_readings : {},
-        automation_settings: typeof item.automation_settings === 'object' ? item.automation_settings : {}
-      })) || [];
+      const devices = await ChildDeviceService.getSafetyDevices();
+      return devices.map(mapChildDeviceToSafetySystem);
     } catch (error) {
       console.error('Error fetching safety systems:', error);
       return [];
@@ -68,30 +88,18 @@ export class SafetySystemService {
 
   static async create(safetySystem: SafetySystem): Promise<SafetySystem> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No authenticated user');
+      // Get device type ID for the safety system type
+      const { data: deviceTypes } = await supabase.rpc('get_device_types');
+      const deviceType = (deviceTypes as DeviceType[])?.find(dt => 
+        dt.device_class === 'safety' && dt.device_series === safetySystem.system_type
+      );
+      
+      if (!deviceType) throw new Error('Device type not found');
 
-      const { data, error } = await supabase
-        .from('safety_systems')
-        .insert({
-          ...safetySystem,
-          user_id: user.id,
-          flame_status: safetySystem.flame_status || 'clear',
-          temperature_value: safetySystem.temperature_value || 25,
-          smoke_percentage: safetySystem.smoke_percentage || 0,
-          sensor_readings: safetySystem.sensor_readings as Json,
-          automation_settings: safetySystem.automation_settings as Json
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return {
-        ...data,
-        system_type: data.system_type as "fire_detection" | "window_rain" | "gas_leak" | "water_overflow",
-        sensor_readings: typeof data.sensor_readings === 'object' ? data.sensor_readings : {},
-        automation_settings: typeof data.automation_settings === 'object' ? data.automation_settings : {}
-      };
+      const childDevice = mapSafetySystemToChildDevice(safetySystem, deviceType.id);
+      const createdDevice = await ChildDeviceService.create(childDevice as ChildDevice);
+      
+      return mapChildDeviceToSafetySystem(createdDevice);
     } catch (error) {
       console.error('Error creating safety system:', error);
       throw error;
@@ -100,28 +108,14 @@ export class SafetySystemService {
 
   static async update(id: string, safetySystem: Partial<SafetySystem>): Promise<SafetySystem> {
     try {
-      const updateData: any = { ...safetySystem };
-      if (safetySystem.sensor_readings) {
-        updateData.sensor_readings = safetySystem.sensor_readings as Json;
-      }
-      if (safetySystem.automation_settings) {
-        updateData.automation_settings = safetySystem.automation_settings as Json;
-      }
+      // Get the existing device to preserve device_type_id
+      const existingDevice = await ChildDeviceService.get(id);
+      if (!existingDevice) throw new Error('Safety system not found');
 
-      const { data, error } = await supabase
-        .from('safety_systems')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return {
-        ...data,
-        system_type: data.system_type as "fire_detection" | "window_rain" | "gas_leak" | "water_overflow",
-        sensor_readings: typeof data.sensor_readings === 'object' ? data.sensor_readings : {},
-        automation_settings: typeof data.automation_settings === 'object' ? data.automation_settings : {}
-      };
+      const updatedChildDevice = mapSafetySystemToChildDevice(safetySystem as SafetySystem);
+      const updatedDevice = await ChildDeviceService.update(id, updatedChildDevice);
+      
+      return mapChildDeviceToSafetySystem(updatedDevice);
     } catch (error) {
       console.error('Error updating safety system:', error);
       throw error;
@@ -130,12 +124,7 @@ export class SafetySystemService {
 
   static async delete(id: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('safety_systems')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await ChildDeviceService.delete(id);
     } catch (error) {
       console.error('Error deleting safety system:', error);
       throw error;

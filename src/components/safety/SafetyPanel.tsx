@@ -71,7 +71,8 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
     },
   };
 
-  const meta = systemMeta[system.system_type] || systemMeta.fire_detection;
+  const systemType = system.system_type || system.device_type?.device_series;
+  const meta = systemMeta[systemType] || systemMeta.fire_detection;
   const SystemIcon = meta.icon;
 
   return (
@@ -121,7 +122,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
           </div>
 
           {/* Fire System Specific */}
-          {system.system_type === "fire_detection" && (
+          {systemType === "fire_detection" && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
@@ -181,7 +182,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
           )}
 
           {/* Rain System Specific */}
-          {system.system_type === "window_rain" && (
+          {systemType === "window_rain" && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
@@ -235,7 +236,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
           )}
 
           {/* Gas Leakage Specific */}
-          {system.system_type === "gas_leak" && (
+          {systemType === "gas_leak" && (
             <div className="space-y-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
@@ -251,7 +252,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
           )}
 
           {/* Water Level Specific */}
-          {system.system_type === "water_overflow" && (
+          {systemType === "water_overflow" && (
             <div className="space-y-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
