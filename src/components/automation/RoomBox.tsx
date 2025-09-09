@@ -27,7 +27,15 @@ import {
   Wrench,
   Shield,
   Server,
-  Archive
+  Archive,
+  Lightbulb,
+  Fan,
+  Zap,
+  Snowflake,
+  Camera,
+  Wind,
+  Layers,
+  Move
 } from "lucide-react";
 
 const getRoomIcon = (roomName) => {
@@ -60,6 +68,19 @@ const getRoomIcon = (roomName) => {
   if (name.includes('archive') || name.includes('file') || name.includes('document')) return Archive;
   
   return Home; // Default icon
+};
+
+const getDeviceIcon = (type) => {
+  switch (type) {
+    case 'smart_lighting': return Lightbulb;
+    case 'smart_hvac': return Snowflake;
+    case 'smart_shading': return Layers;
+    case 'smart_socket': return Zap;
+    case 'smart_camera': return Camera;
+    case 'motion_sensor': return Move;
+    case 'air_quality': return Wind;
+    default: return Lightbulb;
+  }
 };
 
 export default function RoomBox({ room, dragHandleProps }) {
@@ -98,7 +119,7 @@ export default function RoomBox({ room, dragHandleProps }) {
   }, [room]); // Depend on the 'room' prop to update state when parent re-renders with a new room object
 
   const handleClick = () => {
-    navigate(`/room/${currentRoom.id}`);
+    navigate(`/app/room/${currentRoom.id}`);
   };
 
   const RoomIcon = getRoomIcon(currentRoom.name);
@@ -124,28 +145,29 @@ export default function RoomBox({ room, dragHandleProps }) {
           <div className="flex items-center gap-4">
             {dragHandleProps && (
               <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
-                <GripVertical className="w-5 h-5 text-gray-400" />
+                <GripVertical className="app-icon text-gray-400" />
               </div>
             )}
             
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
-              <RoomIcon className="w-6 h-6 text-white" />
+              <RoomIcon className="app-icon text-white" />
             </div>
             
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 font-inter group-hover:text-blue-600 transition-colors">
+              <h3 className="app-text font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                 {currentRoom.name}
               </h3>
               <div className="flex items-center gap-3 mt-1">
-                <span className={`text-sm font-medium ${getDeviceStatusColor()} font-inter`}>
+                <span className={`app-text font-medium ${getDeviceStatusColor()}`}>
                   {activeDevices.length} of {totalDevices} devices active
                 </span>
                 {currentRoom.occupancy_status && (
-                  <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                  <Badge className="app-text bg-green-100 text-green-800 border-green-200">
                     Occupied
                   </Badge>
                 )}
               </div>
+              
             </div>
           </div>
 
@@ -158,7 +180,7 @@ export default function RoomBox({ room, dragHandleProps }) {
                     style={{ width: `${(activeDevices.length / totalDevices) * 100}%` }}
                   ></div>
                 </div>
-                <div className="text-xs text-gray-500 mt-1 font-inter">
+                <div className="app-text text-gray-500 mt-1">
                   {Math.round((activeDevices.length / totalDevices) * 100)}% active
                 </div>
               </div>

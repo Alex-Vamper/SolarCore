@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sun, Eye, EyeOff, Loader2 } from 'lucide-react';
+import solarcore from '../assets/SolarCore-1.svg';
 import { User } from '@/entities/all';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,7 +27,7 @@ export default function Auth() {
     const checkAuth = async () => {
       const user = await User.me();
       if (user) {
-        navigate('/');
+        navigate('/app');
       }
     };
     checkAuth();
@@ -54,7 +55,7 @@ export default function Auth() {
           title: "Welcome back!",
           description: "You have been signed in successfully."
         });
-        navigate('/');
+        navigate('/app');
       }
     } catch (error) {
       toast({
@@ -104,6 +105,7 @@ export default function Auth() {
           title: "Account created!",
           description: "Please check your email to verify your account."
         });
+        navigate('/app');
       }
     } catch (error) {
       toast({
@@ -117,11 +119,24 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 flex flex-col items-center justify-center p-4">
+      
+      {/* Back to Landing Page Button */}
+      <div className="mb-4 text-center w-full max-w-md">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/')}
+          className="w-full"
+        >
+          Back to Landing Page
+        </Button>
+      </div>
+
+      {/* Main Auth Card */}
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Sun className="w-8 h-8 text-white" />
+          <div className="w-16 h-auto mx-auto mb-4">
+            <img src={solarcore} alt="SolarCore Logo" className="w-full h-auto" />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">SolarCore</CardTitle>
           <p className="text-gray-600">Intelligent Home Management</p>
@@ -168,10 +183,15 @@ export default function Auth() {
                     </Button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  className="w-full bg-[#011437] hover:bg-[#022060] text-white" 
+                  disabled={isLoading}
+                >
                   {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Sign In
                 </Button>
+
               </form>
             </TabsContent>
             
@@ -232,10 +252,15 @@ export default function Auth() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button 
+                  type="submit" 
+                  className="w-full bg-[#011437] hover:bg-[#022060] text-white" 
+                  disabled={isLoading}
+                >
                   {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Create Account
                 </Button>
+
               </form>
             </TabsContent>
           </Tabs>

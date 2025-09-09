@@ -2,22 +2,16 @@
 
 export const createPageUrl = (pageName: string): string => {
   const pageRoutes: Record<string, string> = {
-    Dashboard: "/",
-    Automation: "/automation",
-    Energy: "/energy", 
-    Safety: "/safety",
-    Settings: "/settings",
-    Notifications: "/notifications",
-    LandingPage: "/landing",
-    FAQ: "/faq",
-    ContactSupport: "/contact-support",
-    Feedback: "/feedback",
-    HelpCenter: "/help",
-    PrivacyPolicy: "/privacy",
-    Ander: "/ander"
+    Dashboard: "/app",
+    Automation: "/app/automation",
+    Energy: "/app/energy", 
+    Safety: "/app/safety",
+    Settings: "/app/settings",
+    Notifications: "/app/notifications",
+    LandingPage: "/"
   };
 
-  return pageRoutes[pageName] || "/";
+  return pageRoutes[pageName] || "/app";
 };
 
 export const formatEnergy = (value: number, unit: string = "kWh"): string => {

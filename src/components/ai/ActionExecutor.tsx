@@ -1,209 +1,285 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  Play, 
-  Settings, 
-  Lightbulb, 
-  Shield, 
-  Thermometer, 
-  Power,
-  CheckCircle,
-  XCircle
-} from "lucide-react";
-import { Room } from "@/entities/all";
 
-interface ActionExecutorProps {
-  voiceCommands: any[];
-}
+import { User, Room, SafetySystem } from "@/entities/all";
 
-export default function ActionExecutor({ voiceCommands }: ActionExecutorProps) {
-  const [executingAction, setExecutingAction] = useState<string | null>(null);
-  const [lastResult, setLastResult] = useState<{ success: boolean; message: string } | null>(null);
+class ActionExecutor {
+    async execute(command, transcript) {
+        if (!command || !command.action_type) {
+            return { success: false, message: "No action type defined." };
+        }
+        
+        // --- PRIORITY: Direct Device Control from Linked Command ---
+        if (command.action_type === 'device_control' && command.target_room_id && command.target_appliance_id) {
+            try {
+                const room = await Room.get(command.target_room_id);
+                if (!room) return { success: false, reason: "device_not_found" };
 
-  const getActionIcon = (actionType: string) => {
-    const iconMap: Record<string, JSX.Element> = {
-      lights_all_on: <Lightbulb className="w-4 h-4" />,
-      lights_all_off: <Lightbulb className="w-4 h-4" />,
-      system_all_on: <Power className="w-4 h-4" />,
-      system_all_off: <Power className="w-4 h-4" />,
-      lock_door: <Shield className="w-4 h-4" />,
-      unlock_door: <Shield className="w-4 h-4" />,
-      ac_all_on: <Thermometer className="w-4 h-4" />,
-      ac_all_off: <Thermometer className="w-4 h-4" />
-    };
-    return iconMap[actionType] || <Settings className="w-4 h-4" />;
-  };
+                let applianceFound = false;
+                const updatedAppliances = room.appliances.map(app => {
+                    if (app.id === command.target_appliance_id) {
+                        applianceFound = true;
+                        // Parse the stored string value to its correct type (boolean for now)
+                        const newState = command.target_state_value === 'true';
+                        return { ...app, [command.target_state_key]: newState };
+                    }
+                    return app;
+                });
 
-  const executeAction = async (command: any) => {
-    setExecutingAction(command.id);
-    setLastResult(null);
+                if (!applianceFound) return { success: false, reason: "device_not_found" };
 
-    try {
-      // Simulate action execution based on action_type
-      await new Promise(resolve => setTimeout(resolve, 1500));
+                await Room.update(room.id, { appliances: updatedAppliances });
+                window.dispatchEvent(new CustomEvent('systemStateChanged'));
+                return { success: true };
 
-      let success = false;
-      let message = "";
+            } catch (error) {
+                console.error("Error in direct device control:", error);
+                return { success: false, reason: "execution_error" };
+            }
+        }
 
-      switch (command.action_type) {
-        case 'lights_all_on':
-        case 'lights_all_off':
-          success = await updateRoomAppliances('lights', command.action_type.includes('_on'));
-          message = success ? 
-            `Successfully ${command.action_type.includes('_on') ? 'turned on' : 'turned off'} all lights` :
-            'Failed to update lighting systems';
-          break;
+        // --- FALLBACK: Keyword-Based General Commands ---
+        const currentUser = await User.me();
+        const rooms = await Room.filter({ created_by: currentUser.email });
 
-        case 'system_all_on':
-        case 'system_all_off':
-          success = await updateAllSystems(command.action_type.includes('_on'));
-          message = success ? 
-            `Successfully ${command.action_type.includes('_on') ? 'activated' : 'deactivated'} all systems` :
-            'Failed to update system status';
-          break;
+        // --- Parameter Extraction ---
+        const extractRoomName = () => {
+            const roomKeywords = ["living room", "dining room", "kitchen", "bedroom"];
+            for (const rk of roomKeywords) {
+                if (transcript.toLowerCase().includes(rk)) return rk;
+            }
+            return null;
+        };
 
-        case 'lock_door':
-        case 'unlock_door':
-          success = await updateDoorLock(command.action_type === 'lock_door');
-          message = success ? 
-            `Door ${command.action_type === 'lock_door' ? 'locked' : 'unlocked'} successfully` :
-            'Failed to update door lock';
-          break;
+        const extractSocketName = () => {
+            const socketKeywords = ["tv socket", "dispenser socket", "free socket"];
+             for (const sk of socketKeywords) {
+                if (transcript.toLowerCase().includes(sk)) return sk.replace(' socket', '');
+            }
+            return null;
+        }
 
-        default:
-          success = true;
-          message = `Simulated execution of ${command.command_name}`;
-      }
+        const roomName = extractRoomName();
+        const socketName = extractSocketName();
 
-      setLastResult({ success, message });
-    } catch (error) {
-      setLastResult({ 
-        success: false, 
-        message: `Error executing ${command.command_name}: ${error}` 
-      });
-    } finally {
-      setExecutingAction(null);
-    }
-  };
-
-  const updateRoomAppliances = async (applianceType: string, turnOn: boolean): Promise<boolean> => {
-    try {
-      const rooms = await Room.filter({});
-      for (const room of rooms) {
-        const appliances = room.appliances || [];
-        const updatedAppliances = appliances.map((appliance: any) => {
-          if (appliance.type === applianceType) {
-            return { ...appliance, status: turnOn };
-          }
-          return appliance;
-        });
-        await Room.update(room.id, { appliances: updatedAppliances });
-      }
-      return true;
-    } catch (error) {
-      console.error('Failed to update room appliances:', error);
-      return false;
-    }
-  };
-
-  const updateAllSystems = async (activate: boolean): Promise<boolean> => {
-    try {
-      const rooms = await Room.filter({});
-      for (const room of rooms) {
-        const appliances = room.appliances || [];
-        const updatedAppliances = appliances.map((appliance: any) => ({
-          ...appliance,
-          status: activate
-        }));
-        await Room.update(room.id, { appliances: updatedAppliances });
-      }
-      return true;
-    } catch (error) {
-      console.error('Failed to update all systems:', error);
-      return false;
-    }
-  };
-
-  const updateDoorLock = async (lock: boolean): Promise<boolean> => {
-    // Simulate door lock operation
-    console.log(`${lock ? 'Locking' : 'Unlocking'} door`);
-    return Math.random() > 0.1; // 90% success rate for demo
-  };
-
-  const executableCommands = voiceCommands.filter(cmd => 
-    cmd.action_type && !['wake_up', 'introduction', 'help', 'status_report'].includes(cmd.action_type)
-  );
-
-  return (
-    <Card className="glass-card border-0 shadow-lg">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg font-inter">
-          <Play className="w-5 h-5 text-green-600" />
-          Action Executor
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {lastResult && (
-          <Alert variant={lastResult.success ? "default" : "destructive"}>
-            <div className="flex items-center gap-2">
-              {lastResult.success ? (
-                <CheckCircle className="w-4 h-4 text-green-500" />
-              ) : (
-                <XCircle className="w-4 h-4 text-red-500" />
-              )}
-              <AlertDescription>{lastResult.message}</AlertDescription>
-            </div>
-          </Alert>
-        )}
-
-        <div className="space-y-2">
-          {executableCommands.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No executable commands available
-            </div>
-          ) : (
-            executableCommands.map((command) => (
-              <div
-                key={command.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    {getActionIcon(command.action_type)}
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm">{command.command_name}</div>
-                    <div className="text-xs text-gray-500">
-                      {command.keywords.slice(0, 2).join(', ')}
-                    </div>
-                  </div>
-                </div>
+        // --- Safety System Synchronization Helper ---
+        const syncShadesWithSafety = async (type, isOpen, roomName = null) => {
+            try {
+                const safetySystems = await SafetySystem.filter({ created_by: currentUser.email });
+                const windowSystems = safetySystems.filter(sys => 
+                    sys.system_type === 'window_rain' && 
+                    (roomName ? sys.room_name.toLowerCase() === roomName : true)
+                );
                 
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {command.action_type}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    onClick={() => executeAction(command)}
-                    disabled={executingAction === command.id}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {executingAction === command.id ? (
-                      "Executing..."
-                    ) : (
-                      <Play className="w-3 h-3" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+                for (const system of windowSystems) {
+                    await SafetySystem.update(system.id, {
+                        sensor_readings: {
+                            ...system.sensor_readings,
+                            window_status: isOpen ? 'open' : 'closed'
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error syncing with safety systems:', error);
+            }
+        };
+
+        // --- Generic Action Handlers ---
+        const updateAllAppliances = async (type, status) => {
+            const updates = rooms.map(room => {
+                const updatedAppliances = room.appliances.map(app =>
+                    app.type === type ? { ...app, status } : app
+                );
+                return Room.update(room.id, { appliances: updatedAppliances });
+            });
+            await Promise.all(updates);
+            return { success: true, reason: `All ${type} ${status ? 'turned on' : 'turned off'}` };
+        };
+
+        const updateRoomAppliances = async (type, status) => {
+            if (!roomName) return { success: false, reason: "device_not_found" };
+            const targetRoom = rooms.find(r => r.name.toLowerCase() === roomName);
+            if (!targetRoom) return { success: false, reason: "device_not_found" };
+
+            const updatedAppliances = targetRoom.appliances.map(app =>
+                app.type === type ? { ...app, status } : app
+            );
+            await Room.update(targetRoom.id, { appliances: updatedAppliances });
+            return { success: true, reason: `${roomName} ${type} ${status ? 'turned on' : 'turned off'}` };
+        };
+
+        const updateAllDevices = async (status) => {
+             const updates = rooms.map(room => {
+                const updatedAppliances = room.appliances.map(app => ({ ...app, status }));
+                return Room.update(room.id, { appliances: updatedAppliances });
+            });
+            await Promise.all(updates);
+            return { success: true, reason: `All devices ${status ? 'turned on' : 'turned off'}` };
+        };
+        
+        const updateSpecificSocket = async (status) => {
+            if (!roomName || !socketName) return { success: false, reason: "device_not_found" };
+            const targetRoom = rooms.find(r => r.name.toLowerCase() === roomName);
+            if (!targetRoom) return { success: false, reason: "device_not_found" };
+
+            let deviceFound = false;
+            const updatedAppliances = targetRoom.appliances.map(app => {
+                if (app.type === 'smart_socket' && app.name.toLowerCase().includes(socketName)) {
+                    deviceFound = true;
+                    return { ...app, status };
+                }
+                return app;
+            });
+
+            if (!deviceFound) return { success: false, reason: "device_not_found" };
+            
+            await Room.update(targetRoom.id, { appliances: updatedAppliances });
+            return { success: true, reason: `${roomName} ${socketName} socket ${status ? 'turned on' : 'turned off'}` };
+        };
+        
+        const handleSecurityMode = async (mode) => {
+            if (mode === 'away') {
+                await updateAllDevices(false); // Turn off all devices
+            }
+            // Dispatch event for UI to update
+            window.dispatchEvent(new CustomEvent('securityModeChanged', { detail: { mode } }));
+            return { success: true, reason: `${mode} mode activated` };
+        }
+        
+        const handleLockDoor = async (lock) => {
+            try {
+                // Create a door lock safety system if it doesn't exist
+                const safetySystems = await SafetySystem.list();
+                let doorLockSystem = safetySystems.find(sys => 
+                    sys.system_type === 'gas_leak' && sys.room_name === 'Front Door' // Use gas_leak as proxy for door lock
+                );
+                
+                if (!doorLockSystem) {
+                    // Create a door lock system using available system type
+                    doorLockSystem = await SafetySystem.create({
+                        system_id: 'door_lock_001',
+                        system_type: 'gas_leak', // Using available type as proxy
+                        room_name: 'Front Door',
+                        status: 'safe',
+                        sensor_readings: { door_locked: false }
+                    });
+                }
+                
+                if (doorLockSystem) {
+                    await SafetySystem.update(doorLockSystem.id, { 
+                        status: lock ? 'active' : 'safe',
+                        sensor_readings: {
+                            ...doorLockSystem.sensor_readings,
+                            door_locked: lock
+                        }
+                    });
+                }
+                
+                // Dispatch events for SecurityOverview to listen
+                if(lock) {
+                    window.dispatchEvent(new CustomEvent('doorLocked', { detail: { locked: true } }));
+                    // Auto-activate security mode when door is locked
+                    window.dispatchEvent(new CustomEvent('securityModeChanged', { detail: { mode: 'away' } }));
+                } else {
+                    window.dispatchEvent(new CustomEvent('doorUnlocked', { detail: { locked: false } }));
+                }
+                
+                return { success: true, reason: `Front door ${lock ? 'locked' : 'unlocked'}` };
+            } catch (error) {
+                console.error('Error in handleLockDoor:', error);
+                return { success: false, reason: 'execution_error' };
+            }
+        }
+
+        // --- Main Switch Statement ---
+        let result = { success: false, reason: "unrecognized" };
+        switch (command.action_type) {
+            // System
+            case "all_devices_on": result = await updateAllDevices(true); break;
+            case "all_devices_off": result = await updateAllDevices(false); break;
+            
+            // Lighting
+            case "lights_all_on": result = await updateAllAppliances('smart_lighting', true); break;
+            case "lights_all_off": result = await updateAllAppliances('smart_lighting', false); break;
+            case "lights_room_on": result = await updateRoomAppliances('smart_lighting', true); break;
+            case "lights_room_off": result = await updateRoomAppliances('smart_lighting', false); break;
+
+            // Shading - sync with safety systems
+            case "windows_all_open": 
+                result = await updateAllAppliances('smart_shading', true);
+                await syncShadesWithSafety('window', true);
+                break;
+            case "windows_all_close": 
+                result = await updateAllAppliances('smart_shading', false);
+                await syncShadesWithSafety('window', false);
+                break;
+            case "windows_room_open": 
+                result = await updateRoomAppliances('smart_shading', true);
+                await syncShadesWithSafety('window', true, roomName);
+                break;
+            case "windows_room_close": 
+                result = await updateRoomAppliances('smart_shading', false);
+                await syncShadesWithSafety('window', false, roomName);
+                break;
+            case "curtains_all_open": result = await updateAllAppliances('smart_shading', true); break;
+            case "curtains_all_close": result = await updateAllAppliances('smart_shading', false); break;
+            case "curtains_room_open": result = await updateRoomAppliances('smart_shading', true); break;
+            case "curtains_room_close": result = await updateRoomAppliances('smart_shading', false); break;
+
+            // HVAC
+            case "ac_all_on": result = await updateAllAppliances('smart_ac', true); break;
+            case "ac_all_off": result = await updateAllAppliances('smart_ac', false); break;
+            case "ac_room_on": result = await updateRoomAppliances('smart_ac', true); break;
+            case "ac_room_off": result = await updateRoomAppliances('smart_ac', false); break;
+
+            // Sockets
+            case "sockets_all_on": result = await updateAllAppliances('smart_socket', true); break;
+            case "sockets_all_off": result = await updateAllAppliances('smart_socket', false); break;
+            case "sockets_room_on": result = await updateRoomAppliances('smart_socket', true); break;
+            case "sockets_room_off": result = await updateRoomAppliances('smart_socket', false); break;
+            case "socket_specific_on": result = await updateSpecificSocket(true); break;
+            case "socket_specific_off": result = await updateSpecificSocket(false); break;
+
+            // Security - real implementation with safety system sync
+            case "away_mode": result = await handleSecurityMode('away'); break;
+            case "home_mode": result = await handleSecurityMode('home'); break;
+            case "lock_door": result = await handleLockDoor(true); break;
+            case "unlock_door": result = await handleLockDoor(false); break;
+
+            // Non-state-changing actions
+            case "wake_up":
+            case "system_check":
+            case "energy_report":
+            case "introduction":
+            case "help":
+                result = { success: true, reason: "Action completed" };
+                break;
+            
+            default:
+                console.warn(`Unhandled action type: ${command.action_type}`);
+                result = { success: true, reason: `Action '${command.action_type}' acknowledged but not implemented.` };
+        }
+
+
+        if (result.success) {
+            // Dispatch specific events for different state changes
+            window.dispatchEvent(new CustomEvent('systemStateChanged', {
+              detail: { success: true, command: command.action_type }
+            }));
+            window.dispatchEvent(new CustomEvent('deviceStateChanged', {
+              detail: { success: true, command: command.action_type }
+            }));
+            window.dispatchEvent(new CustomEvent('applianceStateChanged', {
+              detail: { success: true, command: command.action_type }
+            }));
+            window.dispatchEvent(new CustomEvent('roomStateChanged', {
+              detail: { success: true, command: command.action_type }
+            }));
+            window.dispatchEvent(new CustomEvent('safetyStateChanged', {
+              detail: { success: true, command: command.action_type }
+            }));
+        }
+
+        return result;
+    }
 }
+
+export default new ActionExecutor();

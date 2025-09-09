@@ -21,6 +21,8 @@ import ContactSupport from "@/pages/ContactSupport";
 import Feedback from "@/pages/Feedback";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Ander from "@/pages/Ander";
+import AdvancedSystemSettings from "@/pages/AdvancedSystemSettings";
+import OnboardingChecker from "@/components/onboarding/OnboardingChecker";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +36,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
           <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
             <div className="w-8 h-8 bg-white rounded-full"></div>
           </div>
-          <p className="text-gray-600 font-inter">Loading...</p>
+          <p className="app-text text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -44,16 +46,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Auth />;
   }
 
-  return <>{children}</>;
+  return <OnboardingChecker user={user}>{children}</OnboardingChecker>;
 }
 
 const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <LandingPage onGetStarted={() => window.location.href = "/auth"} />
+  },
   {
     path: "/auth",
     element: <Auth />
   },
   {
-    path: "/",
+    path: "/app",
     element: (
       <ProtectedRoute>
         <Layout />
@@ -97,7 +103,7 @@ const router = createBrowserRouter([
         element: <FAQ />
       },
       {
-        path: "contact-support",
+        path: "contact",
         element: <ContactSupport />
       },
       {
@@ -111,12 +117,12 @@ const router = createBrowserRouter([
       {
         path: "ander",
         element: <Ander />
+      },
+      {
+        path: "advanced-system-settings",
+        element: <AdvancedSystemSettings />
       }
     ]
-  },
-  {
-    path: "/landing",
-    element: <LandingPage onGetStarted={() => {}} />
   },
   {
     path: "*",

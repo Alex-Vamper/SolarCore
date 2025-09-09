@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { UserSettings } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,18 +12,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { User, Room, SafetySystem } from "@/entities/all";
 import {
   Shield,
   Settings,
   Power,
   Clock,
-  Trash2
+  Trash2,
+  AlertCircle
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
   const [securitySettings, setSecuritySettings] = useState({
     door_security_id: "",
+    door_security_series: "",
     auto_shutdown_enabled: false,
     shutdown_exceptions: [],
     schedule_enabled: false,
@@ -32,6 +44,8 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
   const [userDevices, setUserDevices] = useState([]);
   const [userSafetySystems, setUserSafetySystems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isValidating, setIsValidating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
@@ -70,9 +84,47 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
     setIsLoading(false);
   };
 
-  const handleSave = () => {
-    onSave(securitySettings);
-    onClose();
+  const handleSave = async () => {
+    try {
+      // Validate ESP ID if provided
+      if (securitySettings.door_security_id) {
+        const { data: claimResult } = await supabase.rpc('claim_parent_device', {
+          p_esp_id: securitySettings.door_security_id.trim()
+        }) as any;
+
+        if (!claimResult?.success) {
+          if (claimResult?.code === 'UNREGISTERED_DEVICE') {
+            toast({
+              title: "Invalid Device ID",
+              description: "This device ID is not registered. Please check the ID and try again.",
+              variant: "destructive",
+            });
+            return;
+          } else if (claimResult?.code === 'ALREADY_CLAIMED' && claimResult?.message !== 'Device already claimed by you') {
+            toast({
+              title: "Device Already Claimed",
+              description: "This device is already claimed by another user.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      }
+      
+      await onSave(securitySettings);
+      toast({
+        title: "Success",
+        description: "Security settings saved successfully",
+      });
+      onClose();
+    } catch (error) {
+      console.error("Error saving security settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save security settings",
+        variant: "destructive",
+      });
+    }
   };
 
   const toggleDeviceException = (deviceId) => {
@@ -88,44 +140,67 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl font-inter">
-            <Shield className="w-6 h-6 text-blue-600" />
+          <DialogTitle className="app-heading flex items-center gap-2 text-xl">
+            <Shield className="app-icon text-blue-600" />
             Security System Settings
           </DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="general" className="font-inter">General</TabsTrigger>
-            <TabsTrigger value="devices" className="font-inter">Devices</TabsTrigger>
-            <TabsTrigger value="safety" className="font-inter">Safety Systems</TabsTrigger>
-            <TabsTrigger value="triggers" className="font-inter">Exit Triggers</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 h-auto">
+            <TabsTrigger value="general" className="app-text whitespace-normal py-2">General</TabsTrigger>
+            <TabsTrigger value="devices" className="app-text whitespace-normal py-2">Devices</TabsTrigger>
+            <TabsTrigger value="safety" className="app-text whitespace-normal py-2">Safety Systems</TabsTrigger>
+            <TabsTrigger value="triggers" className="app-text whitespace-normal py-2">Exit Triggers</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4">
             <Card className="glass-card border-0 shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-inter">
-                  <Settings className="w-5 h-5 text-blue-600" />
+                <CardTitle className="app-text flex items-center gap-2 text-lg">
+                  <Settings className="app-icon text-blue-600" />
                   Home Security System
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="app-text text-blue-800 flex items-center gap-2">
+                    <AlertCircle className="app-icon" />
+                    Enter the ESP ID (e.g., SC-GID-0001) to claim your security device
+                  </p>
+                </div>
+
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 font-inter">Door Security ID</Label>
+                  <Label className="app-text text-sm font-medium text-gray-700">ESP Device ID</Label>
                   <Input
-                    placeholder="Enter hardware ID for door lock system"
+                    placeholder="e.g., SC-GID-0001"
                     value={securitySettings.door_security_id}
-                    onChange={(e) => setSecuritySettings(prev => ({ ...prev, door_security_id: e.target.value }))}
-                    className="mt-1 font-inter"
+                    onChange={(e) => setSecuritySettings(prev => ({ ...prev, door_security_id: e.target.value.toUpperCase() }))}
+                    className="app-text mt-1"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Hardware identifier for the main door security system</p>
+                </div>
+
+                <div>
+                  <Label className="app-text text-sm font-medium text-gray-700">Security Model</Label>
+                  <Select
+                    value={securitySettings.door_security_series}
+                    onValueChange={(value) => setSecuritySettings(prev => ({ ...prev, door_security_series: value }))}
+                  >
+                    <SelectTrigger className="app-text w-full mt-1">
+                      <SelectValue placeholder="Select security model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="S-Core Lite">S-Core Lite</SelectItem>
+                      <SelectItem value="S-Core Bio">S-Core Bio (Fingerprint)</SelectItem>
+                      <SelectItem value="S-Core Ultra">S-Core Ultra (Face Recognition)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 font-inter">Auto Power Shutdown</Label>
-                    <p className="text-sm text-gray-500 font-inter">Automatically turn off devices when security mode is activated</p>
+                    <Label className="app-text text-sm font-medium text-gray-700">Auto Power Shutdown</Label>
+                    <p className="app-text text-sm text-gray-500">Automatically turn off devices when security mode is activated</p>
                   </div>
                   <Switch
                     checked={securitySettings.auto_shutdown_enabled}
@@ -139,8 +214,8 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
           <TabsContent value="devices" className="space-y-4">
             <Card className="glass-card border-0 shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-inter">
-                  <Power className="w-5 h-5 text-green-600" />
+                <CardTitle className="app-text flex items-center gap-2 text-lg">
+                  <Power className="app-icon text-green-600" />
                   Device Exceptions
                 </CardTitle>
               </CardHeader>
@@ -148,15 +223,15 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
                 {isLoading ? (
                   <div className="text-center py-8">
                     <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <p className="text-gray-500 font-inter">Loading your devices...</p>
+                    <p className="app-text text-gray-500">Loading your devices...</p>
                   </div>
                 ) : userDevices.length > 0 ? (
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {userDevices.map((device) => (
                       <div key={`${device.room_id}-${device.id}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div>
-                          <div className="font-medium font-inter">{device.name}</div>
-                          <div className="text-sm text-gray-500 font-inter">
+                          <div className="app-text font-medium">{device.name}</div>
+                          <div className="app-text text-sm text-gray-500">
                             {device.room_name} • {device.series}
                           </div>
                         </div>
@@ -169,8 +244,8 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Power className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-gray-500 font-inter">No devices found. Add devices to your rooms first.</p>
+                    <Power className="app-icon w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p className="app-text text-gray-500">No devices found. Add devices to your rooms first.</p>
                   </div>
                 )}
               </CardContent>
@@ -180,8 +255,8 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
           <TabsContent value="safety" className="space-y-4">
             <Card className="glass-card border-0 shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-inter">
-                  <Shield className="w-5 h-5 text-red-600" />
+                <CardTitle className="app-text flex items-center gap-2 text-lg">
+                  <Shield className="app-icon w-5 h-5 text-red-600" />
                   Safety Systems
                 </CardTitle>
               </CardHeader>
@@ -189,14 +264,14 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
                 {isLoading ? (
                   <div className="text-center py-8">
                     <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                    <p className="text-gray-500 font-inter">Loading safety systems...</p>
+                    <p className="app-text text-gray-500">Loading safety systems...</p>
                   </div>
                 ) : userSafetySystems.length > 0 ? (
                   <div className="space-y-3">
                     {userSafetySystems.map((system) => (
                       <div key={system.id} className="p-3 bg-gray-50 rounded-lg">
-                        <div className="font-medium font-inter">{system.room_name}</div>
-                        <div className="text-sm text-gray-500 font-inter">
+                        <div className="app-text font-medium">{system.room_name}</div>
+                        <div className="app-text text-sm text-gray-500">
                           {system.system_type.replace('_', ' ')} • ID: {system.system_id}
                         </div>
                       </div>
@@ -204,8 +279,8 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Shield className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-gray-500 font-inter">No safety systems configured yet.</p>
+                    <Shield className="app-icon w-12 h-12 mx-auto mb-4 text-gray-300" />
+                    <p className="app-text text-gray-500">No safety systems configured yet.</p>
                   </div>
                 )}
               </CardContent>
@@ -215,16 +290,16 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
           <TabsContent value="triggers" className="space-y-4">
             <Card className="glass-card border-0 shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-inter">
-                  <Clock className="w-5 h-5 text-purple-600" />
+                <CardTitle className="app-text flex items-center gap-2 text-lg">
+                  <Clock className="app-icon w-5 h-5 text-purple-600" />
                   Exit Triggers
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700 font-inter">Time-Based Schedule Toggle</Label>
-                    <p className="text-sm text-gray-500 font-inter">Automatically lock door at scheduled time</p>
+                    <Label className="app-text text-sm font-medium text-gray-700">Time-Based Schedule Toggle</Label>
+                    <p className="app-text text-sm text-gray-500">Automatically lock door at scheduled time</p>
                   </div>
                   <Switch
                     checked={securitySettings.schedule_enabled}
@@ -236,14 +311,14 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
                   <Card className="bg-purple-50 border-purple-200">
                     <CardContent className="p-4">
                       <div>
-                        <Label className="text-sm font-medium text-gray-700 font-inter">Auto Lock Time</Label>
+                        <Label className="app-text text-sm font-medium text-gray-700">Auto Lock Time</Label>
                         <Input
                           type="time"
                           value={securitySettings.auto_lock_time}
                           onChange={(e) => setSecuritySettings(prev => ({ ...prev, auto_lock_time: e.target.value }))}
-                          className="mt-1 font-inter"
+                          className="app-text mt-1"
                         />
-                        <p className="text-xs text-gray-500 mt-1">Door will automatically lock at this time daily</p>
+                        <p className="app-text text-xs text-gray-500 mt-1">Door will automatically lock at this time daily</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -254,10 +329,10 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
         </Tabs>
 
         <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onClose} className="font-inter">
+          <Button variant="outline" onClick={onClose} className="app-text">
             Cancel
           </Button>
-          <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 font-inter">
+          <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 app-text">
             Save Settings
           </Button>
         </div>

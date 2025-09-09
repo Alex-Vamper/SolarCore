@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -152,7 +152,7 @@ const SYSTEM_SETTINGS_MAP = {
 }
 
 export default function SafetySystemSettingsModal({ isOpen, onClose, system, onSave, onDelete }) {
-    const [settings, setSettings] = useState(system.automation_settings || {});
+    const [settings, setSettings] = React.useState(system.automation_settings || {});
 
     if (!isOpen || !system) return null;
 
@@ -169,43 +169,43 @@ export default function SafetySystemSettingsModal({ isOpen, onClose, system, onS
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <Icon className="w-5 h-5 text-red-600"/>
-                        {config.title} for {system.room_name}
-                    </DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                   <SpecificSettings settings={settings} setSettings={setSettings} />
+            <DialogContent className="app-dialog">
+            <DialogHeader>
+                <DialogTitle className="app-heading flex items-center gap-2">
+                <Icon className="app-icon text-red-600"/>
+                {config.title} for {system.room_name}
+                </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+                <SpecificSettings settings={settings} setSettings={setSettings} />
+            </div>
+            <DialogFooter className="flex flex-wrap items-center justify-start gap-2">
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="app-text flex items-center gap-2">
+                        <Trash2 className="app-icon"/>
+                        Delete System
+                    </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="app-heading">Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="app-text">
+                        This action cannot be undone. This will permanently delete this safety system.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="app-text">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDelete(system.id)} className="app-text bg-red-600 hover:bg-red-700">Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={onClose} className="app-text">Cancel</Button>
+                    <Button onClick={handleSave} className="app-text bg-red-600 hover:bg-red-700">Save</Button>
                 </div>
-                <DialogFooter className="flex justify-between w-full">
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="flex items-center gap-2">
-                                <Trash2 className="w-4 h-4"/>
-                                Delete System
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this safety system.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDelete(system.id)} className="bg-red-600 hover:bg-red-700">Continue</AlertDialogAction>
-                        </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={onClose}>Cancel</Button>
-                        <Button onClick={handleSave} className="bg-red-600 hover:bg-red-700">Save</Button>
-                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-    );
+        );
 }

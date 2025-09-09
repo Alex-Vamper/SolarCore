@@ -8,16 +8,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Home, 
-  Sun
-} from "lucide-react";
+import { Home } from "lucide-react";
 
 export default function AddRoomModal({ isOpen, onClose, onSave }) {
   const [roomData, setRoomData] = useState({
     name: "",
     appliances: [],
-    dome_count: 0,
     occupancy_status: false
   });
 
@@ -27,7 +23,6 @@ export default function AddRoomModal({ isOpen, onClose, onSave }) {
       setRoomData({
         name: "",
         appliances: [],
-        dome_count: 0,
         occupancy_status: false
       });
       onClose();
@@ -38,8 +33,8 @@ export default function AddRoomModal({ isOpen, onClose, onSave }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl font-inter">
-            <Home className="w-6 h-6 text-blue-600" />
+          <DialogTitle className="app-heading flex items-center gap-2">
+            <Home className="w-6 h-6 text-blue-600 app-icon" />
             Add New Room
           </DialogTitle>
         </DialogHeader>
@@ -47,39 +42,28 @@ export default function AddRoomModal({ isOpen, onClose, onSave }) {
         <div className="space-y-6">
           {/* Room Name */}
           <div>
-            <Label className="text-sm font-medium text-gray-700 font-inter">Room Name</Label>
+            <Label className="app-text font-medium text-gray-700">
+              Room Name
+            </Label>
             <Input
               placeholder="e.g., Living Room, Kitchen"
               value={roomData.name}
-              onChange={(e) => setRoomData(prev => ({ ...prev, name: e.target.value }))}
-              className="mt-1 font-inter"
+              onChange={(e) =>
+                setRoomData((prev) => ({ ...prev, name: e.target.value }))
+              }
+              className="app-text mt-1"
             />
           </div>
 
-          {/* Dome Count */}
-          <div>
-            <Label className="text-sm font-medium text-gray-700 font-inter flex items-center gap-1">
-                <Sun className="w-4 h-4" /> Solar Domes
-            </Label>
-            <Input
-              type="number"
-              min="0"
-              placeholder="Number of solar domes in this room"
-              value={roomData.dome_count}
-              onChange={(e) => setRoomData(prev => ({ ...prev, dome_count: parseInt(e.target.value) || 0 }))}
-              className="mt-1 font-inter"
-            />
-          </div>
-          
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={onClose} className="font-inter">
+            <Button variant="outline" onClick={onClose} className="app-text">
               Cancel
             </Button>
-            <Button 
-              onClick={handleSave} 
+            <Button
+              onClick={handleSave}
               disabled={!roomData.name.trim()}
-              className="bg-blue-600 hover:bg-blue-700 font-inter"
+              className="app-text bg-blue-600 hover:bg-blue-700"
             >
               Create Room
             </Button>

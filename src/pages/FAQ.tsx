@@ -2,9 +2,10 @@ import * as React from "react";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
+import { ArrowLeft, HelpCircle } from 'lucide-react';
+import Layout from '@/layouts/Layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ArrowLeft, HelpCircle } from 'lucide-react';
 
 export default function FAQ() {
   const faqs = [
@@ -27,11 +28,24 @@ export default function FAQ() {
   ];
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 pb-24">
+      <div className="max-w-[1280px] mx-auto space-y-6">
+      {/* Button Row */}
+      <div className="flex justify-start mb-6">
+        <Link to={createPageUrl("Settings")}>
+          <Button variant="outline" className="font-inter">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Settings
+          </Button>
+        </Link>
+      </div>
+
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
           <HelpCircle className="w-8 h-8 text-primary" />
-          <h1 className="text-3xl font-bold text-gray-900 font-inter">Frequently Asked Questions</h1>
+          <h1 className="text-3xl font-bold text-gray-900 font-inter">
+            Frequently Asked Questions
+          </h1>
         </div>
         <p className="text-gray-600 font-inter">
           Find answers to common questions about your SolarCore smart home system
@@ -42,7 +56,11 @@ export default function FAQ() {
         <CardContent className="p-6">
           <Accordion type="single" collapsible className="space-y-4">
             {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border-b border-gray-200 last:border-0">
+              <AccordionItem
+                key={index}
+                value={`item-${index}`}
+                className="border-b border-gray-200 last:border-0"
+              >
                 <AccordionTrigger className="text-left font-semibold text-gray-900 font-inter hover:text-primary">
                   {faq.question}
                 </AccordionTrigger>
@@ -55,5 +73,6 @@ export default function FAQ() {
         </CardContent>
       </Card>
     </div>
+  </div>
   );
 }

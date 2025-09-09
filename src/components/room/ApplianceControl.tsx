@@ -28,10 +28,12 @@ import {
   Layers,
   Move,
   GripVertical,
-  Power
+  Power,
+  Lock
 } from "lucide-react";
 
-const getApplianceIcon = (type) => {
+const getApplianceIcon = (type, name = '') => {
+  // Check by type first - exact match to device catalog types
   switch (type) {
     case 'smart_lighting': return Lightbulb;
     case 'smart_hvac': return Snowflake;
@@ -40,8 +42,22 @@ const getApplianceIcon = (type) => {
     case 'smart_camera': return Camera;
     case 'motion_sensor': return Move;
     case 'air_quality': return Wind;
-    default: return Lightbulb;
+    case 'security': return Lock;
+    case 'smart_fan': return Fan;
   }
+  
+  // Check by name patterns as fallback
+  const nameLower = name.toLowerCase();
+  if (nameLower.includes('light') || nameLower.includes('lamp')) return Lightbulb;
+  if (nameLower.includes('fan')) return Fan;
+  if (nameLower.includes('ac') || nameLower.includes('air') || nameLower.includes('hvac')) return Snowflake;
+  if (nameLower.includes('shade') || nameLower.includes('blind') || nameLower.includes('curtain')) return Layers;
+  if (nameLower.includes('socket') || nameLower.includes('plug')) return Zap;
+  if (nameLower.includes('camera')) return Camera;
+  if (nameLower.includes('motion') || nameLower.includes('sensor')) return Move;
+  if (nameLower.includes('lock') || nameLower.includes('door')) return Lock;
+  
+  return Lightbulb; // Default
 };
 
 const SIMPLIFIED_LIGHT_SERIES = [
@@ -81,7 +97,7 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
   };
 
   const renderStandardDevice = () => {
-    const ApplianceIcon = getApplianceIcon(appliance.type);
+    const ApplianceIcon = getApplianceIcon(appliance.type, appliance.name);
     return (
       <Card className="glass-card border-0 shadow-lg">
         <CardContent className="p-4">
@@ -97,9 +113,11 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
               </div>
               <div>
                 <div className="font-semibold text-gray-900 font-inter">{appliance.name}</div>
-                <div className="text-sm text-gray-500 font-inter flex items-center gap-1">
-                  <span>{appliance.series}</span>
-                </div>
+                {appliance.series && (
+                  <div className="text-xs text-gray-500 font-inter">
+                    {appliance.series}
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -145,6 +163,7 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
 
   const renderSimplifiedLight = () => {
     const moods = getMoodsForSeries(appliance.series);
+    const ApplianceIcon = getApplianceIcon(appliance.type);
     
     const getCurrentMoodId = () => {
       if (!appliance.status) return "off";
@@ -164,9 +183,19 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
                 <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
                     <GripVertical className="w-5 h-5 text-gray-400" />
                 </div>
-                <CardTitle className="flex items-center gap-3 text-lg font-inter">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  appliance.status ? 'bg-blue-100' : 'bg-gray-200'
+                }`}>
+                  <ApplianceIcon className={`w-5 h-5 ${appliance.status ? 'text-blue-600' : 'text-gray-500'}`} />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-inter">
                     <div className="font-semibold">{appliance.name}</div>
-                </CardTitle>
+                  </CardTitle>
+                  {appliance.series && (
+                    <p className="text-xs text-gray-500 font-inter">{appliance.series}</p>
+                  )}
+                </div>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -190,7 +219,6 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
               </AlertDialogContent>
             </AlertDialog>
           </div>
-           <p className="text-sm text-gray-500 font-inter ml-11 -mt-2">{appliance.series}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

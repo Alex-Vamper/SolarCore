@@ -74,26 +74,26 @@ export default function RoomSettingsTab({ room, onRoomUpdate, onDeleteRoom }) {
       {/* General Settings */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <Home className="w-5 h-5 text-blue-600" />
+          <CardTitle className="app-heading flex items-center gap-2">
+            <Home className="app-icon text-blue-600" />
             General
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-4">
             <div>
-              <Label className="text-sm font-medium text-gray-700 font-inter">Room Name</Label>
+              <Label className="app-text font-medium text-gray-700">Room Name</Label>
               <Input
                 value={generalSettings.name}
                 onChange={(e) => setGeneralSettings(prev => ({ ...prev, name: e.target.value }))}
-                className="mt-1 font-inter"
+                className="app-text mt-1"
               />
             </div>
             
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-sm font-medium text-gray-700 font-inter">Occupancy Detection</Label>
-                <p className="text-sm text-gray-500 font-inter">Enable PIR sensor for occupancy detection</p>
+                <Label className="app-text font-medium text-gray-700">Occupancy Detection</Label>
+                <p className="app-text text-gray-500">Enable PIR sensor for occupancy detection</p>
               </div>
               <Switch
                 checked={generalSettings.occupancy_detection}
@@ -103,20 +103,20 @@ export default function RoomSettingsTab({ room, onRoomUpdate, onDeleteRoom }) {
 
             {generalSettings.occupancy_detection && (
               <div>
-                <Label className="text-sm font-medium text-gray-700 font-inter">PIR Sensor ID</Label>
+                <Label className="app-text font-medium text-gray-700">PIR Sensor ID</Label>
                 <Input
                   placeholder="Enter hardware ID of the sensor"
                   value={generalSettings.pir_sensor_id}
                   onChange={(e) => setGeneralSettings(prev => ({ ...prev, pir_sensor_id: e.target.value }))}
-                  className="mt-1 font-inter"
+                  className="app-text mt-1"
                 />
               </div>
             )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" className="font-inter">Cancel</Button>
-            <Button onClick={handleSaveGeneral} className="bg-blue-600 hover:bg-blue-700 font-inter">
+            <Button variant="outline" className="app-text">Cancel</Button>
+            <Button onClick={handleSaveGeneral} className="app-text bg-blue-600 hover:bg-blue-700">
               Save Changes
             </Button>
           </div>
@@ -126,8 +126,8 @@ export default function RoomSettingsTab({ room, onRoomUpdate, onDeleteRoom }) {
       {/* Automation Settings */}
       <Card className="glass-card border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-inter">
-            <Settings className="w-5 h-5 text-purple-600" />
+          <CardTitle className="app-heading flex items-center gap-2">
+            <Settings className="app-icon text-purple-600" />
             Automation
           </CardTitle>
         </CardHeader>
@@ -136,8 +136,8 @@ export default function RoomSettingsTab({ room, onRoomUpdate, onDeleteRoom }) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="text-sm font-medium text-gray-700 font-inter">Schedule Automation</Label>
-                <p className="text-sm text-gray-500 font-inter">Automatically turn devices on/off based on schedule</p>
+                <Label className="app-text font-medium text-gray-700">Schedule Automation</Label>
+                <p className="app-text text-gray-500">Automatically turn devices on/off based on schedule</p>
               </div>
               <Switch
                 checked={automationSettings.auto_schedule}
@@ -148,21 +148,21 @@ export default function RoomSettingsTab({ room, onRoomUpdate, onDeleteRoom }) {
             {automationSettings.auto_schedule && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 font-inter">Morning On</Label>
+                  <Label className="app-text font-medium text-gray-700">Morning On</Label>
                   <Input
                     type="time"
                     value={automationSettings.morning_on}
                     onChange={(e) => setAutomationSettings(prev => ({ ...prev, morning_on: e.target.value }))}
-                    className="mt-1 font-inter"
+                    className="app-text mt-1"
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 font-inter">Evening Off</Label>
+                  <Label className="app-text font-medium text-gray-700">Evening Off</Label>
                   <Input
                     type="time"
                     value={automationSettings.evening_off}
                     onChange={(e) => setAutomationSettings(prev => ({ ...prev, evening_off: e.target.value }))}
-                    className="mt-1 font-inter"
+                    className="app-text mt-1"
                   />
                 </div>
               </div>
@@ -172,49 +172,49 @@ export default function RoomSettingsTab({ room, onRoomUpdate, onDeleteRoom }) {
           {/* Temperature Control */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Thermometer className="w-4 h-4 text-orange-500" />
-              <Label className="text-sm font-medium text-gray-700 font-inter">Temperature Control</Label>
+              <Thermometer className="app-icon text-orange-500" />
+              <Label className="app-text font-medium text-gray-700">Temperature Control</Label>
             </div>
             
             <div>
-              <Label className="text-sm font-medium text-gray-700 font-inter">Temperature Sensor ID</Label>
+              <Label className="app-text font-medium text-gray-700">Temperature Sensor ID</Label>
               <Input
                 placeholder="Hardware ID of temperature sensor"
                 value={automationSettings.temperature_sensor_id}
                 onChange={(e) => setAutomationSettings(prev => ({ ...prev, temperature_sensor_id: e.target.value }))}
-                className="mt-1 font-inter"
+                className="app-text mt-1"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-gray-700 font-inter">Turn ON AC above (°C)</Label>
+                <Label className="app-text font-medium text-gray-700">Turn ON AC above (°C)</Label>
                 <Input
                   type="number"
                   value={automationSettings.temp_high}
                   onChange={(e) => setAutomationSettings(prev => ({ ...prev, temp_high: parseInt(e.target.value) || 28 }))}
-                  className="mt-1 font-inter"
+                  className="app-text mt-1"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-700 font-inter">Turn OFF AC below (°C)</Label>
+                <Label className="app-text font-medium text-gray-700">Turn OFF AC below (°C)</Label>
                 <Input
                   type="number"
                   value={automationSettings.temp_low}
                   onChange={(e) => setAutomationSettings(prev => ({ ...prev, temp_low: parseInt(e.target.value) || 20 }))}
-                  className="mt-1 font-inter"
+                  className="app-text mt-1"
                 />
               </div>
             </div>
             
-            <p className="text-xs text-gray-500 font-inter">
+            <p className="app-text text-gray-500">
               AC will be managed automatically based on these temperature thresholds.
             </p>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" className="font-inter">Cancel</Button>
-            <Button onClick={handleSaveAutomation} className="bg-purple-600 hover:bg-purple-700 font-inter">
+            <Button variant="outline" className="app-text">Cancel</Button>
+            <Button onClick={handleSaveAutomation} className="app-text bg-purple-600 hover:bg-purple-700">
               Save Changes
             </Button>
           </div>
@@ -226,31 +226,31 @@ export default function RoomSettingsTab({ room, onRoomUpdate, onDeleteRoom }) {
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-gray-900 font-inter">Delete Room</h3>
-              <p className="text-sm text-gray-600 font-inter">
+              <h3 className="app-text font-semibold text-gray-900">Delete Room</h3>
+              <p className="app-text text-gray-600">
                 Permanently remove this room and all its devices
               </p>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="font-inter">
-                  <Trash2 className="w-4 h-4 mr-2" />
+                <Button variant="destructive" className="app-text">
+                  <Trash2 className="app-icon mr-2" />
                   Delete Room
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete {room.name}?</AlertDialogTitle>
-                  <AlertDialogDescription>
+                  <AlertDialogTitle className="app-heading">Delete {room.name}?</AlertDialogTitle>
+                  <AlertDialogDescription className="app-text">
                     This action cannot be undone. This will permanently delete the room
                     and all associated devices and settings.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel className="app-text">Cancel</AlertDialogCancel>
                   <AlertDialogAction 
                     onClick={onDeleteRoom}
-                    className="bg-red-600 hover:bg-red-700"
+                    className="app-text bg-red-600 hover:bg-red-700"
                   >
                     Delete Room
                   </AlertDialogAction>

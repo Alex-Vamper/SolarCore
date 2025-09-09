@@ -1,5 +1,6 @@
+//src/layouts/Layout.tsx
 import * as React from "react";
-
+import { useEffect } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,12 @@ import {
 } from "lucide-react";
 
 import AIAssistantButton from "@/components/ai/AIAssistantButton";
+import { ScrollToTop } from "@/components/ScrollToTop";
+import LaunchGate from "@/components/LaunchGate";
+import PostLaunchSplash from "@/components/PostLaunchSplash";  // 👈 import splash
+import { useSecurityState } from "@/hooks/useSecurityState";
+import { useCrossSystemSync } from "@/hooks/useCrossSystemSync";
+import solarcore from "../assets/SolarCore-1.svg";
 
 const navigationItems = [
   {
@@ -54,14 +61,13 @@ const SideNav = () => {
   return (
     <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 fixed h-full">
       <div className="flex items-center gap-3 p-4 border-b">
-        <div className="w-10 h-10 gradient-solarcore rounded-xl flex items-center justify-center shadow-lg">
-          <Sun className="w-6 h-6 text-white" />
-        </div>
+        <img src={solarcore} alt="SolarCore Logo" className="h-10 object-contain" />
         <div>
           <h1 className="text-xl font-bold text-gray-900 font-inter">SolarCore</h1>
           <p className="text-xs text-gray-500 font-inter">Smart Home Control</p>
         </div>
       </div>
+
       <nav className="flex-1 p-4 space-y-2">
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.url;
@@ -71,11 +77,13 @@ const SideNav = () => {
               to={item.url}
               className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${
                 isActive
-                  ? 'bg-primary/10 text-primary font-semibold'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
-              <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : item.color}`} />
+              <item.icon
+                className={`w-5 h-5 ${isActive ? "text-primary" : item.color}`}
+              />
               <span className="font-inter">{item.title}</span>
             </Link>
           );
@@ -98,12 +106,18 @@ const BottomNav = () => {
               to={item.url}
               className={`flex flex-col items-center justify-center gap-1 p-1 rounded-lg transition-all duration-200 ${
                 isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : item.color}`} />
-              <span className={`text-[10px] font-medium font-inter text-center ${isActive ? 'text-primary' : ''}`}>
+              <item.icon
+                className={`w-5 h-5 ${isActive ? "text-primary" : item.color}`}
+              />
+              <span
+                className={`text-[10px] font-medium font-inter text-center ${
+                  isActive ? "text-primary" : ""
+                }`}
+              >
                 {item.title}
               </span>
             </Link>
@@ -116,25 +130,24 @@ const BottomNav = () => {
 
 const TopBar = () => {
   return (
-    <header className="lg:hidden bg-white shadow-sm border-b border-gray-100 px-4 py-3 sticky top-0 z-10">
+    <header className="lg:hidden bg-white shadow-sm border-b border-gray-100 px-4 py-3 sticky top-0 z-50">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 gradient-solarcore rounded-xl flex items-center justify-center shadow-lg">
-            <Sun className="w-6 h-6 text-white" />
-          </div>
+          <img src={solarcore} alt="SolarCore Logo" className="h-10 object-contain" />
           <div>
             <h1 className="text-xl font-bold text-gray-900 font-inter">SolarCore</h1>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
           <Link to={createPageUrl("Notifications")}>
             <Button variant="ghost" size="icon">
-              <Bell className="w-5 h-5 text-gray-600"/>
+              <Bell className="w-5 h-5 text-gray-600" />
             </Button>
           </Link>
           <Link to={createPageUrl("Settings")}>
             <Button variant="ghost" size="icon">
-              <UserIcon className="w-5 h-5 text-gray-600"/>
+              <UserIcon className="w-5 h-5 text-gray-600" />
             </Button>
           </Link>
         </div>
@@ -145,16 +158,16 @@ const TopBar = () => {
 
 const DesktopHeader = () => {
   return (
-    <header className="hidden lg:flex bg-white shadow-sm border-b border-gray-100 px-6 py-3 items-center justify-end">
+    <header className="hidden lg:flex bg-white shadow-sm border-b border-gray-100 px-6 py-3 items-center justify-end sticky top-0 z-50">
       <div className="flex items-center gap-3">
         <Link to={createPageUrl("Notifications")}>
           <Button variant="ghost" size="icon">
-            <Bell className="w-5 h-5 text-gray-600"/>
+            <Bell className="w-5 h-5 text-gray-600" />
           </Button>
         </Link>
         <Link to={createPageUrl("Settings")}>
           <Button variant="ghost" size="icon">
-            <UserIcon className="w-5 h-5 text-gray-600"/>
+            <UserIcon className="w-5 h-5 text-gray-600" />
           </Button>
         </Link>
       </div>
@@ -163,19 +176,36 @@ const DesktopHeader = () => {
 };
 
 interface LayoutProps {
+  children?: React.ReactNode;
   currentPageName?: string;
 }
 
-export default function Layout({}: LayoutProps = {}) {
+export default function Layout({ children }: LayoutProps) {
+  // Initialize global hooks
+  useSecurityState(); // Initialize security state listener globally
+  useCrossSystemSync(); // Initialize cross-system synchronization
+  
+  // LaunchGate config
+  const launchIso =
+    import.meta.env.VITE_LAUNCH_DATE ?? "2025-09-27T00:00:00+01:00";
+  const previewKey = import.meta.env.VITE_PREVIEW_KEY;
+  const serverTimeUrl = import.meta.env.VITE_TIME_ENDPOINT ?? null;
+
   return (
     <div className="min-h-screen bg-solarcore-gray flex flex-col lg:flex-row">
+      <ScrollToTop />
       <SideNav />
       <TopBar />
 
       <div className="flex-1 lg:pl-64">
         <DesktopHeader />
         <main className="flex-1 overflow-auto pb-24 lg:pb-6">
-          <Outlet />
+          {/* 👇 Wrap LaunchGate output in PostLaunchSplash */}
+          <LaunchGate launchIso={launchIso} serverTimeUrl={serverTimeUrl}>
+            <PostLaunchSplash>
+              {children || <Outlet />}
+            </PostLaunchSplash>
+          </LaunchGate>
         </main>
       </div>
 

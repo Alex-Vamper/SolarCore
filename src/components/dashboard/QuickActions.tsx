@@ -162,24 +162,27 @@ export default function QuickActions({ onAction }) {
   return (
     <Card className="glass-card border-0 shadow-lg">
       <CardContent className="p-4">
-        <h3 className="font-semibold text-gray-900 font-inter mb-4">Quick Actions</h3>
+        <h3 className="app-text font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 gap-3">
           {actions.map((action) => (
             <Button
               key={action.id}
               variant="outline"
-              className={`${action.color} text-white border-0 h-auto p-3 flex flex-col items-center gap-2 transition-all duration-200 hover:scale-105 hover:shadow-lg`}
+              className={`${action.color} text-white border-0 h-auto 
+                          p-3 md:p-2 
+                          flex flex-col items-center gap-2 md:gap-1.5 
+                          transition-all duration-200 hover:scale-105 hover:shadow-md`}
               onClick={() => handleAction(action.id)}
               disabled={isLoading === action.id}
             >
               {isLoading === action.id ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="app-icon border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
-                <action.icon className="w-5 h-5" />
+                <action.icon className="app-icon" />
               )}
-              <div className="text-center">
-                <div className="text-sm font-medium">{action.title}</div>
-                <div className="text-xs opacity-80">{action.description}</div>
+              <div className="text-center leading-tight">
+                <div className="app-text font-medium">{action.title}</div>
+                <div className="app-text opacity-80">{action.description}</div>
               </div>
             </Button>
           ))}

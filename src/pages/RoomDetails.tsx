@@ -1,8 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { User, Room } from "@/entities/all";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -212,19 +215,17 @@ const getRoomImage = (roomName) => {
 
 export default function RoomDetails() {
   const navigate = useNavigate();
-  const { roomId } = useParams();
+  const { toast } = useToast();
   const [room, setRoom] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false);
   const [activeTab, setActiveTab] = useState("devices");
 
-  useEffect(() => {
-    loadRoom();
-  }, [roomId]);
-
   const loadRoom = async () => {
+    const pathParts = window.location.pathname.split('/');
+    const roomId = pathParts[pathParts.length - 1];
 
-    if (!roomId) {
+    if (!roomId || roomId === 'room') {
       navigate(createPageUrl("Automation"));
       return;
     }
@@ -240,6 +241,42 @@ export default function RoomDetails() {
         return;
       }
 
+      // If appliances have child_device_ids, sync their states from backend
+      if (foundRoom.appliances && foundRoom.appliances.length > 0) {
+        const appliancesWithChildIds = foundRoom.appliances.filter(app => app.child_device_id);
+        
+        if (appliancesWithChildIds.length > 0) {
+          const childIds = appliancesWithChildIds.map(app => app.child_device_id);
+          
+          // Fetch child device states from backend
+          const { data: childDevices, error } = await supabase
+            .from('child_devices')
+            .select('id, state')
+            .in('id', childIds);
+
+          if (!error && childDevices) {
+            // Update appliances with backend states
+            foundRoom.appliances = foundRoom.appliances.map(app => {
+              if (app.child_device_id) {
+                const childDevice = childDevices.find(cd => cd.id === app.child_device_id);
+                if (childDevice && childDevice.state) {
+                  const state = childDevice.state as any;
+                  return {
+                    ...app,
+                    status: state.status || false,
+                    intensity: state.intensity || app.intensity,
+                    color_tint: state.color_tint || app.color_tint,
+                    auto_mode: state.auto_mode || app.auto_mode,
+                    power_usage: state.power_usage || app.power_usage
+                  };
+                }
+              }
+              return app;
+            });
+          }
+        }
+      }
+
       setRoom(foundRoom);
     } catch (error) {
       console.error("Error loading room:", error);
@@ -247,6 +284,13 @@ export default function RoomDetails() {
     }
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    loadRoom();
+  }, []);
+
+  // Auto-refresh when voice commands change room/device states
+  useAutoRefresh(loadRoom, ['roomStateChanged', 'applianceStateChanged', 'deviceStateChanged']);
 
   const handleBack = () => {
     navigate(createPageUrl("Automation"));
@@ -284,14 +328,56 @@ export default function RoomDetails() {
     if (!room) return;
 
     try {
+      // Find the appliance to update
+      const appliance = room.appliances.find(app => app.id === applianceId);
+      
+      // Update in child_devices table if it has a child_device_id
+      if (appliance?.child_device_id) {
+        // Build state object with all properties
+        const newState = {
+          status: updates.status !== undefined ? updates.status : appliance.status,
+          intensity: updates.intensity !== undefined ? updates.intensity : appliance.intensity,
+          color_tint: updates.color_tint !== undefined ? updates.color_tint : appliance.color_tint,
+          auto_mode: updates.auto_mode !== undefined ? updates.auto_mode : appliance.auto_mode,
+          power_usage: updates.power_usage !== undefined ? updates.power_usage : appliance.power_usage,
+        };
+
+        // Update the child_device state in the backend using the update_child_state RPC
+        const { data: updateResult, error } = await supabase.rpc('update_child_state', {
+          p_child_id: appliance.child_device_id,
+          p_new_state: newState
+        }) as any;
+
+        if (error || !updateResult?.success) {
+          console.error("Error updating child device:", error || updateResult);
+          toast({
+            title: "Update Failed",
+            description: updateResult?.message || "Failed to sync device state with backend.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Update locally in room appliances
       const updatedAppliances = room.appliances.map(app =>
         app.id === applianceId ? { ...app, ...updates } : app
       );
 
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
+      
+      // Trigger update event for synchronization
+      window.dispatchEvent(new CustomEvent('applianceStateChanged', { 
+        detail: { roomId: room.id, applianceId } 
+      }));
     } catch (error) {
       console.error("Error updating appliance:", error);
+      toast({
+        title: "Update Failed", 
+        description: "Failed to update device state.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -299,11 +385,38 @@ export default function RoomDetails() {
     if (!room) return;
 
     try {
+      // Find the appliance to delete
+      const appliance = room.appliances.find(app => app.id === applianceId);
+      
+      // Delete from child_devices table if it has a child_device_id
+      if (appliance?.child_device_id) {
+        const { error } = await supabase
+          .from('child_devices')
+          .delete()
+          .eq('id', appliance.child_device_id);
+
+        if (error) {
+          console.error("Error deleting child device from backend:", error);
+          toast({
+            title: "Delete Failed",
+            description: "Failed to delete device from backend.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Update locally in room appliances
       const updatedAppliances = room.appliances.filter(app => app.id !== applianceId);
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
     } catch (error) {
       console.error("Error deleting appliance:", error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete device.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -311,19 +424,37 @@ export default function RoomDetails() {
     if (!room) return;
 
     try {
+      // Map the device data to appliance format
       const newDevice = {
-        id: `device_${Date.now()}`,
-        ...deviceData,
+        id: deviceData.id || `device_${Date.now()}`,
+        child_device_id: deviceData.id, // Store the child_device_id for backend sync
+        name: deviceData.name,
+        type: deviceData.device_class, // Use device_class as the type
+        series: deviceData.device_series, // Store the series/model
+        device_id: deviceData.esp_id,
         status: false,
-        power_usage: 0
+        power_usage: 0,
+        intensity: 100,
+        color_tint: 'white',
+        auto_mode: false
       };
 
       const updatedAppliances = [...(room.appliances || []), newDevice];
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
       setShowAddDeviceModal(false);
+      
+      toast({
+        title: "Device Added",
+        description: `${newDevice.name} has been added successfully.`,
+      });
     } catch (error) {
       console.error("Error adding device:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add device. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -419,86 +550,89 @@ export default function RoomDetails() {
         </div>
       </div>
 
-      <div className="p-4">
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="devices" className="font-inter">Devices</TabsTrigger>
-            <TabsTrigger value="settings" className="font-inter">Settings</TabsTrigger>
-          </TabsList>
+      <div className="p-4 pb-24">
+        <div className="max-w-[1280px] mx-auto space-y-6">
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="devices" className="font-inter">Devices</TabsTrigger>
+              <TabsTrigger value="settings" className="font-inter">Settings</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="devices" className="space-y-4 mt-4">
-            {/* Master Switch Card */}
-            <Card className="glass-card border-0 shadow-lg">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold font-inter">Master Switch</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <p className="text-sm text-gray-600 font-inter">Turn On or Off All Devices</p>
-                <Button
-                  onClick={handleMasterToggle}
-                  disabled={!room.appliances?.length}
-                  className={`w-32 ${allOn ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} font-inter disabled:bg-gray-400`}
-                >
-                  <Power className="w-4 h-4 mr-2" />
-                  {allOn ? 'Turn All Off' : 'Turn All On'}
-                </Button>
-              </CardContent>
-            </Card>
+            <TabsContent value="devices" className="space-y-4 mt-4">
+              {/* Master Switch Card */}
+              <Card className="glass-card border-0 shadow-lg">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-semibold font-inter">Master Switch</CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600 font-inter">Turn On or Off All Devices</p>
+                  <Button
+                    onClick={handleMasterToggle}
+                    disabled={!room.appliances?.length}
+                    className={`w-32 ${allOn ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} font-inter disabled:bg-gray-400`}
+                  >
+                    <Power className="w-4 h-4 mr-2" />
+                    {allOn ? 'Turn All Off' : 'Turn All On'}
+                  </Button>
+                </CardContent>
+              </Card>
 
-            {/* Devices List */}
-            {room.appliances?.length > 0 ? (
-              <DragDropContext onDragEnd={onApplianceDragEnd}>
-                <Droppable droppableId="appliances">
-                  {(provided) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                      {room.appliances.map((appliance, index) => (
-                        <Draggable key={appliance.id} draggableId={appliance.id} index={index}>
-                          {(provided) => (
-                            <div ref={provided.innerRef} {...provided.draggableProps}>
-                              <ApplianceControl
-                                appliance={appliance}
-                                onUpdate={handleApplianceUpdate}
-                                onDelete={handleApplianceDelete}
-                                dragHandleProps={provided.dragHandleProps}
-                              />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Power className="w-8 h-8 text-gray-400" />
+              {/* Devices List */}
+              {room.appliances?.length > 0 ? (
+                <DragDropContext onDragEnd={onApplianceDragEnd}>
+                  <Droppable droppableId="appliances">
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                        {room.appliances.map((appliance, index) => (
+                          <Draggable key={appliance.id} draggableId={appliance.id} index={index}>
+                            {(provided) => (
+                              <div ref={provided.innerRef} {...provided.draggableProps}>
+                                <ApplianceControl
+                                  appliance={appliance}
+                                  onUpdate={handleApplianceUpdate}
+                                  onDelete={handleApplianceDelete}
+                                  dragHandleProps={provided.dragHandleProps}
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Power className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 font-inter mb-2">No devices added</h3>
+                  <p className="text-gray-600 font-inter mb-4">
+                    Add your first smart device to get started
+                  </p>
+                  <Button onClick={() => setShowAddDeviceModal(true)} className="bg-blue-600 hover:bg-blue-700 font-inter">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Device
+                  </Button>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 font-inter mb-2">No devices added</h3>
-                <p className="text-gray-600 font-inter mb-4">
-                  Add your first smart device to get started
-                </p>
-                <Button onClick={() => setShowAddDeviceModal(true)} className="bg-blue-600 hover:bg-blue-700 font-inter">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Device
-                </Button>
-              </div>
-            )}
-          </TabsContent>
+              )}
+            </TabsContent>
 
-          <TabsContent value="settings" className="space-y-4 mt-4">
-            <RoomSettingsTab room={room} onRoomUpdate={handleRoomUpdate} onDeleteRoom={handleDeleteRoom} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="settings" className="space-y-4 mt-4">
+              <RoomSettingsTab room={room} onRoomUpdate={handleRoomUpdate} onDeleteRoom={handleDeleteRoom} />
+            </TabsContent>
+          </Tabs>
 
-        <AddDeviceModal
-          isOpen={showAddDeviceModal}
-          onClose={() => setShowAddDeviceModal(false)}
-          onSave={handleAddDevice}
-          roomName={room.name}
-        />
+          <AddDeviceModal
+            isOpen={showAddDeviceModal}
+            onClose={() => setShowAddDeviceModal(false)}
+            onSave={handleAddDevice}
+            roomName={room.name}
+            roomId={room.id}
+          />
+        </div>
       </div>
     </div>
   );

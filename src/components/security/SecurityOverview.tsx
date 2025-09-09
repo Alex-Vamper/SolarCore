@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   const [isArming, setIsArming] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const speak = (text, repeat = 2) => {
+  const speak = (text, repeat = 1) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
     utterance.pitch = 1.0;
@@ -61,6 +62,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     localStorage.setItem('securityState', JSON.stringify(securityState));
   }, [isDoorLocked, isSecurityMode]);
 
+  // Listen for global state changes from voice commands
   useEffect(() => {
     const handleDoorLocked = (event) => {
       const locked = event.detail.locked;
@@ -79,8 +81,10 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
 
     const handleSecurityModeChanged = (event) => {
       const mode = event.detail.mode;
-      if (mode === 'away' || mode === 'home') {
-        setIsSecurityMode(mode === 'away');
+      setIsSecurityMode(mode === 'away');
+      onSecurityModeToggle(mode === 'away');
+      if (mode === 'away') {
+          setIsDoorLocked(true); // Locking the door is part of away mode
       }
     };
 

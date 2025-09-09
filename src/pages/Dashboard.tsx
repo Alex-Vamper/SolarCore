@@ -3,12 +3,11 @@ import { User, UserSettings, EnergySystem, SafetySystem, Room } from "@/entities
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
-import SetupWizard from "../components/onboarding/SetupWizard";
 import EnergyOverview from "../components/dashboard/EnergyOverview";
+import PowerStatus from "../components/dashboard/PowerStatus";
 import QuickActions from "../components/dashboard/QuickActions";
 import SafetyStatus from "../components/dashboard/SafetyStatus";
 import RoomBox from "../components/automation/RoomBox";
-import LandingPage from "./LandingPage";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -17,114 +16,34 @@ export default function Dashboard() {
   const [energyData, setEnergyData] = useState(null);
   const [safetyData, setSafetyData] = useState([]);
   const [quickAccessRooms, setQuickAccessRooms] = useState([]);
-  
-  // State machine for controlling the view
-  const [view, setView] = useState('loading'); // 'loading', 'landing', 'setup', 'dashboard'
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const landingPageSeen = sessionStorage.getItem('landingPageSeen');
-    if (landingPageSeen) {
-      // If landing page was seen this session, skip it.
-      loadData(true);
-    } else {
-      // Otherwise, load data and then show landing page.
-      loadData(false);
-    }
+    loadData();
   }, []);
 
-  const loadData = async (skipLanding: boolean) => {
-    setView('loading');
+  const loadData = async () => {
+    setIsLoading(true);
     try {
       const currentUser = await User.me();
       setUser(currentUser);
 
-      const settingsResult = await UserSettings.filter({ created_by: currentUser.email });
-      const userSetting = settingsResult.length > 0 ? settingsResult[0] : null;
-      setUserSettings(userSetting);
-
-      if (userSetting?.setup_completed) {
-        const [energyResult, safetyResult, roomsResult] = await Promise.all([
-            EnergySystem.filter({ created_by: currentUser.email }),
-            SafetySystem.filter({ created_by: currentUser.email }),
-            Room.filter({ created_by: currentUser.email }, 'created_at', 'desc')
-        ]);
-        
-        setEnergyData(energyResult[0] || null);
-        setSafetyData(safetyResult);
-        setQuickAccessRooms(roomsResult);
-        
-        if (skipLanding) {
-          setView('dashboard');
-          return;
-        }
-      }
+      const [energyResult, safetyResult, roomsResult, settingsResult] = await Promise.all([
+        EnergySystem.filter({ created_by: currentUser.email }),
+        SafetySystem.filter({ created_by: currentUser.email }),
+        Room.filter({ created_by: currentUser.email }, 'created_at', 'desc'),
+        UserSettings.list()
+      ]);
       
-      // Default to landing page if not skipping or setup not complete
-      setView('landing');
-
+      setEnergyData(energyResult[0] || null);
+      setSafetyData(safetyResult);
+      setQuickAccessRooms(roomsResult.slice(0, 3)); // Show top 3 rooms for quick access
+      setUserSettings(settingsResult && settingsResult.length > 0 ? settingsResult[0] : null);
+      
     } catch (error) {
       console.error("Error loading data:", error);
-      setView('landing'); // Fallback to landing on error
     }
-  };
-
-  const handleSetupComplete = async (setupData: any) => {
-    setView('loading');
-    try {
-      // 1. Create or update UserSettings
-      const existingSettings = await UserSettings.filter({ created_by: user.email });
-      if (existingSettings.length > 0) {
-        // Update existing settings
-        await UserSettings.update(existingSettings[0].id, {
-          setup_completed: true,
-          building_type: setupData.buildingType,
-          building_name: setupData.buildingName,
-          total_rooms: setupData.rooms.length,
-          energy_mode: setupData.energySource === "mixed" ? "auto_switch" : 
-                      setupData.energySource === "solar" ? "solar_only" : "grid_only"
-        });
-      } else {
-        // Create new settings
-        await UserSettings.create({
-          setup_completed: true,
-          building_type: setupData.buildingType,
-          building_name: setupData.buildingName,
-          total_rooms: setupData.rooms.length,
-          energy_mode: setupData.energySource === "mixed" ? "auto_switch" : 
-                      setupData.energySource === "solar" ? "solar_only" : "grid_only"
-        });
-      }
-
-      // 2. Create Rooms
-      const roomPromises = setupData.rooms.map((room: any, index: number) => {
-        return Room.create({
-            name: room.name,
-            appliances: [],
-            dome_count: 0,
-            occupancy_status: false,
-            order: index
-        });
-      });
-      await Promise.all(roomPromises);
-
-      // 3. Create EnergySystem
-      await EnergySystem.create({
-        energy_source: setupData.energySource,
-        solar_percentage: setupData.energySource === "solar" ? 100 : 65,
-        grid_percentage: setupData.energySource === "grid" ? 100 : 35,
-        battery_level: 78,
-        current_usage: 0,
-        daily_usage: 0,
-        cost_savings: 0
-      });
-
-      // 4. Reload all data and switch to dashboard view
-      await loadData(true); // pass true to skip landing page after setup
-    } catch (error) {
-      console.error("Error completing setup:", error);
-      // Don't go back to landing, stay in dashboard with existing data
-      setView('dashboard');
-    }
+    setIsLoading(false);
   };
 
   const handleQuickAction = async (actionType: string) => {
@@ -143,22 +62,11 @@ export default function Dashboard() {
     }
   };
 
-  const handleGetStarted = () => {
-    sessionStorage.setItem('landingPageSeen', 'true');
-    if (userSettings?.setup_completed) {
-      setView('dashboard');
-    } else {
-      setView('setup');
-    }
-  };
-
-  // --- Render logic based on view state ---
-
-  if (view === 'loading') {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-solarcore-gray">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="w-16 h-16 gradient-solarcore rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+          <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
             <div className="w-8 h-8 bg-white rounded-full"></div>
           </div>
           <p className="text-gray-600 font-inter">Loading your smart home...</p>
@@ -167,26 +75,21 @@ export default function Dashboard() {
     );
   }
 
-  if (view === 'landing') {
-    return <LandingPage onGetStarted={handleGetStarted} />;
-  }
-
-  if (view === 'setup') {
-    return <SetupWizard onComplete={handleSetupComplete} />;
-  }
-  
-  if (view === 'dashboard') {
-    return (
-      <div className="p-4 space-y-6 pb-24">
+  return (
+    <div className="p-4 pb-24">
+      <div className="max-w-[1280px] mx-auto space-y-6">
         {/* Welcome Header */}
         <div className="text-center py-6">
-          <h1 className="text-2xl font-bold text-gray-900 font-inter">
+          <h1 className="app-heading text-2xl font-bold text-gray-900">
             Welcome back, {user?.full_name?.split(' ')[0] || 'User'}!
           </h1>
-          <p className="text-gray-600 font-inter mt-1">
+          <p className="app-text text-gray-600 mt-1">
             Your smart home is running smoothly
           </p>
         </div>
+
+        {/* Power Status Card */}
+        <PowerStatus userSettings={userSettings} energyData={energyData} />
 
         {/* Energy Overview */}
         <EnergyOverview energyData={energyData} />
@@ -196,22 +99,19 @@ export default function Dashboard() {
         
         {/* Quick Access Rooms */}
         {quickAccessRooms.length > 0 && (
-            <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900 font-inter">Quick Access Rooms</h3>
-                <div className="space-y-3">
-                  {quickAccessRooms.map((room: any) => (
-                      <RoomBox key={room.id} room={room} dragHandleProps={null} />
-                  ))}
-                </div>
+          <div className="space-y-4">
+            <h3 className="app-text font-semibold text-gray-900">Quick Access Rooms</h3>
+            <div className="space-y-3">
+              {quickAccessRooms.map((room: any) => (
+                <RoomBox key={room.id} room={room} dragHandleProps={null} />
+              ))}
             </div>
+          </div>
         )}
 
         {/* Safety Status */}
         <SafetyStatus safetyData={safetyData} />
       </div>
-    );
-  }
-
-  // Fallback case
-  return <LandingPage onGetStarted={handleGetStarted} />;
+    </div>
+  );
 }

@@ -4,9 +4,10 @@ import type { Json } from '@/integrations/supabase/types';
 export interface Appliance {
   id: string;
   name: string;
-  type: 'smart_lighting' | 'smart_hvac' | 'smart_shading' | 'smart_socket' | 'smart_camera' | 'motion_sensor' | 'air_quality';
+  type: 'smart_lighting' | 'smart_hvac' | 'smart_shading' | 'smart_socket' | 'smart_camera' | 'motion_sensor' | 'air_quality' | 'security';
   series?: string;
   device_id?: string;
+  child_device_id?: string;
   status?: boolean;
   power_usage?: number;
   intensity?: number;
@@ -38,6 +39,9 @@ export interface Room {
 }
 
 export class RoomService {
+  static async list(): Promise<Room[]> {
+    return this.filter({});
+  }
   static async filter(params: { created_by?: string }, orderBy?: string, order?: string): Promise<Room[]> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
