@@ -2,10 +2,10 @@ import { useEffect, useCallback } from 'react';
 
 export const useAutoRefresh = (refreshCallback: () => void, eventNames: string[] = []) => {
   const handleRefresh = useCallback((event?: any) => {
-    // Add a small delay to ensure database changes are complete
+    // Add a longer delay to ensure backend updates are complete before refreshing
     setTimeout(() => {
       refreshCallback();
-    }, 500);
+    }, 2000);
   }, [refreshCallback]);
 
   useEffect(() => {

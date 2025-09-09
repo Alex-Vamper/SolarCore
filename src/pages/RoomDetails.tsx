@@ -388,33 +388,27 @@ export default function RoomDetails() {
       // Find the appliance to delete
       const appliance = room.appliances.find(app => app.id === applianceId);
       
-      // Delete from child_devices table if it has a child_device_id
+      // Delete from child_devices table using the proper entity service if it has a child_device_id
       if (appliance?.child_device_id) {
-        const { error } = await supabase
-          .from('child_devices')
-          .delete()
-          .eq('id', appliance.child_device_id);
-
-        if (error) {
-          console.error("Error deleting child device from backend:", error);
-          toast({
-            title: "Delete Failed",
-            description: "Failed to delete device from backend.",
-            variant: "destructive"
-          });
-          return;
-        }
+        // Import the ChildDevice service dynamically
+        const { ChildDeviceService } = await import('@/entities/ChildDevice');
+        await ChildDeviceService.delete(appliance.child_device_id);
       }
 
       // Update locally in room appliances
       const updatedAppliances = room.appliances.filter(app => app.id !== applianceId);
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
+      
+      toast({
+        title: "Device Deleted",
+        description: `${appliance.name} has been removed successfully.`,
+      });
     } catch (error) {
       console.error("Error deleting appliance:", error);
       toast({
         title: "Delete Failed",
-        description: "Failed to delete device.",
+        description: "Failed to delete device from backend.",
         variant: "destructive"
       });
     }
