@@ -856,6 +856,39 @@ export type Database = {
           },
         ]
       }
+      wifi_networks: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          password: string
+          priority: number
+          ssid: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          password: string
+          priority?: number
+          ssid: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          password?: string
+          priority?: number
+          ssid?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -914,6 +947,19 @@ export type Database = {
         Returns: string
       }
       admin_list_accounts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          admin_name: string
+          created_at: string
+          created_by: string
+          created_by_name: string
+          id: string
+          status: string
+          uid: string
+          updated_at: string
+        }[]
+      }
+      admin_list_credentials: {
         Args: Record<PropertyKey, never>
         Returns: {
           admin_name: string

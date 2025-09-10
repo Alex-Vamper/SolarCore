@@ -5,9 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Zap, Grid3x3, CheckCircle, Sun, Battery, WifiOff, ArrowLeft, Save } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle, Zap, Grid3x3, CheckCircle, Sun, Battery, WifiOff, ArrowLeft, Save, Wifi, Plus } from "lucide-react";
 import { PowerSystem } from "@/entities/PowerSystem";
 import { UserSettingsService } from "@/entities/UserSettings";
+import { WiFiNetwork } from "@/entities/WiFiNetwork";
+import WiFiNetworkForm from "@/components/settings/WiFiNetworkForm";
+import WiFiNetworkList from "@/components/settings/WiFiNetworkList";
 import { toast } from "sonner";
 
 const ENERGY_SOURCES = [
@@ -40,9 +44,16 @@ export default function AdvancedSystemSettings() {
   const [solarValidated, setSolarValidated] = useState(false);
   const [gridValidated, setGridValidated] = useState(false);
   const [validating, setValidating] = useState(false);
+  
+  // WiFi networks state
+  const [wifiNetworks, setWifiNetworks] = useState<WiFiNetwork[]>([]);
+  const [wifiFormOpen, setWifiFormOpen] = useState(false);
+  const [editingNetwork, setEditingNetwork] = useState<WiFiNetwork | null>(null);
+  const [loadingWifi, setLoadingWifi] = useState(false);
 
   useEffect(() => {
     loadSettings();
+    loadWifiNetworks();
   }, []);
 
   const loadSettings = async () => {
@@ -71,6 +82,32 @@ export default function AdvancedSystemSettings() {
       toast.error("Failed to load system settings");
     }
     setIsLoading(false);
+  };
+
+  const loadWifiNetworks = async () => {
+    setLoadingWifi(true);
+    try {
+      const networks = await WiFiNetwork.list();
+      setWifiNetworks(networks);
+    } catch (error) {
+      console.error("Error loading WiFi networks:", error);
+      toast.error("Failed to load WiFi networks");
+    }
+    setLoadingWifi(false);
+  };
+
+  const handleEditWifiNetwork = (network: WiFiNetwork) => {
+    setEditingNetwork(network);
+    setWifiFormOpen(true);
+  };
+
+  const handleAddWifiNetwork = () => {
+    setEditingNetwork(null);
+    setWifiFormOpen(true);
+  };
+
+  const handleWifiFormSuccess = () => {
+    loadWifiNetworks();
   };
 
   // Reset validation states when IDs change
@@ -198,9 +235,25 @@ export default function AdvancedSystemSettings() {
           </Button>
           <div>
             <h1 className="app-heading text-2xl font-bold">Advanced System Settings</h1>
-            <p className="app-text text-muted-foreground">Configure your power source and system IDs</p>
+            <p className="app-text text-muted-foreground">Configure your power source and connectivity settings</p>
           </div>
         </div>
+
+        {/* Tabbed Interface */}
+        <Tabs defaultValue="energy" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="energy" className="gap-2">
+              <Battery className="app-icon" />
+              Energy Sources
+            </TabsTrigger>
+            <TabsTrigger value="wifi" className="gap-2">
+              <Wifi className="app-icon" />
+              Connectivity
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Energy Sources Tab */}
+          <TabsContent value="energy" className="space-y-6">
 
         {/* Energy Source Selection */}
         <Card className="glass-card border-0 shadow-lg">
@@ -383,24 +436,73 @@ export default function AdvancedSystemSettings() {
           </Card>
         )}
 
-        {/* Save Button */}
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => navigate("/app/settings")}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!canSave() || isSaving}
-            className="flex-1 gap-2"
-          >
-            <Save className="app-icon" />
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
+            {/* Save Button */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => navigate("/app/settings")}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={!canSave() || isSaving}
+                className="flex-1 gap-2"
+              >
+                <Save className="app-icon" />
+                {isSaving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* WiFi Connectivity Tab */}
+          <TabsContent value="wifi" className="space-y-6">
+            <Card className="glass-card border-0 shadow-lg">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="app-text flex items-center gap-2">
+                    <Wifi className="app-icon text-primary" />
+                    WiFi Networks
+                  </CardTitle>
+                  <Button onClick={handleAddWifiNetwork} className="gap-2">
+                    <Plus className="app-icon" />
+                    Add Network
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="app-text text-muted-foreground">
+                    Configure WiFi networks for your connected devices. Devices will automatically 
+                    connect to available networks based on priority order.
+                  </p>
+                  
+                  {loadingWifi ? (
+                    <div className="text-center py-8">
+                      <div className="w-8 h-8 bg-primary/20 rounded-full mx-auto mb-4 animate-pulse"></div>
+                      <p className="app-text text-muted-foreground">Loading WiFi networks...</p>
+                    </div>
+                  ) : (
+                    <WiFiNetworkList
+                      networks={wifiNetworks}
+                      onEdit={handleEditWifiNetwork}
+                      onRefresh={loadWifiNetworks}
+                    />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* WiFi Network Form Modal */}
+        <WiFiNetworkForm
+          isOpen={wifiFormOpen}
+          onClose={() => setWifiFormOpen(false)}
+          network={editingNetwork}
+          onSuccess={handleWifiFormSuccess}
+        />
       </div>
     </div>
   );

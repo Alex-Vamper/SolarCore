@@ -9,3 +9,4 @@ export { Room } from './Room';
 export { VoiceCommand } from './VoiceCommand';
 export { VoiceResponseAudio } from './VoiceResponseAudio';
 export { PowerSystem } from './PowerSystem';
+export { WiFiNetwork } from './WiFiNetwork';

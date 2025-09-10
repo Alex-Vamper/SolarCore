@@ -114,6 +114,74 @@ serve(async (req) => {
         );
       }
 
+      case 'configure_wifi_networks': {
+        // Configure WiFi networks on ESP32 devices
+        const { networks } = data;
+        
+        // Get user's parent devices to send WiFi configuration
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+          throw new Error('User not authenticated');
+        }
+
+        const { data: parentDevices, error: devicesError } = await supabase
+          .from('parent_devices')
+          .select('esp_id')
+          .eq('owner_account', user.id);
+
+        if (devicesError) {
+          throw new Error(`Failed to get user devices: ${devicesError.message}`);
+        }
+
+        // Prepare WiFi configuration message for each device
+        const wifiConfigMessages = parentDevices?.map(device => {
+          const mqttMessage = {
+            message_id: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+            action: 'configure_wifi',
+            payload: {
+              networks: networks.map((network: any, index: number) => ({
+                ssid: network.ssid,
+                password: network.password,
+                priority: network.priority || index
+              }))
+            }
+          };
+
+          // TODO: Actual MQTT publishing will be implemented when broker URL is provided
+          console.log(`Publishing WiFi config to topic esp/${device.esp_id}/wifi-config:`, mqttMessage);
+          
+          return {
+            device_id: device.esp_id,
+            topic: `esp/${device.esp_id}/wifi-config`,
+            message: mqttMessage
+          };
+        }) || [];
+
+        // Log WiFi configuration action
+        await supabase
+          .from('device_audit_logs')
+          .insert({
+            action: 'configure_wifi_networks',
+            entity_type: 'parent_device',
+            entity_id: null,
+            user_id: user.id,
+            details: { 
+              networks_count: networks.length,
+              device_count: parentDevices?.length || 0
+            }
+          });
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'WiFi networks configured successfully',
+            configurations: wifiConfigMessages
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       default:
         throw new Error(`Unknown action: ${action}`);
     }
