@@ -1,10 +1,70 @@
 
-import { User, Room, SafetySystem } from "@/entities/all";
+import { User, Room, SafetySystem, UserSettings } from "@/entities/all";
+import { supabase } from "@/integrations/supabase/client";
 
 class ActionExecutor {
+    // Universal device availability checker
+    async ensureDeviceAvailable(actionType) {
+        try {
+            const settings = await UserSettings.list();
+            if (settings.length === 0) {
+                return { available: false, reason: 'device_not_found' };
+            }
+            
+            const userSettings = settings[0];
+            
+            // Check if action requires Ander device
+            const anderActions = [
+                'lights_all_on', 'lights_all_off', 'lights_room_on', 'lights_room_off',
+                'windows_all_open', 'windows_all_close', 'windows_room_open', 'windows_room_close',
+                'curtains_all_open', 'curtains_all_close', 'curtains_room_open', 'curtains_room_close',
+                'ac_all_on', 'ac_all_off', 'ac_room_on', 'ac_room_off',
+                'sockets_all_on', 'sockets_all_off', 'sockets_room_on', 'sockets_room_off',
+                'socket_specific_on', 'socket_specific_off', 'all_devices_on', 'all_devices_off'
+            ];
+            
+            // Check if action requires security device
+            const securityActions = [
+                'away_mode', 'home_mode', 'lock_door', 'unlock_door'
+            ];
+            
+            if (anderActions.includes(actionType)) {
+                if (!userSettings.ander_device_id) {
+                    return { available: false, reason: 'device_not_found' };
+                }
+                
+                // Verify device ownership via claim_parent_device RPC
+                const { data, error } = await supabase.rpc('claim_parent_device', {
+                    p_esp_id: userSettings.ander_device_id
+                });
+                
+                if (error || !data || !(data as any)?.success) {
+                    return { available: false, reason: 'device_not_found' };
+                }
+            }
+            
+            if (securityActions.includes(actionType)) {
+                if (!userSettings.security_settings?.door_security_id) {
+                    return { available: false, reason: 'device_not_found' };
+                }
+            }
+            
+            return { available: true };
+        } catch (error) {
+            console.error('Error checking device availability:', error);
+            return { available: false, reason: 'device_not_found' };
+        }
+    }
+
     async execute(command, transcript) {
         if (!command || !command.action_type) {
             return { success: false, message: "No action type defined." };
+        }
+        
+        // Check device availability before executing action
+        const deviceCheck = await this.ensureDeviceAvailable(command.action_type);
+        if (!deviceCheck.available) {
+            return { success: false, reason: deviceCheck.reason };
         }
         
         // --- PRIORITY: Direct Device Control from Linked Command ---

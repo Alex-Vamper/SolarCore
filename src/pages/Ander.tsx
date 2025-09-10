@@ -333,6 +333,25 @@ export default function Ander() {
     }
   };
 
+  const validateAndClaimDevice = async (deviceId) => {
+    try {
+      const { data, error } = await supabase.rpc('claim_parent_device', {
+        p_esp_id: deviceId
+      });
+      
+      if (error) throw error;
+      
+      if (!(data as any)?.success) {
+        throw new Error((data as any)?.message || 'Device validation failed');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error validating device:', error);
+      throw error;
+    }
+  };
+
   const validateAndUpdateDeviceId = async (deviceId: string) => {
     const upperDeviceId = deviceId.toUpperCase();
     setAnderDeviceId(upperDeviceId);
@@ -369,6 +388,21 @@ export default function Ander() {
   };
 
   const handleAnderToggle = async (enabled) => {
+    // If enabling Ander, validate device ID first
+    if (enabled && !anderDeviceId) {
+      toast.error("Please configure your Ander device ID first");
+      return;
+    }
+    
+    if (enabled && anderDeviceId) {
+      try {
+        await validateAndClaimDevice(anderDeviceId);
+      } catch (error) {
+        toast.error(error.message || "Device validation failed");
+        return;
+      }
+    }
+    
     // If user is trying to enable Ander for the first time, check subscription plan
     if (enabled && (subscriptionPlan === 'none' || subscriptionPlan === null)) {
       setShowSubscriptionModal(true);
@@ -518,7 +552,7 @@ export default function Ander() {
                 <Switch
                   checked={anderEnabled}
                   onCheckedChange={handleAnderToggle}
-                  disabled={isLoading}
+                  disabled={isLoading || !anderDeviceId}
                 />
               </div>
             </div>

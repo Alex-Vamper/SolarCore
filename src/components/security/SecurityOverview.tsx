@@ -13,6 +13,8 @@ import {
   Clock,
   Unlock
 } from "lucide-react";
+import { UserSettings } from "@/entities/all";
+import { toast } from "sonner";
 import SecuritySettingsModal from "./SecuritySettingsModal";
 
 export default function SecurityOverview({ onSecurityModeToggle, onSecuritySettings }) {
@@ -20,6 +22,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   const [isSecurityMode, setIsSecurityMode] = useState(false);
   const [isArming, setIsArming] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [securitySettings, setSecuritySettings] = useState(null);
 
   const speak = (text, repeat = 1) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -43,14 +46,29 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     doSpeak();
   };
 
-  // Load security state from localStorage on component mount
+  // Load security state and settings from localStorage and database
   useEffect(() => {
-    const savedSecurityState = localStorage.getItem('securityState');
-    if (savedSecurityState) {
-      const state = JSON.parse(savedSecurityState);
-      setIsDoorLocked(state.isDoorLocked || false);
-      setIsSecurityMode(state.isSecurityMode || false);
-    }
+    const loadSecurityData = async () => {
+      try {
+        // Load user settings for security configuration
+        const settings = await UserSettings.list();
+        if (settings.length > 0) {
+          setSecuritySettings(settings[0].security_settings);
+        }
+      } catch (error) {
+        console.error("Error loading security settings:", error);
+      }
+      
+      // Load local state
+      const savedSecurityState = localStorage.getItem('securityState');
+      if (savedSecurityState) {
+        const state = JSON.parse(savedSecurityState);
+        setIsDoorLocked(state.isDoorLocked || false);
+        setIsSecurityMode(state.isSecurityMode || false);
+      }
+    };
+    
+    loadSecurityData();
   }, []);
 
   // Save security state to localStorage whenever it changes
@@ -100,6 +118,13 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   }, [onSecurityModeToggle]);
 
   const handleDoorToggle = async () => {
+    // Check if security device is configured
+    if (!securitySettings?.door_security_id) {
+      toast.error("Security device not configured. Please configure your door security device first.");
+      speak("Security device not configured");
+      return;
+    }
+    
     setIsArming(true);
     const newLockState = !isDoorLocked;
     
@@ -119,6 +144,13 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   };
 
   const handleSecurityToggle = async () => {
+    // Check if security device is configured
+    if (!securitySettings?.door_security_id) {
+      toast.error("Security device not configured. Please configure your door security device first.");
+      speak("Security device not configured");
+      return;
+    }
+    
     setIsArming(true);
     const newSecurityMode = !isSecurityMode;
 
@@ -154,9 +186,10 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
               )}
             </div>
             <div>
-              <div className="font-semibold">Home Security System</div>
+            <div className="font-semibold">Home Security System</div>
               <div className="text-sm text-gray-500 font-normal">
-                {isDoorLocked ? "House is secured" : "Normal operation"}
+                {!securitySettings?.door_security_id ? "Device not configured" :
+                 isDoorLocked ? "House is secured" : "Normal operation"}
               </div>
             </div>
           </CardTitle>
@@ -186,7 +219,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
               <Switch
                 checked={isDoorLocked}
                 onCheckedChange={handleDoorToggle}
-                disabled={isArming}
+                disabled={isArming || !securitySettings?.door_security_id}
               />
             </div>
           </div>
@@ -215,7 +248,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
               <Switch
                 checked={isSecurityMode}
                 onCheckedChange={handleSecurityToggle}
-                disabled={isArming}
+                disabled={isArming || !securitySettings?.door_security_id}
               />
             </div>
           </div>

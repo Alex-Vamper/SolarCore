@@ -231,7 +231,8 @@ export default function AIAssistantButton() {
         }
     };
 
-    if (!anderEnabled) {
+    // Only show button if Ander is enabled AND a device ID is configured
+    if (!anderEnabled || !userSettingsRef.current?.ander_device_id) {
         return null;
     }
 
