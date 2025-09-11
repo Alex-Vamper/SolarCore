@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, SafetySystem, Room, UserSettings } from "@/entities/all";
+import { User, ChildDevice, Room, UserSettings } from "@/entities/all";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,7 @@ export default function Safety() {
     try {
       const currentUser = await User.me();
       const [systemsData, roomsData] = await Promise.all([
-        SafetySystem.filter({ created_by: currentUser.email }),
+        ChildDevice.getSafetyDevices(),
         Room.filter({ created_by: currentUser.email })
       ]);
       setSafetySystems(systemsData);
@@ -40,12 +40,12 @@ export default function Safety() {
 
   const handleAddSystem = async (systemData) => {
     try {
-        const newSystem = await SafetySystem.create(systemData);
+        const newSystem = await ChildDevice.create(systemData);
         await loadData();
         setShowAddModal(false);
         toast({
           title: "Success",
-          description: `Safety system ${systemData.system_id} added successfully`,
+          description: `Safety system ${systemData.device_name} added successfully`,
         });
         
         // Trigger event for synchronization
@@ -64,7 +64,7 @@ export default function Safety() {
 
   const handleDeleteSystem = async (systemId) => {
     try {
-        await SafetySystem.delete(systemId);
+        await ChildDevice.delete(systemId);
         loadData();
         setShowSettingsModal(false);
         setSelectedSystem(null);
@@ -80,27 +80,32 @@ export default function Safety() {
 
       switch (action) {
         case "activate_suppression":
-          updates = { status: "suppression_active" };
+          updates = { 
+            state: { 
+              ...system.state, 
+              status: "suppression_active" 
+            }
+          };
           break;
         case "close_window":
           updates = { 
-            sensor_readings: { 
-              ...system.sensor_readings, 
+            state: { 
+              ...system.state, 
               window_status: "closed" 
             }
           };
           break;
         case "open_window":
           updates = { 
-            sensor_readings: { 
-              ...system.sensor_readings, 
+            state: { 
+              ...system.state, 
               window_status: "open" 
             }
           };
           break;
       }
 
-      await SafetySystem.update(systemId, updates);
+      await ChildDevice.update(systemId, updates);
       loadData();
     } catch (error) {
       console.error("Error with manual override:", error);
@@ -151,8 +156,8 @@ export default function Safety() {
   const getOverallStatus = () => {
     if (safetySystems.length === 0) return "unknown";
     
-    const hasActive = safetySystems.some(s => s.status === "active" || s.status === "suppression_active");
-    const hasAlert = safetySystems.some(s => s.status === "alert");
+    const hasActive = safetySystems.some(s => s.state?.status === "active" || s.state?.status === "suppression_active");
+    const hasAlert = safetySystems.some(s => s.state?.status === "alert");
     
     if (hasActive) return "active";
     if (hasAlert) return "alert";
@@ -160,9 +165,9 @@ export default function Safety() {
   };
 
   const getStatusStats = () => {
-    const safe = safetySystems.filter(s => s.status === "safe").length;
-    const alert = safetySystems.filter(s => s.status === "alert").length;
-    const active = safetySystems.filter(s => s.status === "active" || s.status === "suppression_active").length;
+    const safe = safetySystems.filter(s => s.state?.status === "safe").length;
+    const alert = safetySystems.filter(s => s.state?.status === "alert").length;
+    const active = safetySystems.filter(s => s.state?.status === "active" || s.state?.status === "suppression_active").length;
     
     return { safe, alert, active };
   };

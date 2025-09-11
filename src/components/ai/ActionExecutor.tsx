@@ -1,5 +1,5 @@
 
-import { User, Room, SafetySystem, UserSettings } from "@/entities/all";
+import { User, Room, ChildDevice, SecuritySystem, UserSettings } from "@/entities/all";
 import { supabase } from "@/integrations/supabase/client";
 import { deviceCapabilitiesCache } from "@/lib/deviceCapabilitiesCache";
 
@@ -107,16 +107,16 @@ class ActionExecutor {
         // --- Safety System Synchronization Helper ---
         const syncShadesWithSafety = async (type, isOpen, roomName = null) => {
             try {
-                const safetySystems = await SafetySystem.filter({ created_by: currentUser.email });
+                const safetySystems = await ChildDevice.getSafetyDevices();
                 const windowSystems = safetySystems.filter(sys => 
-                    sys.system_type === 'window_rain' && 
-                    (roomName ? sys.room_name.toLowerCase() === roomName : true)
+                    sys.device_type?.device_series === 'window_rain' && 
+                    (roomName ? sys.state?.room_name?.toLowerCase() === roomName : true)
                 );
                 
                 for (const system of windowSystems) {
-                    await SafetySystem.update(system.id, {
-                        sensor_readings: {
-                            ...system.sensor_readings,
+                    await ChildDevice.update(system.id, {
+                        state: {
+                            ...system.state,
                             window_status: isOpen ? 'open' : 'closed'
                         }
                     });
@@ -213,32 +213,28 @@ class ActionExecutor {
         
         const handleLockDoor = async (lock) => {
             try {
-                // Create a door lock safety system if it doesn't exist
-                const safetySystems = await SafetySystem.list();
-                let doorLockSystem = safetySystems.find(sys => 
-                    sys.system_type === 'gas_leak' && sys.room_name === 'Front Door' // Use gas_leak as proxy for door lock
+                // Check for existing security system or create one
+                const securitySystems = await SecuritySystem.list();
+                let doorLockSystem = securitySystems.find(sys => 
+                    sys.system_type === 'door_control'
                 );
                 
                 if (!doorLockSystem) {
-                    // Create a door lock system using available system type
-                    doorLockSystem = await SafetySystem.create({
+                    // Create a door lock system in child_devices
+                    doorLockSystem = await SecuritySystem.create({
                         system_id: 'door_lock_001',
-                        system_type: 'gas_leak', // Using available type as proxy
-                        room_name: 'Front Door',
-                        status: 'safe',
-                        sensor_readings: { door_locked: false }
+                        system_type: 'door_control',
+                        lock_status: 'unlocked',
+                        security_mode: 'home'
                     });
                 }
                 
-                if (doorLockSystem) {
-                    await SafetySystem.update(doorLockSystem.id, { 
-                        status: lock ? 'active' : 'safe',
-                        sensor_readings: {
-                            ...doorLockSystem.sensor_readings,
-                            door_locked: lock
-                        }
-                    });
-                }
+                // Update the security system state
+                await SecuritySystem.update(doorLockSystem.id, { 
+                    lock_status: lock ? 'locked' : 'unlocked',
+                    security_mode: lock ? 'away' : 'home',
+                    last_action: `door_${lock ? 'locked' : 'unlocked'}_${new Date().toISOString()}`
+                });
                 
                 // Dispatch events for SecurityOverview to listen
                 if(lock) {

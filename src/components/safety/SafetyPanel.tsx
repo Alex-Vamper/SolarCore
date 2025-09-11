@@ -71,7 +71,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
     },
   };
 
-  const systemType = system.system_type || system.device_type?.device_series;
+  const systemType = system.device_type?.device_series || system.system_type;
   const meta = systemMeta[systemType] || systemMeta.fire_detection;
   const SystemIcon = meta.icon;
 
@@ -85,15 +85,15 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                 <SystemIcon className="app-icon text-white" />
               </div>
               <div>
-                <div className="font-semibold">{system.room_name}</div>
+                <div className="font-semibold">{system.device_name || system.room_name}</div>
                 <div className="app-text text-gray-500 font-normal">
                   {meta.name}
                 </div>
               </div>
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Badge className={getStatusColor(system.status)}>
-                {system.status.replace('_', ' ')}
+              <Badge className={getStatusColor(system.state?.status || 'safe')}>
+                {(system.state?.status || 'safe').replace('_', ' ')}
               </Badge>
               <Button
                 variant="ghost"
@@ -110,14 +110,14 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
           {/* Status Overview */}
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-2">
-              {getStatusIcon(system.status)}
+              {getStatusIcon(system.state?.status || 'safe')}
               <span className="app-text font-medium text-gray-700">System Status</span>
             </div>
             <span className={`app-text font-bold ${
-              system.status === "safe" ? 'text-green-600' : 
-              system.status === "alert" ? 'text-yellow-600' : 'text-red-600'
+              (system.state?.status || 'safe') === "safe" ? 'text-green-600' : 
+              (system.state?.status || 'safe') === "alert" ? 'text-yellow-600' : 'text-red-600'
             }`}>
-              {system.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              {(system.state?.status || 'safe').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </span>
           </div>
 
@@ -131,11 +131,11 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                     <span className="app-text font-medium text-gray-700">Flame</span>
                   </div>
                   <Badge className={
-                    system.sensor_readings?.flame_detected 
+                    system.state?.flame_detected 
                       ? "bg-red-100 text-red-800 border-red-200" 
                       : "bg-green-100 text-green-800 border-green-200"
                   }>
-                    {system.sensor_readings?.flame_detected ? "Detected" : "Clear"}
+                    {system.state?.flame_detected ? "Detected" : "Clear"}
                   </Badge>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
@@ -144,7 +144,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                     <span className="app-text font-medium text-gray-700">Temperature</span>
                   </div>
                   <span className="app-text font-bold text-gray-900">
-                    {system.sensor_readings?.temperature || 25}°C
+                    {system.state?.temperature || 25}°C
                   </span>
                 </div>
               </div>
@@ -153,16 +153,16 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                 <div className="flex items-center justify-between">
                   <span className="app-text font-medium text-gray-700">Smoke Level</span>
                   <span className="app-text font-bold text-gray-900">
-                    {system.sensor_readings?.smoke_level || 0}%
+                    {system.state?.smoke_level || 0}%
                   </span>
                 </div>
                 <Progress 
-                  value={system.sensor_readings?.smoke_level || 0} 
+                  value={system.state?.smoke_level || 0} 
                   className="h-2" 
                 />
               </div>
 
-              {system.status !== "safe" && (
+              {(system.state?.status || 'safe') !== "safe" && (
                 <div className="pt-2 border-t">
                   <Button
                     onClick={() => handleOverride("activate_suppression")}
@@ -191,11 +191,11 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                     <span className="app-text font-medium text-gray-700">Rain</span>
                   </div>
                   <Badge className={
-                    system.sensor_readings?.rain_detected 
+                    system.state?.rain_detected 
                       ? "bg-blue-100 text-blue-800 border-blue-200" 
                       : "bg-green-100 text-green-800 border-green-200"
                   }>
-                    {system.sensor_readings?.rain_detected ? "Detected" : "Clear"}
+                    {system.state?.rain_detected ? "Detected" : "Clear"}
                   </Badge>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
@@ -204,11 +204,11 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                     <span className="app-text font-medium text-gray-700">Window</span>
                   </div>
                   <Badge className={
-                    system.sensor_readings?.window_status === "open"
+                    system.state?.window_status === "open"
                       ? "bg-yellow-100 text-yellow-800 border-yellow-200" 
                       : "bg-green-100 text-green-800 border-green-200"
                   }>
-                    {system.sensor_readings?.window_status || "Closed"}
+                    {system.state?.window_status || "Closed"}
                   </Badge>
                 </div>
               </div>
@@ -244,9 +244,9 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                     <span className="app-text font-medium text-gray-700">Gas Level</span>
                   </div>
                   <span className="app-text font-bold text-gray-900">
-                    {system.sensor_readings?.gas_level || 0} ppm
+                    {system.state?.gas_level || 0} ppm
                   </span>
-                  <Progress value={(system.sensor_readings?.gas_level || 0) / 10} className="h-2 mt-2" />
+                  <Progress value={(system.state?.gas_level || 0) / 10} className="h-2 mt-2" />
                 </div>
             </div>
           )}
@@ -260,9 +260,9 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                     <span className="app-text font-medium text-gray-700">Tank Water Level</span>
                   </div>
                   <span className="app-text font-bold text-gray-900">
-                    {system.sensor_readings?.water_level || 0}%
+                    {system.state?.water_level || 0}%
                   </span>
-                  <Progress value={system.sensor_readings?.water_level || 0} className="h-2 mt-2" />
+                  <Progress value={system.state?.water_level || 0} className="h-2 mt-2" />
                 </div>
             </div>
           )}
