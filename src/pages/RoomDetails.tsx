@@ -2,10 +2,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { User, Room } from "@/entities/all";
+import { User, Room, UserSettings } from "@/entities/all";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
+import { deviceCapabilitiesCache } from "@/lib/deviceCapabilitiesCache";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -311,6 +312,17 @@ export default function RoomDetails() {
     if (!room || !room.appliances?.length) return;
 
     try {
+      // Check if user has a valid Ander device for device control
+      const capabilities = await deviceCapabilitiesCache.getCapabilities();
+      if (!capabilities.hasAnderDevice) {
+        toast({
+          title: "Device Not Found", 
+          description: "No Ander device configured for your account.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const allOn = room.appliances.every(app => app.status);
       const updatedAppliances = room.appliances.map(app => ({
         ...app,
@@ -319,8 +331,16 @@ export default function RoomDetails() {
 
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
+      
+      // Invalidate cache when changes are made
+      deviceCapabilitiesCache.invalidateCache();
     } catch (error) {
       console.error("Error toggling all appliances:", error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update appliances.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -328,6 +348,17 @@ export default function RoomDetails() {
     if (!room) return;
 
     try {
+      // Check if user has a valid Ander device for device control
+      const capabilities = await deviceCapabilitiesCache.getCapabilities();
+      if (!capabilities.hasAnderDevice) {
+        toast({
+          title: "Device Not Found",
+          description: "No Ander device configured for your account.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Find the appliance to update
       const appliance = room.appliances.find(app => app.id === applianceId);
       
@@ -367,6 +398,9 @@ export default function RoomDetails() {
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
       
+      // Invalidate cache when changes are made
+      deviceCapabilitiesCache.invalidateCache();
+      
       // Trigger update event for synchronization
       window.dispatchEvent(new CustomEvent('applianceStateChanged', { 
         detail: { roomId: room.id, applianceId } 
@@ -400,6 +434,9 @@ export default function RoomDetails() {
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
       
+      // Invalidate cache when devices are removed
+      deviceCapabilitiesCache.invalidateCache();
+      
       toast({
         title: "Device Deleted",
         description: `${appliance.name} has been removed successfully.`,
@@ -418,6 +455,17 @@ export default function RoomDetails() {
     if (!room) return;
 
     try {
+      // Check if user has a valid Ander device for device control
+      const capabilities = await deviceCapabilitiesCache.getCapabilities();
+      if (!capabilities.hasAnderDevice) {
+        toast({
+          title: "Device Not Found",
+          description: "No Ander device configured for your account.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Map the device data to appliance format
       const newDevice = {
         id: deviceData.id || `device_${Date.now()}`,
@@ -437,6 +485,9 @@ export default function RoomDetails() {
       await Room.update(room.id, { appliances: updatedAppliances });
       setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
       setShowAddDeviceModal(false);
+      
+      // Invalidate cache when new devices are added
+      deviceCapabilitiesCache.invalidateCache();
       
       toast({
         title: "Device Added",

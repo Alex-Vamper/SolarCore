@@ -1,50 +1,23 @@
 
 import { User, Room, SafetySystem, UserSettings } from "@/entities/all";
 import { supabase } from "@/integrations/supabase/client";
+import { deviceCapabilitiesCache } from "@/lib/deviceCapabilitiesCache";
 
 class ActionExecutor {
-    // Universal device availability checker
-    async ensureDeviceAvailable(actionType) {
+    // Enhanced device availability checker using capabilities cache
+    async ensureDeviceAvailable(actionType, roomName = null) {
         try {
-            const settings = await UserSettings.list();
-            if (settings.length === 0) {
+            // Use cached capabilities for fast checking
+            const canExecute = await deviceCapabilitiesCache.canExecuteAction(actionType, roomName);
+            if (!canExecute) {
                 return { available: false, reason: 'device_not_found' };
             }
             
-            const userSettings = settings[0];
-            
-            // Check if action requires Ander device
-            const anderActions = [
-                'lights_all_on', 'lights_all_off', 'lights_room_on', 'lights_room_off',
-                'windows_all_open', 'windows_all_close', 'windows_room_open', 'windows_room_close',
-                'curtains_all_open', 'curtains_all_close', 'curtains_room_open', 'curtains_room_close',
-                'ac_all_on', 'ac_all_off', 'ac_room_on', 'ac_room_off',
-                'sockets_all_on', 'sockets_all_off', 'sockets_room_on', 'sockets_room_off',
-                'socket_specific_on', 'socket_specific_off', 'all_devices_on', 'all_devices_off'
-            ];
-            
-            // Check if action requires security device
-            const securityActions = [
-                'away_mode', 'home_mode', 'lock_door', 'unlock_door'
-            ];
-            
-            if (anderActions.includes(actionType)) {
-                if (!userSettings.ander_device_id) {
-                    return { available: false, reason: 'device_not_found' };
-                }
-                
-                // Verify device ownership via claim_parent_device RPC
-                const { data, error } = await supabase.rpc('claim_parent_device', {
-                    p_esp_id: userSettings.ander_device_id
-                });
-                
-                if (error || !data || !(data as any)?.success) {
-                    return { available: false, reason: 'device_not_found' };
-                }
-            }
-            
+            // Additional security device checks for security actions
+            const securityActions = ['away_mode', 'home_mode', 'lock_door', 'unlock_door'];
             if (securityActions.includes(actionType)) {
-                if (!userSettings.security_settings?.door_security_id) {
+                const settings = await UserSettings.list();
+                if (settings.length === 0 || !settings[0].security_settings?.door_security_id) {
                     return { available: false, reason: 'device_not_found' };
                 }
             }
@@ -61,8 +34,19 @@ class ActionExecutor {
             return { success: false, message: "No action type defined." };
         }
         
+        // Extract room name for room-specific availability checks
+        const extractRoomName = () => {
+            const roomKeywords = ["living room", "dining room", "kitchen", "bedroom"];
+            for (const rk of roomKeywords) {
+                if (transcript.toLowerCase().includes(rk)) return rk;
+            }
+            return null;
+        };
+        
+        const roomName = command.action_type.includes('room') ? extractRoomName() : null;
+        
         // Check device availability before executing action
-        const deviceCheck = await this.ensureDeviceAvailable(command.action_type);
+        const deviceCheck = await this.ensureDeviceAvailable(command.action_type, roomName);
         if (!deviceCheck.available) {
             return { success: false, reason: deviceCheck.reason };
         }
@@ -101,7 +85,7 @@ class ActionExecutor {
         const rooms = await Room.filter({ created_by: currentUser.email });
 
         // --- Parameter Extraction ---
-        const extractRoomName = () => {
+        const extractRoomNameForSocket = () => {
             const roomKeywords = ["living room", "dining room", "kitchen", "bedroom"];
             for (const rk of roomKeywords) {
                 if (transcript.toLowerCase().includes(rk)) return rk;
@@ -117,7 +101,7 @@ class ActionExecutor {
             return null;
         }
 
-        const roomName = extractRoomName();
+        const roomNameForSocket = extractRoomNameForSocket();
         const socketName = extractSocketName();
 
         // --- Safety System Synchronization Helper ---
@@ -144,13 +128,26 @@ class ActionExecutor {
 
         // --- Generic Action Handlers ---
         const updateAllAppliances = async (type, status) => {
+            let devicesUpdated = 0;
             const updates = rooms.map(room => {
-                const updatedAppliances = room.appliances.map(app =>
-                    app.type === type ? { ...app, status } : app
-                );
-                return Room.update(room.id, { appliances: updatedAppliances });
+                const hasDeviceType = room.appliances.some(app => app.type === type);
+                if (hasDeviceType) {
+                    const updatedAppliances = room.appliances.map(app => {
+                        if (app.type === type) {
+                            devicesUpdated++;
+                            return { ...app, status };
+                        }
+                        return app;
+                    });
+                    return Room.update(room.id, { appliances: updatedAppliances });
+                }
+                return Promise.resolve();
             });
             await Promise.all(updates);
+            
+            if (devicesUpdated === 0) {
+                return { success: false, reason: 'device_not_found' };
+            }
             return { success: true, reason: `All ${type} ${status ? 'turned on' : 'turned off'}` };
         };
 
@@ -159,9 +156,19 @@ class ActionExecutor {
             const targetRoom = rooms.find(r => r.name.toLowerCase() === roomName);
             if (!targetRoom) return { success: false, reason: "device_not_found" };
 
-            const updatedAppliances = targetRoom.appliances.map(app =>
-                app.type === type ? { ...app, status } : app
-            );
+            let devicesUpdated = 0;
+            const updatedAppliances = targetRoom.appliances.map(app => {
+                if (app.type === type) {
+                    devicesUpdated++;
+                    return { ...app, status };
+                }
+                return app;
+            });
+            
+            if (devicesUpdated === 0) {
+                return { success: false, reason: "device_not_found" };
+            }
+            
             await Room.update(targetRoom.id, { appliances: updatedAppliances });
             return { success: true, reason: `${roomName} ${type} ${status ? 'turned on' : 'turned off'}` };
         };
@@ -176,8 +183,8 @@ class ActionExecutor {
         };
         
         const updateSpecificSocket = async (status) => {
-            if (!roomName || !socketName) return { success: false, reason: "device_not_found" };
-            const targetRoom = rooms.find(r => r.name.toLowerCase() === roomName);
+            if (!roomNameForSocket || !socketName) return { success: false, reason: "device_not_found" };
+            const targetRoom = rooms.find(r => r.name.toLowerCase() === roomNameForSocket);
             if (!targetRoom) return { success: false, reason: "device_not_found" };
 
             let deviceFound = false;
@@ -192,7 +199,7 @@ class ActionExecutor {
             if (!deviceFound) return { success: false, reason: "device_not_found" };
             
             await Room.update(targetRoom.id, { appliances: updatedAppliances });
-            return { success: true, reason: `${roomName} ${socketName} socket ${status ? 'turned on' : 'turned off'}` };
+            return { success: true, reason: `${roomNameForSocket} ${socketName} socket ${status ? 'turned on' : 'turned off'}` };
         };
         
         const handleSecurityMode = async (mode) => {
@@ -285,10 +292,10 @@ class ActionExecutor {
             case "curtains_room_close": result = await updateRoomAppliances('smart_shading', false); break;
 
             // HVAC
-            case "ac_all_on": result = await updateAllAppliances('smart_ac', true); break;
-            case "ac_all_off": result = await updateAllAppliances('smart_ac', false); break;
-            case "ac_room_on": result = await updateRoomAppliances('smart_ac', true); break;
-            case "ac_room_off": result = await updateRoomAppliances('smart_ac', false); break;
+            case "ac_all_on": result = await updateAllAppliances('smart_hvac', true); break;
+            case "ac_all_off": result = await updateAllAppliances('smart_hvac', false); break;
+            case "ac_room_on": result = await updateRoomAppliances('smart_hvac', true); break;
+            case "ac_room_off": result = await updateRoomAppliances('smart_hvac', false); break;
 
             // Sockets
             case "sockets_all_on": result = await updateAllAppliances('smart_socket', true); break;
