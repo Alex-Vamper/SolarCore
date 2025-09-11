@@ -83,18 +83,30 @@ export default function PowerStatus({ userSettings, energyData }: PowerStatusPro
         )}
 
         {/* Power Source Bars */}
-        <div className="grid grid-cols-2 gap-4">
+        <div
+          className={`grid gap-4 ${
+            powerSource === 'solar_grid' ? 'grid-cols-2' : 'grid-cols-1'
+          }`}
+        >
           {powerSource !== 'grid_only' && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="app-text font-medium text-gray-600">Solar</span>
-                <span className={`app-text font-bold ${getSolarColor(adjustedData.solar_percentage)}`}>
+                <span
+                  className={`app-text font-bold ${getSolarColor(
+                    adjustedData.solar_percentage
+                  )}`}
+                >
                   {adjustedData.solar_percentage}%
                 </span>
               </div>
-              <Progress value={adjustedData.solar_percentage} className="h-2 bg-gray-200" />
+              <Progress
+                value={adjustedData.solar_percentage}
+                className="h-2 bg-gray-200"
+              />
             </div>
           )}
+
           {powerSource !== 'solar_only' && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -103,10 +115,14 @@ export default function PowerStatus({ userSettings, energyData }: PowerStatusPro
                   {adjustedData.grid_percentage}%
                 </span>
               </div>
-              <Progress value={adjustedData.grid_percentage} className="h-2 bg-gray-200" />
+              <Progress
+                value={adjustedData.grid_percentage}
+                className="h-2 bg-gray-200"
+              />
             </div>
           )}
         </div>
+
         
         {/* Battery Level - only show for solar */}
         {powerSource !== 'grid_only' && (
