@@ -1,5 +1,5 @@
 
-import { User, Room, SafetySystem, SecuritySystem, UserSettings } from "@/entities/all";
+import { User, Room, ChildDevice, SecuritySystem, UserSettings } from "@/entities/all";
 import { supabase } from "@/integrations/supabase/client";
 import { deviceCapabilitiesCache } from "@/lib/deviceCapabilitiesCache";
 
@@ -107,16 +107,16 @@ class ActionExecutor {
         // --- Safety System Synchronization Helper ---
         const syncShadesWithSafety = async (type, isOpen, roomName = null) => {
             try {
-                const safetySystems = await SafetySystem.filter({ created_by: currentUser.email });
+                const safetySystems = await ChildDevice.getSafetyDevices();
                 const windowSystems = safetySystems.filter(sys => 
-                    sys.system_type === 'window_rain' && 
-                    (roomName ? sys.room_name.toLowerCase() === roomName : true)
+                    sys.device_type?.device_series === 'window_rain' && 
+                    (roomName ? sys.state?.room_name?.toLowerCase() === roomName : true)
                 );
                 
                 for (const system of windowSystems) {
-                    await SafetySystem.update(system.id, {
-                        sensor_readings: {
-                            ...system.sensor_readings,
+                    await ChildDevice.update(system.id, {
+                        state: {
+                            ...system.state,
                             window_status: isOpen ? 'open' : 'closed'
                         }
                     });
