@@ -94,9 +94,25 @@ export class SafetySystemService {
         dt.device_class === 'safety' && dt.device_series === safetySystem.system_type
       );
       
-      if (!deviceType) throw new Error('Device type not found');
+      if (!deviceType) throw new Error(`Device type not found for ${safetySystem.system_type}`);
 
-      const childDevice = mapSafetySystemToChildDevice(safetySystem, deviceType.id);
+      // Get parent device from ESP ID
+      const { data: parentDevices } = await supabase
+        .from('parent_devices')
+        .select('id')
+        .eq('esp_id', safetySystem.system_id)
+        .eq('owner_account', (await supabase.auth.getUser()).data.user?.id);
+      
+      if (!parentDevices || parentDevices.length === 0) {
+        throw new Error('Parent device not found or not owned by user');
+      }
+
+      const childDevice = {
+        ...mapSafetySystemToChildDevice(safetySystem, deviceType.id),
+        parent_id: parentDevices[0].id,
+        created_by: (await supabase.auth.getUser()).data.user?.id
+      };
+      
       const createdDevice = await ChildDeviceService.create(childDevice as ChildDevice);
       
       return mapChildDeviceToSafetySystem(createdDevice);

@@ -57,10 +57,23 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
     setIsLoading(true);
     try {
       const currentUser = await User.me();
-      const [rooms, safetySystems] = await Promise.all([
+      const [rooms, safetySystems, userSettings] = await Promise.all([
         Room.filter({ created_by: currentUser.email }),
-        SafetySystem.filter({ created_by: currentUser.email })
+        SafetySystem.filter({ created_by: currentUser.email }),
+        UserSettings.list()
       ]);
+
+      // Load existing security settings
+      if (userSettings.length > 0 && userSettings[0].security_settings) {
+        setSecuritySettings({
+          door_security_id: userSettings[0].security_settings.door_security_id || "",
+          door_security_series: userSettings[0].security_settings.door_security_series || "",
+          auto_shutdown_enabled: userSettings[0].security_settings.auto_shutdown_enabled || false,
+          shutdown_exceptions: userSettings[0].security_settings.shutdown_exceptions || [],
+          schedule_enabled: userSettings[0].security_settings.schedule_enabled || false,
+          auto_lock_time: userSettings[0].security_settings.auto_lock_time || "22:00"
+        });
+      }
 
       // Extract all devices from all rooms
       const allDevices = [];
@@ -116,6 +129,10 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
         title: "Success",
         description: "Security settings saved successfully",
       });
+      
+      // Trigger event for SecurityOverview to reload settings
+      window.dispatchEvent(new CustomEvent('securitySettingsChanged'));
+      
       onClose();
     } catch (error) {
       console.error("Error saving security settings:", error);

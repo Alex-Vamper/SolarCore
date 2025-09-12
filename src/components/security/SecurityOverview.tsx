@@ -47,28 +47,40 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   };
 
   // Load security state and settings from localStorage and database
-  useEffect(() => {
-    const loadSecurityData = async () => {
-      try {
-        // Load user settings for security configuration
-        const settings = await UserSettings.list();
-        if (settings.length > 0) {
-          setSecuritySettings(settings[0].security_settings);
-        }
-      } catch (error) {
-        console.error("Error loading security settings:", error);
+  const loadSecurityData = async () => {
+    try {
+      // Load user settings for security configuration
+      const settings = await UserSettings.list();
+      if (settings.length > 0) {
+        setSecuritySettings(settings[0].security_settings);
       }
-      
-      // Load local state
-      const savedSecurityState = localStorage.getItem('securityState');
-      if (savedSecurityState) {
-        const state = JSON.parse(savedSecurityState);
-        setIsDoorLocked(state.isDoorLocked || false);
-        setIsSecurityMode(state.isSecurityMode || false);
-      }
-    };
+    } catch (error) {
+      console.error("Error loading security settings:", error);
+    }
     
+    // Load local state
+    const savedSecurityState = localStorage.getItem('securityState');
+    if (savedSecurityState) {
+      const state = JSON.parse(savedSecurityState);
+      setIsDoorLocked(state.isDoorLocked || false);
+      setIsSecurityMode(state.isSecurityMode || false);
+    }
+  };
+
+  useEffect(() => {
     loadSecurityData();
+  }, []);
+
+  // Listen for settings changes
+  useEffect(() => {
+    const handleSecuritySettingsChanged = () => {
+      loadSecurityData();
+    };
+
+    window.addEventListener('securitySettingsChanged', handleSecuritySettingsChanged);
+    return () => {
+      window.removeEventListener('securitySettingsChanged', handleSecuritySettingsChanged);
+    };
   }, []);
 
   // Save security state to localStorage whenever it changes

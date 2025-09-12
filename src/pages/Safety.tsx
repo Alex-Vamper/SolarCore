@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, ChildDevice, Room, UserSettings } from "@/entities/all";
+import { User, ChildDevice, Room, UserSettings, SafetySystem } from "@/entities/all";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,7 @@ export default function Safety() {
     try {
       const currentUser = await User.me();
       const [systemsData, roomsData] = await Promise.all([
-        ChildDevice.getSafetyDevices(),
+        SafetySystem.list(),
         Room.filter({ created_by: currentUser.email })
       ]);
       setSafetySystems(systemsData);
@@ -40,12 +40,23 @@ export default function Safety() {
 
   const handleAddSystem = async (systemData) => {
     try {
-        const newSystem = await ChildDevice.create(systemData);
+        // Convert safety system data to SafetySystem format
+        const safetySystemData = {
+          system_id: systemData.system_id,
+          system_type: systemData.system_type,
+          room_name: systemData.room_name,
+          status: 'safe',
+          flame_status: 'clear',
+          temperature_value: 25,
+          smoke_percentage: 0
+        };
+        
+        const newSystem = await SafetySystem.create(safetySystemData);
         await loadData();
         setShowAddModal(false);
         toast({
           title: "Success",
-          description: `Safety system ${systemData.device_name} added successfully`,
+          description: `Safety system ${systemData.system_id} added successfully`,
         });
         
         // Trigger event for synchronization
