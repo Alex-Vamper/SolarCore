@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 import Layout from "@/layouts/Layout";
 import Dashboard from "@/pages/Dashboard";
 import Automation from "@/pages/Automation";
@@ -133,9 +134,11 @@ const router = createBrowserRouter([
 function AppContent() {
   return (
     <TooltipProvider>
-      <RouterProvider router={router} />
-      <Toaster />
-      <Sonner />
+      <NotificationProvider>
+        <RouterProvider router={router} />
+        <Toaster />
+        <Sonner />
+      </NotificationProvider>
     </TooltipProvider>
   );
 }

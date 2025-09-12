@@ -29,7 +29,10 @@ export const useNotifications = () => {
 
   // Fetch notifications from admin_notifications where delivery_method = 'push'
   const fetchNotifications = useCallback(async () => {
-    if (!session?.user) return;
+    if (!session?.user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
