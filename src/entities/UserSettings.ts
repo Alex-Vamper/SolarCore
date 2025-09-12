@@ -32,6 +32,7 @@ export interface UserSettings {
   solar_system_id?: string;
   grid_meter_id?: string;
   security_settings?: any;
+  last_login_at?: string;
   created_at?: string;
   updated_at?: string;
 }

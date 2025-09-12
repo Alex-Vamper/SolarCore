@@ -681,6 +681,7 @@ export type Database = {
           energy_mode: string | null
           grid_meter_id: string | null
           id: string
+          last_login_at: string | null
           notifications_enabled: boolean | null
           power_source: string | null
           preferred_email: string | null
@@ -714,6 +715,7 @@ export type Database = {
           energy_mode?: string | null
           grid_meter_id?: string | null
           id?: string
+          last_login_at?: string | null
           notifications_enabled?: boolean | null
           power_source?: string | null
           preferred_email?: string | null
@@ -747,6 +749,7 @@ export type Database = {
           energy_mode?: string | null
           grid_meter_id?: string | null
           id?: string
+          last_login_at?: string | null
           notifications_enabled?: boolean | null
           power_source?: string | null
           preferred_email?: string | null
