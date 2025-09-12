@@ -137,28 +137,17 @@ export const useNotifications = () => {
     try {
       // Get user's last login time
       const userSettings = await UserSettingsService.list();
-      const lastLoginAt = userSettings[0]?.last_login_at;
+      const lastLoginAt = userSettings[0]?.last_login_at ? new Date(userSettings[0].last_login_at) : null;
       
-      // If no last login time, treat as new user and check last 36 hours
-      const checkFromTime = lastLoginAt 
-        ? new Date(lastLoginAt) 
-        : new Date(Date.now() - 36 * 60 * 60 * 1000); // 36 hours ago
+      // Anchor is max(last_login_at, now - 36h)
+      const thirtySixHoursAgo = new Date(Date.now() - 36 * 60 * 60 * 1000);
+      const anchorStart = lastLoginAt ? (lastLoginAt > thirtySixHoursAgo ? lastLoginAt : thirtySixHoursAgo) : thirtySixHoursAgo;
 
-      const thirtySevenHoursAgo = new Date(Date.now() - 37 * 60 * 60 * 1000);
-
-      // Don't check if last login was very recent (less than 30 minutes ago)
-      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-      if (lastLoginAt && new Date(lastLoginAt) > thirtyMinutesAgo) {
-        return;
-      }
-
-      // Fetch notifications from the last 36 hours that were published after the user's last login
       const { data: missedNotifications, error } = await supabase
         .from('admin_notifications')
         .select('*')
         .eq('delivery_method', 'push')
-        .gte('created_date', checkFromTime.toISOString())
-        .gte('created_date', thirtySevenHoursAgo.toISOString())
+        .gte('created_date', anchorStart.toISOString())
         .order('created_date', { ascending: false });
 
       if (error) throw error;
@@ -196,6 +185,13 @@ export const useNotifications = () => {
         }, 5 * 1500);
       }
 
+      // Update last login time after processing missed notifications
+      try {
+        await UserSettingsService.upsert({ last_login_at: new Date().toISOString() });
+      } catch (e) {
+        console.error('Failed to update last_login_at after missed notifications:', e);
+      }
+
     } catch (error) {
       console.error('Error checking for missed notifications:', error);
     }
@@ -212,10 +208,10 @@ export const useNotifications = () => {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'admin_notifications',
-          filter: `delivery_method=eq.push`
+          table: 'admin_notifications'
         },
         (payload) => {
+          if (payload.new.delivery_method !== 'push') return;
           const newNotification: Notification = {
             id: payload.new.id,
             title: payload.new.title,
@@ -262,6 +258,19 @@ export const useNotifications = () => {
       return () => clearTimeout(timer);
     }
   }, [isNewLogin, session?.user, checkForMissedNotifications]);
+
+  // Refresh when tab becomes visible
+  useEffect(() => {
+    if (!session?.user) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications();
+        checkForMissedNotifications();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [session?.user, fetchNotifications, checkForMissedNotifications]);
 
   return {
     notifications,

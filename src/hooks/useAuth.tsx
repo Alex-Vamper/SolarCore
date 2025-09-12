@@ -37,16 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (wasLoggedOut && isNowLoggedIn) {
           setIsNewLogin(true);
           
-          // Update last_login_at in user settings
-          setTimeout(async () => {
-            try {
-              await UserSettingsService.upsert({ 
-                last_login_at: new Date().toISOString() 
-              });
-            } catch (error) {
-              console.error('Error updating last login time:', error);
-            }
-          }, 0);
+          // last_login_at will be updated after missed notifications are checked
+
         }
         
         // Defer user data fetching to avoid blocking auth state changes
