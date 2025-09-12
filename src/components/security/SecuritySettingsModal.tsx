@@ -99,7 +99,7 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
 
   const handleSave = async () => {
     try {
-      // Validate ESP ID if provided
+      // Validate ESP ID and create child device if provided
       if (securitySettings.door_security_id) {
         const { data: claimResult } = await supabase.rpc('claim_parent_device', {
           p_esp_id: securitySettings.door_security_id.trim()
@@ -121,6 +121,41 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
             });
             return;
           }
+        }
+
+        // Create security device in child_devices table if it doesn't exist
+        try {
+          // Get security device type
+          const { data: deviceTypes } = await supabase.rpc('get_device_types');
+          const securityDeviceType = (deviceTypes as any[])?.find(dt => 
+            dt.device_class === 'security' && dt.device_series === 'door_control'
+          );
+          
+          if (securityDeviceType && claimResult?.parent_id) {
+            // Create child device for security system
+            const { data: createResult, error: createError } = await supabase.rpc('create_child_device', {
+              p_parent_id: claimResult.parent_id,
+              p_device_type_id: securityDeviceType.id,
+              p_device_name: securitySettings.door_security_id,
+              p_initial_state: {
+                system_type: 'door_control',
+                room_name: 'Front Door',
+                lock_status: 'unlocked',
+                security_mode: 'home'
+              }
+            });
+
+            if (createError || !(createResult as any)?.success) {
+              console.error('Create security device error:', createError, createResult);
+              // Don't fail the save if device already exists
+              if (!(createResult as any)?.message?.includes('already has a child device')) {
+                throw new Error((createResult as any)?.message || 'Failed to create security device');
+              }
+            }
+          }
+        } catch (deviceError) {
+          console.error('Error creating security device:', deviceError);
+          // Don't fail the main save operation
         }
       }
       

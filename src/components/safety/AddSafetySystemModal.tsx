@@ -125,7 +125,7 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
               className="app-text w-full mt-1 p-2 border border-gray-300 rounded-lg"
             >
               <option value="fire_detection">Fire Detection</option>
-              <option value="window_rain">Rain Detection</option>
+              <option value="rain_detection">Rain Detection</option>
               <option value="gas_leak">Gas Leakage</option>
               <option value="water_overflow">Water Level</option>
             </select>

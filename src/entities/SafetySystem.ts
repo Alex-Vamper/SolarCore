@@ -6,7 +6,7 @@ export interface SafetySystem {
   id?: string;
   user_id?: string;
   system_id: string;
-  system_type: 'fire_detection' | 'window_rain' | 'gas_leak' | 'water_overflow';
+  system_type: 'fire_detection' | 'rain_detection' | 'gas_leak' | 'water_overflow';
   room_name: string;
   status?: string;
   flame_status?: string;  // For fire detection: 'clear' or 'flames'
@@ -25,7 +25,7 @@ const mapChildDeviceToSafetySystem = (device: ChildDevice): SafetySystem => {
     id: device.id,
     user_id: device.created_by,
     system_id: device.device_name || '',
-    system_type: device.device_type?.device_series as 'fire_detection' | 'window_rain' | 'gas_leak' | 'water_overflow',
+    system_type: device.device_type?.device_series as 'fire_detection' | 'rain_detection' | 'gas_leak' | 'water_overflow',
     room_name: device.state?.room_name || '',
     status: device.state?.status || 'safe',
     flame_status: device.state?.flame_status || 'clear',

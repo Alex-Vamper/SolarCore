@@ -14,7 +14,7 @@ export const useCrossSystemSync = () => {
         for (const room of rooms) {
           const windowAppliances = room.appliances.filter(app => app.type === 'smart_shading');
           const windowSafetySystems = safetySystems.filter(sys => 
-            sys.system_type === 'window_rain' && sys.room_name.toLowerCase() === room.name.toLowerCase()
+            sys.system_type === 'rain_detection' && sys.room_name.toLowerCase() === room.name.toLowerCase()
           );
           
           for (const windowApp of windowAppliances) {

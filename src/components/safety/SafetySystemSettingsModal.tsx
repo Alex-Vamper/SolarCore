@@ -134,7 +134,7 @@ const SYSTEM_SETTINGS_MAP = {
         icon: Flame,
         component: FireDetectionSettings
     },
-    window_rain: {
+    rain_detection: {
         title: "Rain Detection Settings",
         icon: Droplets,
         component: RainDetectionSettings
