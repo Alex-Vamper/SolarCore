@@ -11,9 +11,10 @@ import {
   Shield,
   Settings,
   Bolt,
-  Bell,
   User as UserIcon
 } from "lucide-react";
+
+import { NotificationIndicator } from "@/components/notifications/NotificationIndicator";
 
 import AIAssistantButton from "@/components/ai/AIAssistantButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
@@ -142,7 +143,7 @@ const TopBar = () => {
         <div className="flex items-center gap-2">
           <Link to={createPageUrl("Notifications")}>
             <Button variant="ghost" size="icon">
-              <Bell className="w-5 h-5 text-gray-600" />
+              <NotificationIndicator />
             </Button>
           </Link>
           <Link to={createPageUrl("Settings")}>
@@ -162,7 +163,7 @@ const DesktopHeader = () => {
       <div className="flex items-center gap-3">
         <Link to={createPageUrl("Notifications")}>
           <Button variant="ghost" size="icon">
-            <Bell className="w-5 h-5 text-gray-600" />
+            <NotificationIndicator />
           </Button>
         </Link>
         <Link to={createPageUrl("Settings")}>

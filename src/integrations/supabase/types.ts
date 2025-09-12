@@ -97,58 +97,46 @@ export type Database = {
       }
       admin_devices: {
         Row: {
-          building_name: string | null
           created_by: string
           created_date: string
           device_class: string
           device_id: string
-          device_name: string
           device_type: string
           flag_reason: string | null
           flagged_at: string | null
           flagged_by: string | null
           id: string
           is_flagged: boolean
-          room_name: string | null
           status: string
           updated_date: string
-          user_id: string | null
         }
         Insert: {
-          building_name?: string | null
           created_by: string
           created_date?: string
           device_class: string
           device_id: string
-          device_name: string
           device_type: string
           flag_reason?: string | null
           flagged_at?: string | null
           flagged_by?: string | null
           id?: string
           is_flagged?: boolean
-          room_name?: string | null
           status?: string
           updated_date?: string
-          user_id?: string | null
         }
         Update: {
-          building_name?: string | null
           created_by?: string
           created_date?: string
           device_class?: string
           device_id?: string
-          device_name?: string
           device_type?: string
           flag_reason?: string | null
           flagged_at?: string | null
           flagged_by?: string | null
           id?: string
           is_flagged?: boolean
-          room_name?: string | null
           status?: string
           updated_date?: string
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -198,6 +186,7 @@ export type Database = {
         Row: {
           created_by: string
           created_date: string
+          delivery_method: string | null
           delivery_status: string
           id: string
           message: string
@@ -212,6 +201,7 @@ export type Database = {
         Insert: {
           created_by: string
           created_date?: string
+          delivery_method?: string | null
           delivery_status?: string
           id?: string
           message: string
@@ -226,6 +216,7 @@ export type Database = {
         Update: {
           created_by?: string
           created_date?: string
+          delivery_method?: string | null
           delivery_status?: string
           id?: string
           message?: string
@@ -648,6 +639,30 @@ export type Database = {
           system_type?: string
           temperature_value?: number | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_notification_reads: {
+        Row: {
+          created_at: string | null
+          id: string
+          notification_id: string
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notification_id: string
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notification_id?: string
+          read_at?: string | null
           user_id?: string
         }
         Relationships: []

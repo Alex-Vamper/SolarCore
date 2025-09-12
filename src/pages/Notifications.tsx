@@ -1,10 +1,6 @@
 import * as React from "react";
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Bell } from 'lucide-react';
-import Layout from '@/layouts/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Bell } from 'lucide-react';
+import { NotificationTabs } from '@/components/notifications/NotificationTabs';
 
 export default function Notifications() {
   return (
@@ -19,20 +15,7 @@ export default function Notifications() {
         </p>
       </div>
 
-      <Card className="glass-card border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="app-text">No New Notifications</CardTitle>
-        </CardHeader>
-        <CardContent className="p-8 text-center">
-          <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-          <h3 className="app-text text-lg font-semibold text-gray-900 mb-2">
-            You're all caught up!
-          </h3>
-          <p className="app-text text-gray-600">
-            New notifications will appear here when available.
-          </p>
-        </CardContent>
-      </Card>
+      <NotificationTabs />
     </div>
   );
 }
