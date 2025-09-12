@@ -60,7 +60,7 @@ export default function Footer() {
             <ul className="app-text space-y-2">
               <li>
                 <a
-                  href="#"
+                  href="https://solar-core-powered-living.vercel.app/products"
                   className="flex items-center gap-1 hover:text-yellow-400"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -71,7 +71,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="https://solar-core-powered-living.vercel.app/products"
                   className="flex items-center gap-1 hover:text-yellow-400"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -82,7 +82,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="https://solar-core-powered-living.vercel.app/products"
                   className="flex items-center gap-1 hover:text-yellow-400"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -93,7 +93,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="https://solar-core-powered-living.vercel.app/products"
                   className="flex items-center gap-1 hover:text-yellow-400"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -104,7 +104,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="https://solar-core-powered-living.vercel.app/products"
                   className="flex items-center gap-1 hover:text-yellow-400"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -122,7 +122,7 @@ export default function Footer() {
             <ul className="app-text space-y-2">
               <li>
                 <a
-                  href="#"
+                  href="https://solar-core-powered-living.vercel.app/solutions"
                   className="flex items-center gap-1 hover:text-yellow-400"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -133,7 +133,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="https://solar-core-powered-living.vercel.app/solutions"
                   className="flex items-center gap-1 hover:text-yellow-400"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -144,7 +144,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="https://solar-core-powered-living.vercel.app/solutions"
                   className="flex items-center gap-1 hover:text-yellow-400"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -155,7 +155,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="https://solar-core-powered-living.vercel.app/solutions"
                   className="flex items-center gap-1 hover:text-yellow-400"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -206,7 +206,3 @@ export default function Footer() {
     </footer>
   );
 }
-
-
-{/*https://solar-core-powered-living.vercel.app/products*/}
-{/*https://solar-core-powered-living.vercel.app/solutions*/}
