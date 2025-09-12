@@ -96,24 +96,42 @@ export class SafetySystemService {
       
       if (!deviceType) throw new Error(`Device type not found for ${safetySystem.system_type}`);
 
-      // Get parent device from ESP ID
-      const { data: parentDevices } = await supabase
+      // Get parent device from ESP ID - the device should be already claimed via claim_parent_device RPC
+      const { data: parentDevices, error: parentError } = await supabase
         .from('parent_devices')
         .select('id')
-        .eq('esp_id', safetySystem.system_id)
-        .eq('owner_account', (await supabase.auth.getUser()).data.user?.id);
+        .eq('esp_id', safetySystem.system_id);
       
-      if (!parentDevices || parentDevices.length === 0) {
-        throw new Error('Parent device not found or not owned by user');
+      if (parentError || !parentDevices || parentDevices.length === 0) {
+        console.error('Parent device query error:', parentError);
+        throw new Error('Parent device not found. Make sure the device is claimed first.');
       }
 
-      const childDevice = {
-        ...mapSafetySystemToChildDevice(safetySystem, deviceType.id),
-        parent_id: parentDevices[0].id,
-        created_by: (await supabase.auth.getUser()).data.user?.id
-      };
-      
-      const createdDevice = await ChildDeviceService.create(childDevice as ChildDevice);
+      // Use the create_child_device RPC function for proper validation and creation
+      const { data: createResult, error: createError } = await supabase.rpc('create_child_device', {
+        p_parent_id: parentDevices[0].id,
+        p_device_type_id: deviceType.id,
+        p_device_name: safetySystem.system_id,
+        p_initial_state: {
+          room_name: safetySystem.room_name,
+          status: safetySystem.status || 'safe',
+          flame_status: safetySystem.flame_status || 'clear',
+          temperature: safetySystem.temperature_value || 25,
+          smoke_percentage: safetySystem.smoke_percentage || 0,
+          last_triggered: safetySystem.last_triggered,
+          sensor_readings: safetySystem.sensor_readings || {},
+          automation_settings: safetySystem.automation_settings || {}
+        }
+      });
+
+      if (createError || !(createResult as any)?.success) {
+        console.error('Create child device error:', createError, createResult);
+        throw new Error((createResult as any)?.message || 'Failed to create safety system');
+      }
+
+      // Fetch the created device to return it
+      const createdDevice = await ChildDeviceService.get((createResult as any).child_id);
+      if (!createdDevice) throw new Error('Failed to retrieve created device');
       
       return mapChildDeviceToSafetySystem(createdDevice);
     } catch (error) {

@@ -28,7 +28,7 @@ export default function Safety() {
       const currentUser = await User.me();
       const [systemsData, roomsData] = await Promise.all([
         SafetySystem.list(),
-        Room.filter({ created_by: currentUser.email })
+        Room.list()
       ]);
       setSafetySystems(systemsData);
       setRooms(roomsData);

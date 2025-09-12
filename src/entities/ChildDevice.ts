@@ -52,13 +52,9 @@ export class ChildDeviceService {
 
   static async list(params?: { device_class?: string; device_series?: string }): Promise<ChildDevice[]> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
-
       const { data, error } = await supabase
         .from('child_devices')
         .select('*')
-        .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
