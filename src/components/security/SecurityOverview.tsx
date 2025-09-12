@@ -132,8 +132,6 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   const handleDoorToggle = async () => {
     // Check if security device is configured
     if (!securitySettings?.door_security_id) {
-      toast.error("Security device not configured. Please configure your door security device first.");
-      speak("Security device not configured");
       return;
     }
     
@@ -141,12 +139,10 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     const newLockState = !isDoorLocked;
     
     if (newLockState) {
-      speak("Front Door has been locked. Turning off all non-essentials in 5 seconds.");
       setIsDoorLocked(true);
       setIsSecurityMode(true);
       await onSecurityModeToggle(true);
     } else {
-      speak("Front Door has been unlocked.");
       setIsDoorLocked(false);
       setIsSecurityMode(false);
       await onSecurityModeToggle(false);
@@ -158,8 +154,6 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   const handleSecurityToggle = async () => {
     // Check if security device is configured
     if (!securitySettings?.door_security_id) {
-      toast.error("Security device not configured. Please configure your door security device first.");
-      speak("Security device not configured");
       return;
     }
     
@@ -168,14 +162,11 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
 
     if (newSecurityMode) {
       if (!isDoorLocked) {
-        speak("Front Door has been locked. Turning off all non-essentials in 5 seconds.");
         setIsDoorLocked(true);
       }
-      speak("Away Mode activated.");
       setIsSecurityMode(true);
       await onSecurityModeToggle(true);
     } else {
-      speak("Home Mode Activated. Systems will remain active.");
       setIsSecurityMode(false);
       await onSecurityModeToggle(false);
     }
