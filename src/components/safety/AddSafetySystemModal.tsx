@@ -11,6 +11,7 @@ import {
 import { Shield, Key, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SafetySystemService } from "@/entities/SafetySystem";
 
 export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = [] }) {
   const [systemData, setSystemData] = useState({
@@ -60,7 +61,19 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
         }
       }
 
-      // If valid, proceed with saving
+      // If valid, proceed with creating the child device
+      // Convert safety system data to SafetySystem format and create
+      const safetySystemData = {
+        system_id: systemData.system_id,
+        system_type: systemData.system_type as 'fire_detection' | 'rain_detection' | 'gas_leak' | 'water_overflow',
+        room_name: systemData.room_name,
+        status: 'safe',
+        flame_status: 'clear',
+        temperature_value: 25,
+        smoke_percentage: 0
+      };
+      
+      await SafetySystemService.create(safetySystemData);
       await onSave(systemData);
       toast({
         title: "Success",

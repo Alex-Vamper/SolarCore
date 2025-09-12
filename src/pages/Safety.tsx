@@ -40,28 +40,14 @@ export default function Safety() {
 
   const handleAddSystem = async (systemData) => {
     try {
-        // Convert safety system data to SafetySystem format
-        const safetySystemData = {
-          system_id: systemData.system_id,
-          system_type: systemData.system_type,
-          room_name: systemData.room_name,
-          status: 'safe',
-          flame_status: 'clear',
-          temperature_value: 25,
-          smoke_percentage: 0
-        };
-        
-        const newSystem = await SafetySystem.create(safetySystemData);
+        // The AddSafetySystemModal already creates the device
+        // Just reload data and show success
         await loadData();
         setShowAddModal(false);
-        toast({
-          title: "Success",
-          description: `Safety system ${systemData.system_id} added successfully`,
-        });
         
         // Trigger event for synchronization
         window.dispatchEvent(new CustomEvent('safetyStateChanged', { 
-          detail: { safetySystemId: newSystem.id } 
+          detail: { safetySystemId: systemData.system_id } 
         }));
     } catch(error) {
         console.error("Error adding safety system", error);
