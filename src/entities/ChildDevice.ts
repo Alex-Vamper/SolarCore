@@ -54,15 +54,24 @@ export class ChildDeviceService {
     try {
       console.log('[ChildDeviceService] Fetching child devices with params:', params);
       
-      // Build query with proper joins to respect RLS
+      // Get current user first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('[ChildDeviceService] No authenticated user');
+        return [];
+      }
+      
+      // Build query with proper RLS filtering - filter by current user's parent devices
       let query = supabase
         .from('child_devices')
         .select(`
           *,
-          parent_devices!inner(id, owner_account)
+          parent_devices!inner(id, owner_account, esp_id)
         `)
+        .eq('parent_devices.owner_account', user.id)
         .order('created_at', { ascending: false });
 
+      console.log('[ChildDeviceService] Executing query for user:', user.id);
       const { data, error } = await query;
       console.log('[ChildDeviceService] Raw query result:', { data, error });
 
