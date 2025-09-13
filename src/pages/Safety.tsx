@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Shield, AlertTriangle, CheckCircle } from "lucide-react";
-import { supabase } from '@/integrations/supabase/client';
+import { useSafetySystemsRealtime } from "@/hooks/useSafetySystemsRealtime";
 
 import SafetyPanel from "../components/safety/SafetyPanel";
 import SecurityOverview from "../components/security/SecurityOverview";
@@ -12,94 +12,48 @@ import AddSafetySystemModal from "../components/safety/AddSafetySystemModal";
 import SafetySystemSettingsModal from "../components/safety/SafetySystemSettingsModal";
 
 export default function Safety() {
-  const [safetySystems, setSafetySystems] = useState([]);
+  const { safetySystems, isLoading, refresh } = useSafetySystemsRealtime();
   const [rooms, setRooms] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedSystem, setSelectedSystem] = useState(null);
 
   useEffect(() => {
-    loadData();
-    
-    // Set up real-time subscription for child_devices changes
-    const channel = supabase
-      .channel('safety-systems-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'child_devices',
-          filter: 'device_type.device_class=eq.safety'
-        },
-        (payload) => {
-          console.log('Real-time safety system update:', payload);
-          // Reload data when changes occur
-          loadData();
-          
-          // Show toast for status changes
-          if (payload.eventType === 'UPDATE' && payload.new?.state?.status !== payload.old?.state?.status) {
-            const deviceName = payload.new?.device_name || 'Safety System';
-            const newStatus = payload.new?.state?.status || 'unknown';
-            const room = payload.new?.state?.room_name || 'Unknown Room';
-            
-            toast.success(
-              `${deviceName} status changed to ${newStatus} in ${room}`,
-              {
-                description: new Date().toLocaleTimeString(),
-                duration: 5000,
-              }
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    loadRooms();
   }, []);
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadRooms = async () => {
     try {
-      const currentUser = await User.me();
-      const [systemsData, roomsData] = await Promise.all([
-        SafetySystem.list(),
-        Room.list()
-      ]);
-      setSafetySystems(systemsData);
+      const roomsData = await Room.list();
       setRooms(roomsData);
     } catch (error) {
-      console.error("Error loading safety data:", error);
+      console.error("Error loading rooms:", error);
     }
-    setIsLoading(false);
   };
 
   const handleAddSystem = async (systemData) => {
     try {
-        // The AddSafetySystemModal already creates the device
-        // Just reload data and show success
-        await loadData();
-        setShowAddModal(false);
-        
-        // Trigger event for synchronization
-        window.dispatchEvent(new CustomEvent('safetyStateChanged', { 
-          detail: { safetySystemId: systemData.system_id } 
-        }));
+      // The AddSafetySystemModal already creates the device
+      // Just refresh data and show success
+      await refresh();
+      setShowAddModal(false);
+      
+      // Trigger event for synchronization
+      window.dispatchEvent(new CustomEvent('safetyStateChanged', { 
+        detail: { safetySystemId: systemData.system_id } 
+      }));
     } catch(error) {
-        console.error("Error adding safety system", error);
-        toast.error("Error", {
-          description: "Failed to add safety system"
-        });
+      console.error("Error adding safety system", error);
+      toast.error("Error", {
+        description: "Failed to add safety system"
+      });
     }
   }
 
   const handleDeleteSystem = async (systemId) => {
     try {
         await ChildDevice.delete(systemId);
-        loadData();
+        await refresh();
         setShowSettingsModal(false);
         setSelectedSystem(null);
     } catch(error) {
@@ -115,243 +69,180 @@ export default function Safety() {
       switch (action) {
         case "activate_suppression":
           updates = { 
-            state: { 
-              ...system.state, 
-              status: "suppression_active" 
-            }
+            status: "suppression_active" 
           };
           break;
-        case "close_window":
+        case "deactivate_suppression":
           updates = { 
-            state: { 
-              ...system.state, 
-              window_status: "closed" 
-            }
+            status: "safe" 
           };
           break;
-        case "open_window":
+        case "reset_system":
           updates = { 
-            state: { 
-              ...system.state, 
-              window_status: "open" 
+            status: "safe",
+            flame_status: "clear",
+            temperature_value: 25,
+            smoke_percentage: 0
+          };
+          break;
+        case "silence_alarm":
+          updates = { 
+            automation_settings: {
+              ...system.automation_settings,
+              alarm_silenced: true 
             }
           };
           break;
       }
 
-      await ChildDevice.update(systemId, updates);
-      loadData();
-    } catch (error) {
-      console.error("Error with manual override:", error);
-    }
-  };
-
-  const handleSystemSettings = (system) => {
-    setSelectedSystem(system);
-    setShowSettingsModal(true);
-  };
-  
-  const handleSaveSystemSettings = async (system) => {
-      // This function is passed to the settings modal
-      // but the actual save logic will be within the modal itself for simplicity
-      console.log("Settings saved for:", system);
-      loadData();
-  }
-
-  const handleSecurityModeToggle = async (enabled) => {
-    console.log("Security mode:", enabled ? "ENABLED" : "DISABLED");
-    // Here you would typically call an API to toggle all appliances
-    // For now, we'll just simulate the action
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  };
-
-  const handleSecuritySettings = async (settings) => {
-    try {
-      // Save security settings to user settings
-      await UserSettings.upsert({
-        security_settings: {
-          ...settings,
-          door_security_id: settings.door_security_id || '',
-          door_security_series: settings.door_security_series || ''
-        }
+      await SafetySystem.update(systemId, updates);
+      await refresh();
+      
+      toast.success(`Manual override applied: ${action}`, {
+        description: `System ${system.system_id || systemId} has been updated.`,
       });
-      
-      console.log("Security settings saved:", settings);
-      
-      // Trigger event for synchronization
-      window.dispatchEvent(new CustomEvent('securityModeChanged', { 
-        detail: { settings } 
-      }));
     } catch (error) {
-      console.error("Error saving security settings:", error);
+      console.error(`Error applying manual override:`, error);
+      toast.error("Manual override failed", {
+        description: "Please try again or contact support if the issue persists.",
+      });
     }
   };
 
-  const getOverallStatus = () => {
-    if (safetySystems.length === 0) return "unknown";
-    
-    const hasActive = safetySystems.some(s => s.state?.status === "active" || s.state?.status === "suppression_active");
-    const hasAlert = safetySystems.some(s => s.state?.status === "alert");
-    
-    if (hasActive) return "active";
-    if (hasAlert) return "alert";
-    return "safe";
-  };
+  const handleScheduleCheck = async (systemId, schedule) => {
+    try {
+      const system = safetySystems.find(s => s.id === systemId);
+      const updates = { 
+        automation_settings: {
+          ...system.automation_settings,
+          maintenance_schedule: schedule
+        }
+      };
 
-  const getStatusStats = () => {
-    const safe = safetySystems.filter(s => s.state?.status === "safe").length;
-    const alert = safetySystems.filter(s => s.state?.status === "alert").length;
-    const active = safetySystems.filter(s => s.state?.status === "active" || s.state?.status === "suppression_active").length;
-    
-    return { safe, alert, active };
+      await SafetySystem.update(systemId, updates);
+      await refresh();
+      
+      toast.success("Maintenance scheduled", {
+        description: `Next check scheduled for ${schedule.next_check}`,
+      });
+    } catch (error) {
+      console.error("Error scheduling check:", error);
+      toast.error("Failed to schedule maintenance check");
+    }
   };
-
-  const overallStatus = getOverallStatus();
-  const stats = getStatusStats();
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <div className="w-8 h-8 bg-white rounded-full"></div>
-          </div>
-          <p className="text-gray-600 font-inter">Loading safety systems...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading safety systems...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 pb-24">
-      <div className="max-w-[1280px] mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 font-inter">Safety Systems</h1>
-              <p className="text-gray-600 font-inter mt-1">
-                Monitor and control your home safety
-              </p>
-            </div>
-            <Button onClick={() => setShowAddModal(true)} className="bg-red-600 hover:bg-red-700 font-inter">
-              <Plus className="w-4 h-4 mr-2" />
-              Add System
-            </Button>
-          </div>
-
-          {/* Security Overview */}
-          <SecurityOverview 
-            onSecurityModeToggle={handleSecurityModeToggle}
-            onSecuritySettings={handleSecuritySettings}
-          />
-
-          {/* Overall Status */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className={`p-4 rounded-xl ${
-              overallStatus === "safe" ? 'bg-green-50 border-green-200' :
-              overallStatus === "alert" ? 'bg-yellow-50 border-yellow-200' :
-              'bg-red-50 border-red-200'
-            } border-2`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  overallStatus === "safe" ? 'bg-green-500' :
-                  overallStatus === "alert" ? 'bg-yellow-500' :
-                  'bg-red-500'
-                }`}>
-                  {overallStatus === "safe" ? (
-                    <CheckCircle className="w-5 h-5 text-white" />
-                  ) : overallStatus === "alert" ? (
-                    <AlertTriangle className="w-5 h-5 text-white" />
-                  ) : (
-                    <Shield className="w-5 h-5 text-white" />
-                  )}
-                </div>
-                <div>
-                  <div className="font-semibold text-gray-900 font-inter">Overall Status</div>
-                  <div className={`text-sm font-medium ${
-                    overallStatus === "safe" ? 'text-green-600' :
-                    overallStatus === "alert" ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {overallStatus === "safe" ? "All Systems Safe" :
-                    overallStatus === "alert" ? "Alert Active" :
-                    "Emergency Active"}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-white rounded-xl border-2 border-gray-200">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600 font-inter">{stats.safe}</div>
-                <div className="text-sm text-gray-500 font-inter">Safe</div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-white rounded-xl border-2 border-gray-200">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600 font-inter">{stats.alert}</div>
-                <div className="text-sm text-gray-500 font-inter">Alert</div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-white rounded-xl border-2 border-gray-200">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600 font-inter">{stats.active}</div>
-                <div className="text-sm text-gray-500 font-inter">Active</div>
-              </div>
-            </div>
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Shield className="h-8 w-8 text-red-600" />
+          <div>
+            <h1 className="text-3xl font-bold">Safety & Security</h1>
+            <p className="text-muted-foreground">Monitor and manage your safety systems</p>
           </div>
         </div>
-
-        {/* Safety Systems */}
-        {safetySystems.length > 0 ? (
-          <div className="space-y-4">
-            {safetySystems.map((system) => (
-              <SafetyPanel
-                key={system.id}
-                system={system}
-                onManualOverride={handleManualOverride}
-                onSystemSettings={() => handleSystemSettings(system)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 font-inter mb-2">No safety systems configured</h3>
-            <p className="text-gray-600 font-inter mb-4">
-              Add fire detection and rain sensors to monitor your home
-            </p>
-            <Button onClick={() => setShowAddModal(true)} className="bg-red-600 hover:bg-red-700 font-inter">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Safety System
-            </Button>
-          </div>
-        )}
-
-        <AddSafetySystemModal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSave={handleAddSystem}
-          rooms={rooms}
-        />
-        {selectedSystem && (
-          <SafetySystemSettingsModal
-              isOpen={showSettingsModal}
-              onClose={() => {
-                  setShowSettingsModal(false);
-                  setSelectedSystem(null);
-              }}
-              system={selectedSystem}
-              onSave={handleSaveSystemSettings}
-              onDelete={handleDeleteSystem}
-          />
-        )}
+        
+        <div className="flex items-center gap-2">
+          <Badge 
+            variant={safetySystems.some(s => s.status === 'danger') ? 'destructive' : 'default'}
+            className="px-4 py-2"
+          >
+            <CheckCircle className="h-4 w-4 mr-1" />
+            {safetySystems.every(s => s.status === 'safe') ? 'All Safe' : 'Alert Active'}
+          </Badge>
+          
+          <Button onClick={() => setShowAddModal(true)} className="bg-red-600 hover:bg-red-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Safety System
+          </Button>
+        </div>
       </div>
+
+      {/* Safety Systems Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {safetySystems.map((system) => (
+          <SafetyPanel
+            key={system.id}
+            system={system}
+            onManualOverride={handleManualOverride}
+            onSystemSettings={() => {
+              setSelectedSystem(system);
+              setShowSettingsModal(true);
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {safetySystems.length === 0 && (
+        <div className="text-center py-12">
+          <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-xl font-semibold mb-2">No Safety Systems</h3>
+          <p className="text-muted-foreground mb-4">
+            Add your first safety system to start monitoring your property.
+          </p>
+          <Button onClick={() => setShowAddModal(true)} className="bg-red-600 hover:bg-red-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Safety System
+          </Button>
+        </div>
+      )}
+
+      {/* Security Overview */}
+      <div className="border-t pt-6">
+        <SecurityOverview 
+          onSecurityModeToggle={() => {
+            toast.info("Security mode toggle not implemented yet");
+          }}
+          onSecuritySettings={() => {
+            toast.info("Security settings not implemented yet");
+          }}
+        />
+      </div>
+
+      {/* Modals */}
+      <AddSafetySystemModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleAddSystem}
+        rooms={rooms}
+      />
+
+      {selectedSystem && (
+        <SafetySystemSettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => {
+            setShowSettingsModal(false);
+            setSelectedSystem(null);
+          }}
+          system={selectedSystem}
+          onDelete={() => handleDeleteSystem(selectedSystem.id)}
+          onSave={async (updates) => {
+            try {
+              await SafetySystem.update(selectedSystem.id, updates);
+              await refresh();
+              setShowSettingsModal(false);
+              setSelectedSystem(null);
+              toast.success("Settings updated successfully");
+            } catch (error) {
+              console.error("Error updating system:", error);
+              toast.error("Failed to update settings");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
