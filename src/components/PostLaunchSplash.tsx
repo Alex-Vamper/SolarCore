@@ -1,6 +1,7 @@
 // src/components/PostLaunchSplash.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLaunchStatus } from "@/hooks/useLaunchStatus";
 
 type Props = {
   children?: React.ReactNode;
@@ -32,22 +33,34 @@ export default function PostLaunchSplash({
   displayMs = 20_000,
 }: Props) {
   const navigate = useNavigate();
+  const { launchStatus, loading: launchLoading } = useLaunchStatus();
   const [serverOffset, setServerOffset] = useState<number>(0);
   const [visible, setVisible] = useState<boolean>(false);
   const [showing, setShowing] = useState<boolean>(false);
   const [loadingServerTime, setLoadingServerTime] = useState<boolean>(true);
 
-  // Effective launch ISO
+  // Effective launch ISO (priority: prop > admin backend > env > default)
   const effectiveLaunchIso = useMemo(() => {
     if (launchIso) return launchIso;
+    if (launchStatus?.success && launchStatus.launch_date) return launchStatus.launch_date;
     if (import.meta.env.VITE_LAUNCH_DATE) return import.meta.env.VITE_LAUNCH_DATE;
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d.toISOString();
-  }, [launchIso]);
+  }, [launchIso, launchStatus]);
 
-  // Fetch server time if provided
+  // Use backend server time or fetch from URL
   useEffect(() => {
+    // If we have backend server time, use it
+    if (launchStatus?.success && launchStatus.server_time) {
+      const serverTime = new Date(launchStatus.server_time).getTime();
+      const clientTime = Date.now();
+      setServerOffset(serverTime - clientTime);
+      setLoadingServerTime(false);
+      return;
+    }
+
+    // Otherwise fetch from provided URL
     let mounted = true;
     if (!serverTimeUrl) {
       setLoadingServerTime(false);
@@ -70,12 +83,12 @@ export default function PostLaunchSplash({
     return () => {
       mounted = false;
     };
-  }, [serverTimeUrl]);
+  }, [serverTimeUrl, launchStatus]);
 
   // Decide splash visibility
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (loadingServerTime) return;
+    if (loadingServerTime || launchLoading) return;
 
     const now = new Date(Date.now() + serverOffset);
     const launchDate = new Date(effectiveLaunchIso);
@@ -105,7 +118,7 @@ export default function PostLaunchSplash({
     }, displayMs);
 
     return () => clearTimeout(timer);
-  }, [effectiveLaunchIso, serverOffset, loadingServerTime, userId, displayMs]);
+  }, [effectiveLaunchIso, serverOffset, loadingServerTime, userId, displayMs, launchLoading]);
 
   // Time since launch
   const timeSince = useMemo(() => {

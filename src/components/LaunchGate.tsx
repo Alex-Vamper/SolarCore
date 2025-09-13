@@ -2,7 +2,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client"; // <- reuse existing client
+import { supabase } from "@/integrations/supabase/client";
+import { useLaunchStatus } from "@/hooks/useLaunchStatus";
 
 type LaunchGateProps = {
   launchIso?: string | null;
@@ -39,18 +40,27 @@ export default function LaunchGate({
   serverTimeUrl = null,
 }: LaunchGateProps) {
   const navigate = useNavigate();
+  const { launchStatus, loading: launchLoading, error: launchError } = useLaunchStatus();
 
-  // compute effective launch ISO (prop > env > today@00:00 local)
+  // compute effective launch ISO (priority: prop > admin backend > env > default)
   const effectiveLaunchIso = useMemo(() => {
     if (launchIso) return launchIso;
+    if (launchStatus?.success && launchStatus.launch_date) return launchStatus.launch_date;
     if (import.meta.env.VITE_LAUNCH_DATE) return import.meta.env.VITE_LAUNCH_DATE;
     const d = new Date();
     d.setHours(0, 0, 0, 0); // today at 00:00 local
     return d.toISOString();
-  }, [launchIso]);
+  }, [launchIso, launchStatus]);
 
-  // server-client offset (serverNow - clientNow)
-  const [nowOffsetMs, setNowOffsetMs] = useState<number>(0);
+  // server-client offset (serverNow - clientNow) - use backend server time if available
+  const [nowOffsetMs, setNowOffsetMs] = useState<number>(() => {
+    if (launchStatus?.success && launchStatus.server_time) {
+      const serverTime = new Date(launchStatus.server_time).getTime();
+      const clientTime = Date.now();
+      return serverTime - clientTime;
+    }
+    return 0;
+  });
 
   // remaining ms until target (initialized from effectiveLaunchIso)
   const [remainingMs, setRemainingMs] = useState<number>(() => {
@@ -58,8 +68,11 @@ export default function LaunchGate({
     return target - Date.now();
   });
 
-  // ready when remaining <= 0
-  const [ready, setReady] = useState<boolean>(() => remainingMs <= 0);
+  // ready when remaining <= 0 or backend says we're launched
+  const [ready, setReady] = useState<boolean>(() => {
+    if (launchStatus?.success && launchStatus.is_launched) return true;
+    return remainingMs <= 0;
+  });
 
   // Dev convenience: bypass gate on localhost
   useEffect(() => {
@@ -71,9 +84,30 @@ export default function LaunchGate({
     }
   }, []);
 
-  // Optionally fetch server time to compute offset
+  // Update offset when backend data changes
   useEffect(() => {
-    if (!serverTimeUrl) return;
+    if (launchStatus?.success && launchStatus.server_time) {
+      const serverTime = new Date(launchStatus.server_time).getTime();
+      const clientTime = Date.now();
+      setNowOffsetMs(serverTime - clientTime);
+    }
+
+    // Check if backend says we're launched
+    if (launchStatus?.success && launchStatus.is_launched) {
+      setReady(true);
+      return;
+    }
+
+    // Update remaining time based on new launch date
+    const target = new Date(effectiveLaunchIso).getTime();
+    const rem = target - (Date.now() + nowOffsetMs);
+    setRemainingMs(rem);
+    if (rem <= 0) setReady(true);
+  }, [launchStatus, effectiveLaunchIso, nowOffsetMs]);
+
+  // Optionally fetch server time to compute offset (fallback if no backend data)
+  useEffect(() => {
+    if (!serverTimeUrl || (launchStatus?.success && launchStatus.server_time)) return;
     let mounted = true;
     fetch(serverTimeUrl)
       .then((r) => r.json())
@@ -96,10 +130,16 @@ export default function LaunchGate({
     return () => {
       mounted = false;
     };
-  }, [serverTimeUrl, effectiveLaunchIso]);
+  }, [serverTimeUrl, effectiveLaunchIso, launchStatus]);
 
   // Tick every second to update remainingMs and flip ready when time reached
   useEffect(() => {
+    // Skip countdown if backend says we're already launched
+    if (launchStatus?.success && launchStatus.is_launched) {
+      setReady(true);
+      return;
+    }
+
     const target = new Date(effectiveLaunchIso).getTime();
     const id = setInterval(() => {
       const clientNow = Date.now();
@@ -109,7 +149,21 @@ export default function LaunchGate({
       if (rem <= 0) setReady(true);
     }, 1000);
     return () => clearInterval(id);
-  }, [effectiveLaunchIso, nowOffsetMs]);
+  }, [effectiveLaunchIso, nowOffsetMs, launchStatus]);
+
+  // Show loading while fetching launch status
+  if (launchLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-500 via-amber-400 to-yellow-500">
+        <div className="text-white text-xl">Loading launch status...</div>
+      </div>
+    );
+  }
+
+  // Show error if launch status fetch failed (fallback to env variables)
+  if (launchError && !launchStatus) {
+    console.warn('Failed to fetch launch status, falling back to environment variables:', launchError);
+  }
 
   // If ready -> render children (actual app)
   if (ready) {
