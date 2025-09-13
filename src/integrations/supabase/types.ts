@@ -1060,6 +1060,10 @@ export type Database = {
         Args: { p_canonical_child_id: string; p_parent_id: string }
         Returns: Json
       }
+      migrate_safety_systems_to_child_devices: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       set_demo_mode: {
         Args: { p_is_demo: boolean; p_parent_id: string }
         Returns: Json
