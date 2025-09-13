@@ -42,15 +42,23 @@ export default function LaunchGate({
   const navigate = useNavigate();
   const { launchStatus, loading: launchLoading, error: launchError } = useLaunchStatus();
 
-  // compute effective launch ISO (priority: prop > admin backend > env > default)
+  // compute effective launch ISO (priority: backend > prop > env > default)
   const effectiveLaunchIso = useMemo(() => {
+    // Priority 1: Backend launch date (only if successfully loaded)
+    if (launchStatus?.success && launchStatus.launch_date) {
+      return launchStatus.launch_date;
+    }
+    // Priority 2: Prop override (for testing/admin)
     if (launchIso) return launchIso;
-    if (launchStatus?.success && launchStatus.launch_date) return launchStatus.launch_date;
-    if (import.meta.env.VITE_LAUNCH_DATE) return import.meta.env.VITE_LAUNCH_DATE;
+    // Priority 3: Environment variable (fallback only if backend fails/unavailable)
+    if (!launchLoading && launchError && import.meta.env.VITE_LAUNCH_DATE) {
+      return import.meta.env.VITE_LAUNCH_DATE;
+    }
+    // Priority 4: Default fallback
     const d = new Date();
     d.setHours(0, 0, 0, 0); // today at 00:00 local
     return d.toISOString();
-  }, [launchIso, launchStatus]);
+  }, [launchIso, launchStatus, launchLoading, launchError]);
 
   // server-client offset (serverNow - clientNow) - use backend server time if available
   const [nowOffsetMs, setNowOffsetMs] = useState<number>(() => {
@@ -70,8 +78,14 @@ export default function LaunchGate({
 
   // ready when remaining <= 0 or backend says we're launched
   const [ready, setReady] = useState<boolean>(() => {
+    // If backend data is available and says we're launched, ready immediately
     if (launchStatus?.success && launchStatus.is_launched) return true;
-    return remainingMs <= 0;
+    // Otherwise check countdown (but only if we have a valid launch date)
+    if (effectiveLaunchIso) {
+      const target = new Date(effectiveLaunchIso).getTime();
+      return (target - Date.now()) <= 0;
+    }
+    return false;
   });
 
   // Dev convenience: bypass gate on localhost
@@ -151,19 +165,29 @@ export default function LaunchGate({
     return () => clearInterval(id);
   }, [effectiveLaunchIso, nowOffsetMs, launchStatus]);
 
-  // Show loading while fetching launch status
-  if (launchLoading) {
+  // Show loading while fetching launch status (but only for a reasonable time)
+  if (launchLoading && !launchStatus) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-500 via-amber-400 to-yellow-500">
-        <div className="text-white text-xl">Loading launch status...</div>
+        <div className="text-white text-xl">Checking launch status...</div>
       </div>
     );
   }
 
-  // Show error if launch status fetch failed (fallback to env variables)
-  if (launchError && !launchStatus) {
-    console.warn('Failed to fetch launch status, falling back to environment variables:', launchError);
+  // Log backend status for debugging
+  if (launchError) {
+    console.warn('Failed to fetch launch status, using fallback:', launchError);
   }
+  
+  // Debug info
+  console.log('Launch Status Debug:', {
+    backendSuccess: launchStatus?.success,
+    backendLaunched: launchStatus?.is_launched,
+    backendDate: launchStatus?.launch_date,
+    effectiveDate: effectiveLaunchIso,
+    ready,
+    remainingMs
+  });
 
   // If ready -> render children (actual app)
   if (ready) {
