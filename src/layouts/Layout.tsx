@@ -186,9 +186,7 @@ export default function Layout({ children }: LayoutProps) {
   useSecurityState(); // Initialize security state listener globally
   useCrossSystemSync(); // Initialize cross-system synchronization
   
-  // LaunchGate config
-  const launchIso =
-    import.meta.env.VITE_LAUNCH_DATE ?? "2025-09-27T00:00:00+01:00";
+  // Preview key for development access
   const previewKey = import.meta.env.VITE_PREVIEW_KEY;
   const serverTimeUrl = import.meta.env.VITE_TIME_ENDPOINT ?? null;
 
@@ -201,8 +199,8 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex-1 lg:pl-64">
         <DesktopHeader />
         <main className="flex-1 overflow-auto pb-24 lg:pb-6">
-          {/* 👇 Wrap LaunchGate output in PostLaunchSplash */}
-          <LaunchGate launchIso={launchIso} serverTimeUrl={serverTimeUrl}>
+          {/* LaunchGate and PostLaunchSplash now use admin-controlled backend launch dates */}
+          <LaunchGate serverTimeUrl={serverTimeUrl}>
             <PostLaunchSplash>
               {children || <Outlet />}
             </PostLaunchSplash>

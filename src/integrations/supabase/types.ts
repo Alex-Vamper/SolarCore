@@ -182,6 +182,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_launch_control: {
+        Row: {
+          created_at: string
+          created_by: string
+          created_by_name: string
+          id: string
+          is_active: boolean
+          launch_date: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          created_by_name: string
+          id?: string
+          is_active?: boolean
+          launch_date: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          created_by_name?: string
+          id?: string
+          is_active?: boolean
+          launch_date?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_notifications: {
         Row: {
           created_by: string
@@ -960,6 +993,10 @@ export type Database = {
           target_type: string
         }[]
       }
+      admin_get_launch_date: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       admin_get_superadmin_id: {
         Args: { superadmin_email: string }
         Returns: string
@@ -1005,6 +1042,10 @@ export type Database = {
       admin_reset_keycode: {
         Args: { account_id: string; new_keycode: string }
         Returns: boolean
+      }
+      admin_set_launch_date: {
+        Args: { p_launch_date: string; p_notes?: string }
+        Returns: Json
       }
       admin_update_account_status: {
         Args: { account_id: string; new_status: string }
@@ -1061,6 +1102,10 @@ export type Database = {
         Returns: Json
       }
       migrate_safety_systems_to_child_devices: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      public_get_launch_status: {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
