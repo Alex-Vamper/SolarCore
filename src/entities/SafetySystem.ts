@@ -151,11 +151,23 @@ export class SafetySystemService {
         throw new Error(errorMessage);
       }
 
-      // Fetch the created device to return it
-      const createdDevice = await ChildDeviceService.get((createResult as any).child_id);
-      if (!createdDevice) throw new Error('Failed to retrieve created device');
-      
-      return mapChildDeviceToSafetySystem(createdDevice);
+      // Return the safety system data directly to avoid permission issues
+      return {
+        id: (createResult as any).child_id,
+        user_id: undefined, // Will be set by database
+        system_id: safetySystem.system_id,
+        system_type: safetySystem.system_type,
+        room_name: safetySystem.room_name,
+        status: safetySystem.status || 'safe',
+        flame_status: safetySystem.flame_status || 'clear',
+        temperature_value: safetySystem.temperature_value || 25,
+        smoke_percentage: safetySystem.smoke_percentage || 0,
+        last_triggered: safetySystem.last_triggered,
+        sensor_readings: safetySystem.sensor_readings || {},
+        automation_settings: safetySystem.automation_settings || {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
     });
   }
 
