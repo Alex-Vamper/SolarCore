@@ -18,6 +18,7 @@ export interface SafetySystem {
   automation_settings?: any;
   created_at?: string;
   updated_at?: string;
+  parent_id?: string; // Add parent_id for direct creation
 }
 
 // Convert ChildDevice to SafetySystem format for backwards compatibility
@@ -120,20 +121,16 @@ export class SafetySystemService {
         throw new Error(`Device type not found for ${safetySystem.system_type}. Available types: ${(deviceTypes as DeviceType[])?.filter(dt => dt.device_class === 'safety').map(dt => dt.device_series).join(', ')}`);
       }
 
-      // Get parent device from ESP ID - the device should be already claimed via claim_parent_device RPC
-      const { data: parentDevices, error: parentError } = await supabase
-        .from('parent_devices')
-        .select('id')
-        .eq('esp_id', safetySystem.system_id);
+      // Get parent_id from the passed parameter or claim result
+      let parentId = safetySystem.parent_id;
       
-      if (parentError || !parentDevices || parentDevices.length === 0) {
-        console.error('Parent device query error:', parentError);
-        throw new Error('Parent device not found. Make sure the device is claimed first.');
+      if (!parentId) {
+        throw new Error('Parent device ID is required. Make sure the device is claimed first.');
       }
 
       // Use the create_child_device RPC function for proper validation and creation
       const { data: createResult, error: createError } = await supabase.rpc('create_child_device', {
-        p_parent_id: parentDevices[0].id,
+        p_parent_id: parentId,
         p_device_type_id: deviceType.id,
         p_device_name: safetySystem.system_id,
         p_initial_state: {

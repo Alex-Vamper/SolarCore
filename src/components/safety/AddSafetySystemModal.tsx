@@ -104,7 +104,8 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
           trigger_threshold: 75,
           notification_level: "all",
           auto_response_enabled: true
-        }
+        },
+        parent_id: result?.parent_id // Pass the parent_id from claim result
       };
       
       console.log('Calling SafetySystemService.create with:', safetySystemData);
