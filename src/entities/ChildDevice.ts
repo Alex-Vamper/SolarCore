@@ -61,17 +61,33 @@ export class ChildDeviceService {
         return [];
       }
       
-      // Build query with proper RLS filtering - filter by current user's parent devices
+      // First get user's parent devices
+      const { data: parentDevices, error: parentError } = await supabase
+        .from('parent_devices')
+        .select('id')
+        .eq('owner_account', user.id);
+      
+      if (parentError) {
+        console.error('[ChildDeviceService] Error fetching parent devices:', parentError);
+        return [];
+      }
+      
+      if (!parentDevices || parentDevices.length === 0) {
+        console.log('[ChildDeviceService] No parent devices found for user');
+        return [];
+      }
+      
+      const parentIds = parentDevices.map(p => p.id);
+      console.log('[ChildDeviceService] Found parent device IDs:', parentIds);
+      
+      // Now get child devices that belong to these parent devices
       let query = supabase
         .from('child_devices')
-        .select(`
-          *,
-          parent_devices!inner(id, owner_account, esp_id)
-        `)
-        .eq('parent_devices.owner_account', user.id)
+        .select('*')
+        .in('parent_id', parentIds)
         .order('created_at', { ascending: false });
 
-      console.log('[ChildDeviceService] Executing query for user:', user.id);
+      console.log('[ChildDeviceService] Executing query for parent IDs:', parentIds);
       const { data, error } = await query;
       console.log('[ChildDeviceService] Raw query result:', { data, error });
 
