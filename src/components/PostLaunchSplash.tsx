@@ -39,13 +39,13 @@ export default function PostLaunchSplash({
   const [showing, setShowing] = useState<boolean>(false);
   const [loadingServerTime, setLoadingServerTime] = useState<boolean>(true);
 
-  // Effective launch ISO (priority: prop > admin backend > env > default)
+  // Effective launch ISO (priority: prop > admin backend > default)
   const effectiveLaunchIso = useMemo(() => {
     if (launchIso) return launchIso;
     if (launchStatus?.success && launchStatus.launch_date) return launchStatus.launch_date;
-    if (import.meta.env.VITE_LAUNCH_DATE) return import.meta.env.VITE_LAUNCH_DATE;
+    // Default fallback (far future date to prevent bypass)
     const d = new Date();
-    d.setHours(0, 0, 0, 0);
+    d.setFullYear(d.getFullYear() + 1);
     return d.toISOString();
   }, [launchIso, launchStatus]);
 

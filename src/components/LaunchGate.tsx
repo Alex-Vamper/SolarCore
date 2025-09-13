@@ -42,7 +42,7 @@ export default function LaunchGate({
   const navigate = useNavigate();
   const { launchStatus, loading: launchLoading, error: launchError } = useLaunchStatus();
 
-  // compute effective launch ISO (priority: backend > prop > env > default)
+  // compute effective launch ISO (priority: backend > prop > default)
   const effectiveLaunchIso = useMemo(() => {
     // Priority 1: Backend launch date (only if successfully loaded)
     if (launchStatus?.success && launchStatus.launch_date) {
@@ -50,15 +50,11 @@ export default function LaunchGate({
     }
     // Priority 2: Prop override (for testing/admin)
     if (launchIso) return launchIso;
-    // Priority 3: Environment variable (fallback only if backend fails/unavailable)
-    if (!launchLoading && launchError && import.meta.env.VITE_LAUNCH_DATE) {
-      return import.meta.env.VITE_LAUNCH_DATE;
-    }
-    // Priority 4: Default fallback
+    // Priority 3: Default fallback (far future date to prevent bypass)
     const d = new Date();
-    d.setHours(0, 0, 0, 0); // today at 00:00 local
+    d.setFullYear(d.getFullYear() + 1); // one year from now
     return d.toISOString();
-  }, [launchIso, launchStatus, launchLoading, launchError]);
+  }, [launchIso, launchStatus]);
 
   // server-client offset (serverNow - clientNow) - use backend server time if available
   const [nowOffsetMs, setNowOffsetMs] = useState<number>(() => {
@@ -76,16 +72,10 @@ export default function LaunchGate({
     return target - Date.now();
   });
 
-  // ready when remaining <= 0 or backend says we're launched
+  // ready when backend says we're launched or countdown reaches zero
   const [ready, setReady] = useState<boolean>(() => {
-    // If backend data is available and says we're launched, ready immediately
-    if (launchStatus?.success && launchStatus.is_launched) return true;
-    // Otherwise check countdown (but only if we have a valid launch date)
-    if (effectiveLaunchIso) {
-      const target = new Date(effectiveLaunchIso).getTime();
-      return (target - Date.now()) <= 0;
-    }
-    return false;
+    // Only ready if backend explicitly says we're launched
+    return launchStatus?.success && launchStatus.is_launched === true;
   });
 
   // Dev convenience: bypass gate on localhost
@@ -107,16 +97,21 @@ export default function LaunchGate({
     }
 
     // Check if backend says we're launched
-    if (launchStatus?.success && launchStatus.is_launched) {
+    if (launchStatus?.success && launchStatus.is_launched === true) {
       setReady(true);
       return;
     }
 
     // Update remaining time based on new launch date
-    const target = new Date(effectiveLaunchIso).getTime();
-    const rem = target - (Date.now() + nowOffsetMs);
-    setRemainingMs(rem);
-    if (rem <= 0) setReady(true);
+    if (launchStatus?.success && launchStatus.launch_date) {
+      const target = new Date(effectiveLaunchIso).getTime();
+      const rem = target - (Date.now() + nowOffsetMs);
+      setRemainingMs(rem);
+      // Only set ready if backend says we're launched OR countdown reaches zero
+      if (rem <= 0 && !launchStatus.is_launched) {
+        setReady(true);
+      }
+    }
   }, [launchStatus, effectiveLaunchIso, nowOffsetMs]);
 
   // Optionally fetch server time to compute offset (fallback if no backend data)
@@ -149,10 +144,13 @@ export default function LaunchGate({
   // Tick every second to update remainingMs and flip ready when time reached
   useEffect(() => {
     // Skip countdown if backend says we're already launched
-    if (launchStatus?.success && launchStatus.is_launched) {
+    if (launchStatus?.success && launchStatus.is_launched === true) {
       setReady(true);
       return;
     }
+
+    // Only run countdown if we have backend data
+    if (!launchStatus?.success || !launchStatus.launch_date) return;
 
     const target = new Date(effectiveLaunchIso).getTime();
     const id = setInterval(() => {
@@ -160,6 +158,7 @@ export default function LaunchGate({
       const effectiveNow = clientNow + nowOffsetMs;
       const rem = target - effectiveNow;
       setRemainingMs(rem);
+      // Only set ready when countdown reaches zero (backend will control launch state)
       if (rem <= 0) setReady(true);
     }, 1000);
     return () => clearInterval(id);
