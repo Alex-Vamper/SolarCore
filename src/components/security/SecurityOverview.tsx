@@ -51,22 +51,41 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     try {
       // Load user settings for security configuration
       const settings = await UserSettings.list();
+      let doorSecurityId: string | undefined;
       if (settings.length > 0) {
         setSecuritySettings(settings[0].security_settings);
+        doorSecurityId = settings[0]?.security_settings?.door_security_id;
+      }
+
+      // Load local state first for instant UI, then hydrate from backend
+      const savedSecurityState = localStorage.getItem('securityState');
+      if (savedSecurityState) {
+        const state = JSON.parse(savedSecurityState);
+        setIsDoorLocked(!!state.isDoorLocked);
+        setIsSecurityMode(!!state.isSecurityMode);
+      }
+
+      // Hydrate from backend if a device is configured
+      if (doorSecurityId) {
+        try {
+          const { SecuritySystemService } = await import('@/entities/SecuritySystem');
+          const securitySystems = await SecuritySystemService.list();
+          const securitySystem = securitySystems.find(s => s.system_id === doorSecurityId);
+          if (securitySystem) {
+            const locked = securitySystem.lock_status === 'locked';
+            const away = securitySystem.security_mode === 'away';
+            setIsDoorLocked(locked);
+            setIsSecurityMode(away);
+            localStorage.setItem('securityState', JSON.stringify({ isDoorLocked: locked, isSecurityMode: away }));
+          }
+        } catch (err) {
+          console.error('Error hydrating security state from backend:', err);
+        }
       }
     } catch (error) {
-      console.error("Error loading security settings:", error);
-    }
-    
-    // Load local state
-    const savedSecurityState = localStorage.getItem('securityState');
-    if (savedSecurityState) {
-      const state = JSON.parse(savedSecurityState);
-      setIsDoorLocked(state.isDoorLocked || false);
-      setIsSecurityMode(state.isSecurityMode || false);
+      console.error('Error loading security settings:', error);
     }
   };
-
   useEffect(() => {
     loadSecurityData();
   }, []);
