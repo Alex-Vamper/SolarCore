@@ -19,6 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { User, Room, SafetySystem } from "@/entities/all";
 import {
   Shield,
@@ -28,6 +39,7 @@ import {
   Trash2,
   AlertCircle
 } from "lucide-react";
+import { SecuritySystemService } from "@/entities/SecuritySystem";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -45,6 +57,7 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
   const [userSafetySystems, setUserSafetySystems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -188,6 +201,49 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
     }));
   };
 
+  const handleRemoveDevice = async () => {
+    if (!securitySettings.door_security_id) return;
+
+    setIsRemoving(true);
+    try {
+      // Find and delete the security device
+      const securitySystems = await SecuritySystemService.list();
+      const securitySystem = securitySystems.find(s => s.system_id === securitySettings.door_security_id);
+      
+      if (securitySystem?.id) {
+        await SecuritySystemService.delete(securitySystem.id);
+      }
+
+      // Clear security settings
+      const clearedSettings = {
+        ...securitySettings,
+        door_security_id: "",
+        door_security_series: ""
+      };
+      
+      await onSave(clearedSettings);
+      setSecuritySettings(clearedSettings);
+      
+      toast({
+        title: "Success",
+        description: "Security device removed successfully",
+      });
+      
+      // Trigger event for SecurityOverview to reload settings
+      window.dispatchEvent(new CustomEvent('securitySettingsChanged'));
+      
+    } catch (error) {
+      console.error("Error removing security device:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove security device",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -259,6 +315,40 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
                     onCheckedChange={(checked) => setSecuritySettings(prev => ({ ...prev, auto_shutdown_enabled: checked }))}
                   />
                 </div>
+
+                {securitySettings.door_security_id && (
+                  <div className="pt-4 border-t">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          disabled={isRemoving}
+                          className="flex items-center gap-2"
+                        >
+                          <Trash2 className="app-icon w-4 h-4" />
+                          {isRemoving ? "Removing..." : "Remove Device"}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remove Security Device</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to remove this security device? This will delete the device from your account and clear all security settings.
+                            <br /><br />
+                            <strong>Device ID:</strong> {securitySettings.door_security_id}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleRemoveDevice} className="bg-red-600 hover:bg-red-700">
+                            Remove Device
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

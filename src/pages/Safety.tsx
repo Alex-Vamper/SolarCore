@@ -185,8 +185,7 @@ export default function Safety() {
               detail: { mode: isSecurityMode ? 'away' : 'home' } 
             }));
             
-            // Show success message
-            toast.success(`Security mode set to ${isSecurityMode ? 'AWAY' : 'HOME'} mode`);
+            // Security mode changed - no toast needed
           } catch (error) {
             console.error('Failed to toggle security mode:', error);
             toast.error('Failed to toggle security mode');
@@ -195,7 +194,6 @@ export default function Safety() {
         onSecuritySettings={async () => {
           try {
             console.log('Security settings updated');
-            toast.success('Security settings updated successfully');
             
             // Trigger a refresh of the component if needed
             window.dispatchEvent(new CustomEvent('securitySettingsChanged'));
