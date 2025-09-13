@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { User, ChildDevice, Room, UserSettings, SafetySystem } from "@/entities/all";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Shield, AlertTriangle, CheckCircle } from "lucide-react";
+import { supabase } from '@/integrations/supabase/client';
 
 import SafetyPanel from "../components/safety/SafetyPanel";
 import SecurityOverview from "../components/security/SecurityOverview";
@@ -20,6 +21,44 @@ export default function Safety() {
 
   useEffect(() => {
     loadData();
+    
+    // Set up real-time subscription for child_devices changes
+    const channel = supabase
+      .channel('safety-systems-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'child_devices',
+          filter: 'device_type.device_class=eq.safety'
+        },
+        (payload) => {
+          console.log('Real-time safety system update:', payload);
+          // Reload data when changes occur
+          loadData();
+          
+          // Show toast for status changes
+          if (payload.eventType === 'UPDATE' && payload.new?.state?.status !== payload.old?.state?.status) {
+            const deviceName = payload.new?.device_name || 'Safety System';
+            const newStatus = payload.new?.state?.status || 'unknown';
+            const room = payload.new?.state?.room_name || 'Unknown Room';
+            
+            toast.success(
+              `${deviceName} status changed to ${newStatus} in ${room}`,
+              {
+                description: new Date().toLocaleTimeString(),
+                duration: 5000,
+              }
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadData = async () => {
@@ -51,10 +90,8 @@ export default function Safety() {
         }));
     } catch(error) {
         console.error("Error adding safety system", error);
-        toast({
-          title: "Error",
-          description: "Failed to add safety system",
-          variant: "destructive"
+        toast.error("Error", {
+          description: "Failed to add safety system"
         });
     }
   }

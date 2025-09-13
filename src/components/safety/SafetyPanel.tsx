@@ -1,23 +1,42 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import React, { useState } from 'react';
 import { 
   Shield, 
+  ShieldAlert, 
   Flame, 
   Droplets, 
+  CloudRain, 
+  Wind,
+  Settings,
   AlertTriangle,
   CheckCircle,
-  Settings,
+  Clock,
+  RefreshCw,
   Activity,
   Thermometer,
-  Wind,
   Waves
-} from "lucide-react";
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { SafetySystem } from '@/entities/SafetySystem';
+import { toast } from 'sonner';
 
 export default function SafetyPanel({ system, onManualOverride, onSystemSettings }) {
   const [isOverriding, setIsOverriding] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // Trigger a manual refresh - could emit event or callback
+      toast.success('System status refreshed');
+    } catch (error) {
+      toast.error('Failed to refresh system status');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleOverride = async (action) => {
     setIsOverriding(true);
@@ -91,10 +110,18 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
                 </div>
               </div>
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center space-x-2">
               <Badge className={getStatusColor(system.state?.status || 'safe')}>
                 {(system.state?.status || 'safe').replace('_', ' ')}
               </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"

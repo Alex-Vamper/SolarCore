@@ -151,11 +151,11 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="app-text text-blue-800 flex items-center gap-2">
-              <AlertCircle className="app-icon" />
-              Enter the ESP ID (e.g., SC-GID-0001) to claim your safety device
+        <div className="space-y-4">
+          <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+            <p className="text-sm text-foreground/80">
+              Enter your ESP device ID to claim and configure your safety system. 
+              The device must be registered in our system.
             </p>
           </div>
 
@@ -178,10 +178,10 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
               onChange={(e) => setSystemData(prev => ({ ...prev, system_type: e.target.value }))}
               className="app-text w-full mt-1 p-2 border border-gray-300 rounded-lg"
             >
-              <option value="fire_detection">Fire Detection</option>
-              <option value="rain_detection">Rain Detection</option>
-              <option value="gas_leak">Gas Leakage</option>
-              <option value="water_overflow">Water Level</option>
+              <option value="fire_detection">🔥 Fire Detection System</option>
+              <option value="rain_detection">🌧️ Rain Detection System</option>
+              <option value="gas_leak">⚠️ Gas Leak Detection</option>
+              <option value="water_overflow">💧 Water Overflow Detection</option>
             </select>
           </div>
 

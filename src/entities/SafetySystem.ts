@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { ChildDeviceService, type ChildDevice, type DeviceType } from './ChildDevice';
+import { useToast } from '@/hooks/use-toast';
 
 export interface SafetySystem {
   id?: string;
@@ -59,42 +60,65 @@ const mapSafetySystemToChildDevice = (safetySystem: SafetySystem, deviceTypeId?:
 };
 
 export class SafetySystemService {
+  // Retry mechanism for failed operations
+  private static async withRetry<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    delay: number = 1000
+  ): Promise<T> {
+    let lastError: Error;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Attempt ${attempt} failed:`, error);
+        
+        if (attempt === maxRetries) {
+          throw lastError;
+        }
+        
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
+      }
+    }
+    
+    throw lastError!;
+  }
+
   static async filter(params?: any): Promise<SafetySystem[]> {
-    return this.list();
+    return this.withRetry(() => this.list());
   }
 
   static async get(id: string): Promise<SafetySystem | null> {
-    try {
+    return this.withRetry(async () => {
       const device = await ChildDeviceService.get(id);
       if (!device || device.device_type?.device_class !== 'safety') {
         return null;
       }
       return mapChildDeviceToSafetySystem(device);
-    } catch (error) {
-      console.error('Error fetching safety system:', error);
-      return null;
-    }
+    });
   }
 
   static async list(): Promise<SafetySystem[]> {
-    try {
+    return this.withRetry(async () => {
       const devices = await ChildDeviceService.getSafetyDevices();
       return devices.map(mapChildDeviceToSafetySystem);
-    } catch (error) {
-      console.error('Error fetching safety systems:', error);
-      return [];
-    }
+    });
   }
 
   static async create(safetySystem: SafetySystem): Promise<SafetySystem> {
-    try {
+    return this.withRetry(async () => {
       // Get device type ID for the safety system type
       const { data: deviceTypes } = await supabase.rpc('get_device_types');
       const deviceType = (deviceTypes as DeviceType[])?.find(dt => 
         dt.device_class === 'safety' && dt.device_series === safetySystem.system_type
       );
       
-      if (!deviceType) throw new Error(`Device type not found for ${safetySystem.system_type}`);
+      if (!deviceType) {
+        throw new Error(`Device type not found for ${safetySystem.system_type}. Available types: ${(deviceTypes as DeviceType[])?.filter(dt => dt.device_class === 'safety').map(dt => dt.device_series).join(', ')}`);
+      }
 
       // Get parent device from ESP ID - the device should be already claimed via claim_parent_device RPC
       const { data: parentDevices, error: parentError } = await supabase
@@ -126,7 +150,8 @@ export class SafetySystemService {
 
       if (createError || !(createResult as any)?.success) {
         console.error('Create child device error:', createError, createResult);
-        throw new Error((createResult as any)?.message || 'Failed to create safety system');
+        const errorMessage = (createResult as any)?.message || createError?.message || 'Failed to create safety system';
+        throw new Error(errorMessage);
       }
 
       // Fetch the created device to return it
@@ -134,14 +159,11 @@ export class SafetySystemService {
       if (!createdDevice) throw new Error('Failed to retrieve created device');
       
       return mapChildDeviceToSafetySystem(createdDevice);
-    } catch (error) {
-      console.error('Error creating safety system:', error);
-      throw error;
-    }
+    });
   }
 
   static async update(id: string, safetySystem: Partial<SafetySystem>): Promise<SafetySystem> {
-    try {
+    return this.withRetry(async () => {
       // Get the existing device to preserve device_type_id
       const existingDevice = await ChildDeviceService.get(id);
       if (!existingDevice) throw new Error('Safety system not found');
@@ -150,19 +172,13 @@ export class SafetySystemService {
       const updatedDevice = await ChildDeviceService.update(id, updatedChildDevice);
       
       return mapChildDeviceToSafetySystem(updatedDevice);
-    } catch (error) {
-      console.error('Error updating safety system:', error);
-      throw error;
-    }
+    });
   }
 
   static async delete(id: string): Promise<void> {
-    try {
+    return this.withRetry(async () => {
       await ChildDeviceService.delete(id);
-    } catch (error) {
-      console.error('Error deleting safety system:', error);
-      throw error;
-    }
+    });
   }
 
   static async upsert(safetySystem: SafetySystem): Promise<SafetySystem> {
