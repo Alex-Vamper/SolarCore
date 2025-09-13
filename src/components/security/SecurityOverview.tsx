@@ -148,25 +148,38 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
       // If no security system found, create one
       if (!securitySystem) {
         console.log('Creating new security system with ID:', securitySettings.door_security_id);
-        securitySystem = await SecuritySystemService.create({
-          system_id: securitySettings.door_security_id,
-          system_type: 'door_control',
-          lock_status: 'unlocked',
-          security_mode: 'home'
-        });
-        toast.success('Security system created and linked');
+        try {
+          securitySystem = await SecuritySystemService.create({
+            system_id: securitySettings.door_security_id,
+            system_type: 'door_control',
+            lock_status: 'unlocked',
+            security_mode: 'home'
+          });
+          console.log('Security system created successfully:', securitySystem);
+          toast.success('Security system created and linked');
+        } catch (createError) {
+          console.error('Failed to create security system:', createError);
+          toast.error(`Failed to create security system: ${createError.message}`);
+          throw createError;
+        }
       }
       
       if (securitySystem?.id) {
-        await SecuritySystemService.update(securitySystem.id, {
-          lock_status: newLockState ? 'locked' : 'unlocked',
-          security_mode: newLockState ? 'away' : 'home',
-          last_action: new Date().toISOString()
-        });
-        console.log('Security system updated:', securitySystem.id, {
-          lock_status: newLockState ? 'locked' : 'unlocked',
-          security_mode: newLockState ? 'away' : 'home'
-        });
+        try {
+          await SecuritySystemService.update(securitySystem.id, {
+            lock_status: newLockState ? 'locked' : 'unlocked',
+            security_mode: newLockState ? 'away' : 'home',
+            last_action: new Date().toISOString()
+          });
+          console.log('Security system updated:', securitySystem.id, {
+            lock_status: newLockState ? 'locked' : 'unlocked',
+            security_mode: newLockState ? 'away' : 'home'
+          });
+        } catch (updateError) {
+          console.error('Failed to update security system:', updateError);
+          toast.error(`Failed to update security system: ${updateError.message}`);
+          throw updateError;
+        }
       }
       
       // Update local state
@@ -206,25 +219,38 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
       // If no security system found, create one
       if (!securitySystem) {
         console.log('Creating new security system with ID:', securitySettings.door_security_id);
-        securitySystem = await SecuritySystemService.create({
-          system_id: securitySettings.door_security_id,
-          system_type: 'door_control',
-          lock_status: 'unlocked',
-          security_mode: 'home'
-        });
-        toast.success('Security system created and linked');
+        try {
+          securitySystem = await SecuritySystemService.create({
+            system_id: securitySettings.door_security_id,
+            system_type: 'door_control',
+            lock_status: 'unlocked',
+            security_mode: 'home'
+          });
+          console.log('Security system created successfully:', securitySystem);
+          toast.success('Security system created and linked');
+        } catch (createError) {
+          console.error('Failed to create security system:', createError);
+          toast.error(`Failed to create security system: ${createError.message}`);
+          throw createError;
+        }
       }
       
       if (securitySystem?.id) {
-        await SecuritySystemService.update(securitySystem.id, {
-          security_mode: newSecurityMode ? 'away' : 'home',
-          lock_status: newSecurityMode ? 'locked' : (isDoorLocked ? 'locked' : 'unlocked'),
-          last_action: new Date().toISOString()
-        });
-        console.log('Security system updated:', securitySystem.id, {
-          security_mode: newSecurityMode ? 'away' : 'home',
-          lock_status: newSecurityMode ? 'locked' : (isDoorLocked ? 'locked' : 'unlocked')
-        });
+        try {
+          await SecuritySystemService.update(securitySystem.id, {
+            security_mode: newSecurityMode ? 'away' : 'home',
+            lock_status: newSecurityMode ? 'locked' : (isDoorLocked ? 'locked' : 'unlocked'),
+            last_action: new Date().toISOString()
+          });
+          console.log('Security system updated:', securitySystem.id, {
+            security_mode: newSecurityMode ? 'away' : 'home',
+            lock_status: newSecurityMode ? 'locked' : (isDoorLocked ? 'locked' : 'unlocked')
+          });
+        } catch (updateError) {
+          console.error('Failed to update security system:', updateError);
+          toast.error(`Failed to update security system: ${updateError.message}`);
+          throw updateError;
+        }
       }
       
       // Update local state
