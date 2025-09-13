@@ -16,6 +16,7 @@ import {
 import { UserSettings } from "@/entities/all";
 import { toast } from "sonner";
 import SecuritySettingsModal from "./SecuritySettingsModal";
+import { SecurityAutoLockService } from "@/lib/securityAutoLockService";
 
 export default function SecurityOverview({ onSecurityModeToggle, onSecuritySettings }) {
   const [isDoorLocked, setIsDoorLocked] = useState(false);
@@ -23,6 +24,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   const [isArming, setIsArming] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [securitySettings, setSecuritySettings] = useState(null);
+  const [isAutoLockActive, setIsAutoLockActive] = useState(false);
 
   const speak = (text, repeat = 1) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -147,6 +149,31 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
       window.removeEventListener('securityModeChanged', handleSecurityModeChanged);
     };
   }, [onSecurityModeToggle]);
+
+  // Monitor security state changes for auto-lock
+  useEffect(() => {
+    const isLockedAndAway = isDoorLocked && isSecurityMode;
+    
+    if (isLockedAndAway && !SecurityAutoLockService.isCountdownRunning()) {
+      // Start auto-lock countdown when entering "Locked & Away" state
+      SecurityAutoLockService.startAutoLockCountdown();
+      setIsAutoLockActive(true);
+    } else if (!isLockedAndAway && SecurityAutoLockService.isCountdownRunning()) {
+      // Cancel auto-lock countdown when leaving "Locked & Away" state
+      SecurityAutoLockService.cancelAutoLockCountdown();
+      setIsAutoLockActive(false);
+    }
+
+    // Update auto-lock status for UI display
+    setIsAutoLockActive(SecurityAutoLockService.isCountdownRunning());
+  }, [isDoorLocked, isSecurityMode]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      SecurityAutoLockService.cleanup();
+    };
+  }, []);
 
   const handleDoorToggle = async () => {
     // Check if security device is configured
@@ -381,11 +408,15 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
 
           {/* Security Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <Power className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+            <div className={`text-center p-3 rounded-lg ${
+              isAutoLockActive ? "bg-orange-50 border border-orange-200" : "bg-blue-50"
+            }`}>
+              <Power className={`w-6 h-6 mx-auto mb-2 ${
+                isAutoLockActive ? "text-orange-600" : "text-blue-600"
+              }`} />
               <div className="text-sm font-medium text-gray-900 font-inter">Auto Power Off</div>
               <div className="text-xs text-gray-500 font-inter">
-                {isSecurityMode ? "Active" : "Inactive"}
+                {isAutoLockActive ? "Countdown Active" : isSecurityMode ? "Armed" : "Inactive"}
               </div>
             </div>
             <div className="text-center p-3 bg-purple-50 rounded-lg">
@@ -414,10 +445,18 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
             </Button>
           </div>
 
-          {isSecurityMode && (
+          {isSecurityMode && !isAutoLockActive && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800 font-inter">
                 <strong>Away Mode Active:</strong> Main door is locked and security system is engaged. All non-essential appliances are powered off automatically. Safety systems remain active.
+              </p>
+            </div>
+          )}
+
+          {isAutoLockActive && (
+            <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <p className="text-sm text-orange-800 font-inter">
+                <strong>Auto-Lock Countdown Active:</strong> All automation devices will turn off in 90 seconds. Change security mode to cancel. Devices in exceptions list will remain active.
               </p>
             </div>
           )}
