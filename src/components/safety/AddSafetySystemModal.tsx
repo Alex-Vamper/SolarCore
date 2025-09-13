@@ -30,20 +30,36 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
     setIsLoading(true);
     try {
       // Call the RPC to validate ESP ID
-      const { data: claimResult } = await supabase.rpc('claim_parent_device', {
+      const { data: claimResult, error: claimError } = await supabase.rpc('claim_parent_device', {
         p_esp_id: systemData.system_id.trim()
-      }) as any;
+      });
 
-      if (!claimResult?.success) {
-        if (claimResult?.code === 'UNREGISTERED_DEVICE') {
+      console.log('Claim result:', claimResult, 'Error:', claimError);
+
+      if (claimError) {
+        console.error('RPC error:', claimError);
+        toast({
+          title: "Error",
+          description: "Failed to validate device. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const result = claimResult as any;
+      if (!result?.success) {
+        if (result?.code === 'UNREGISTERED_DEVICE') {
           toast({
             title: "Invalid Device ID",
             description: "This device ID is not registered. Please check the ID and try again.",
             variant: "destructive",
           });
-        } else if (claimResult?.code === 'ALREADY_CLAIMED') {
+          setIsLoading(false);
+          return;
+        } else if (result?.code === 'ALREADY_CLAIMED') {
           // Already claimed by this user is OK
-          if (claimResult?.message !== 'Device already claimed by you') {
+          if (result?.message !== 'Device already claimed by you') {
             toast({
               title: "Device Already Claimed",
               description: "This device is already claimed by another account.",
@@ -52,29 +68,54 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
             setIsLoading(false);
             return;
           }
-        }
-        
-        // If unregistered, stop here
-        if (claimResult?.code === 'UNREGISTERED_DEVICE') {
+        } else {
+          // Other error
+          toast({
+            title: "Error",
+            description: result?.message || "Failed to claim device.",
+            variant: "destructive",
+          });
           setIsLoading(false);
           return;
         }
       }
 
       // If valid, proceed with creating the child device
-      // Convert safety system data to SafetySystem format and create
+      console.log('Creating safety system with data:', systemData);
+      
       const safetySystemData = {
         system_id: systemData.system_id,
         system_type: systemData.system_type as 'fire_detection' | 'rain_detection' | 'gas_leak' | 'water_overflow',
         room_name: systemData.room_name,
-        status: 'safe',
-        flame_status: 'clear',
+        status: 'safe' as const,
+        flame_status: 'clear' as const,
         temperature_value: 25,
-        smoke_percentage: 0
+        smoke_percentage: 0,
+        sensor_readings: {
+          gas_level: 0,
+          smoke_level: 0,
+          temperature: 25,
+          water_level: 0,
+          rain_detected: false,
+          window_status: "closed",
+          flame_detected: false
+        },
+        automation_settings: {
+          trigger_threshold: 75,
+          notification_level: "all",
+          auto_response_enabled: true
+        }
       };
       
-      await SafetySystemService.create(safetySystemData);
-      await onSave(systemData);
+      console.log('Calling SafetySystemService.create with:', safetySystemData);
+      const createdSystem = await SafetySystemService.create(safetySystemData);
+      console.log('Safety system created:', createdSystem);
+      
+      // Call parent component's onSave
+      if (onSave) {
+        await onSave(systemData);
+      }
+      
       toast({
         title: "Success",
         description: "Safety system added successfully",
@@ -89,10 +130,10 @@ export default function AddSafetySystemModal({ isOpen, onClose, onSave, rooms = 
       
       onClose();
     } catch (error) {
-      console.error("Error validating device:", error);
+      console.error("Error creating safety system:", error);
       toast({
         title: "Error",
-        description: "Failed to validate device. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create safety system. Please try again.",
         variant: "destructive",
       });
     } finally {

@@ -138,17 +138,36 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     setIsArming(true);
     const newLockState = !isDoorLocked;
     
-    if (newLockState) {
-      setIsDoorLocked(true);
-      setIsSecurityMode(true);
-      await onSecurityModeToggle(true);
-    } else {
-      setIsDoorLocked(false);
-      setIsSecurityMode(false);
-      await onSecurityModeToggle(false);
+    try {
+      // Update backend state via SecuritySystemService
+      const { SecuritySystemService } = await import('@/entities/SecuritySystem');
+      const securitySystems = await SecuritySystemService.list();
+      const securitySystem = securitySystems.find(s => s.system_id === securitySettings.door_security_id);
+      
+      if (securitySystem?.id) {
+        await SecuritySystemService.update(securitySystem.id, {
+          lock_status: newLockState ? 'locked' : 'unlocked',
+          security_mode: newLockState ? 'away' : 'home',
+          last_action: new Date().toISOString()
+        });
+      }
+      
+      // Update local state
+      if (newLockState) {
+        setIsDoorLocked(true);
+        setIsSecurityMode(true);
+        await onSecurityModeToggle(true);
+      } else {
+        setIsDoorLocked(false);
+        setIsSecurityMode(false);
+        await onSecurityModeToggle(false);
+      }
+    } catch (error) {
+      console.error('Error updating security state:', error);
+      toast.error('Failed to update security state');
+    } finally {
+      setIsArming(false);
     }
-    
-    setIsArming(false);
   };
 
   const handleSecurityToggle = async () => {
@@ -160,18 +179,37 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     setIsArming(true);
     const newSecurityMode = !isSecurityMode;
 
-    if (newSecurityMode) {
-      if (!isDoorLocked) {
-        setIsDoorLocked(true);
+    try {
+      // Update backend state via SecuritySystemService
+      const { SecuritySystemService } = await import('@/entities/SecuritySystem');
+      const securitySystems = await SecuritySystemService.list();
+      const securitySystem = securitySystems.find(s => s.system_id === securitySettings.door_security_id);
+      
+      if (securitySystem?.id) {
+        await SecuritySystemService.update(securitySystem.id, {
+          security_mode: newSecurityMode ? 'away' : 'home',
+          lock_status: newSecurityMode ? 'locked' : (isDoorLocked ? 'locked' : 'unlocked'),
+          last_action: new Date().toISOString()
+        });
       }
-      setIsSecurityMode(true);
-      await onSecurityModeToggle(true);
-    } else {
-      setIsSecurityMode(false);
-      await onSecurityModeToggle(false);
+      
+      // Update local state
+      if (newSecurityMode) {
+        if (!isDoorLocked) {
+          setIsDoorLocked(true);
+        }
+        setIsSecurityMode(true);
+        await onSecurityModeToggle(true);
+      } else {
+        setIsSecurityMode(false);
+        await onSecurityModeToggle(false);
+      }
+    } catch (error) {
+      console.error('Error updating security mode:', error);
+      toast.error('Failed to update security mode');
+    } finally {
+      setIsArming(false);
     }
-    
-    setIsArming(false);
   };
 
   return (
