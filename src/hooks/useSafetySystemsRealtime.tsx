@@ -10,10 +10,13 @@ export const useSafetySystemsRealtime = () => {
 
   const loadSafetySystems = async () => {
     try {
+      console.log('[useSafetySystemsRealtime] Loading safety systems...');
       setError(null);
       const systems = await SafetySystemService.list();
+      console.log('[useSafetySystemsRealtime] Loaded safety systems:', systems);
       setSafetySystems(systems);
     } catch (err) {
+      console.error('[useSafetySystemsRealtime] Error loading safety systems:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load safety systems';
       setError(errorMessage);
       toast.error('Failed to load safety systems', {
@@ -42,27 +45,25 @@ export const useSafetySystemsRealtime = () => {
           table: 'child_devices'
         },
         async (payload: any) => {
-          console.log('Real-time child device update:', payload);
+          console.log('[useSafetySystemsRealtime] Real-time child device update:', payload);
           
-          // Check if this is a safety device by looking at the device_type
-          if (payload.new?.device_type_id || payload.old?.device_type_id) {
-            // Reload all safety systems to ensure consistency
-            await loadSafetySystems();
+          // Always reload safety systems on any child_devices change to ensure we catch safety devices
+          console.log('[useSafetySystemsRealtime] Reloading safety systems due to child_devices change');
+          await loadSafetySystems();
+          
+          // Show notification for status changes
+          if (payload.eventType === 'UPDATE' && payload.new?.state?.status !== payload.old?.state?.status) {
+            const deviceName = payload.new?.device_name || 'Safety System';
+            const newStatus = payload.new?.state?.status || 'unknown';
+            const room = payload.new?.state?.room_name || 'Unknown Room';
             
-            // Show notification for status changes
-            if (payload.eventType === 'UPDATE' && payload.new?.state?.status !== payload.old?.state?.status) {
-              const deviceName = payload.new?.device_name || 'Safety System';
-              const newStatus = payload.new?.state?.status || 'unknown';
-              const room = payload.new?.state?.room_name || 'Unknown Room';
-              
-              toast(
-                `${deviceName} status changed to ${newStatus}`,
-                {
-                  description: `Location: ${room} • ${new Date().toLocaleTimeString()}`,
-                  duration: 5000,
-                }
-              );
-            }
+            toast(
+              `${deviceName} status changed to ${newStatus}`,
+              {
+                description: `Location: ${room} • ${new Date().toLocaleTimeString()}`,
+                duration: 5000,
+              }
+            );
           }
         }
       )

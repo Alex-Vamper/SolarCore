@@ -12,7 +12,14 @@ import AddSafetySystemModal from "../components/safety/AddSafetySystemModal";
 import SafetySystemSettingsModal from "../components/safety/SafetySystemSettingsModal";
 
 export default function Safety() {
+  console.log('[Safety Page] Component rendering...');
   const { safetySystems, isLoading, refresh } = useSafetySystemsRealtime();
+  
+  console.log('[Safety Page] Hook state:', { 
+    safetySystems, 
+    safetySystemsCount: safetySystems.length,
+    isLoading
+  });
   const [rooms, setRooms] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);

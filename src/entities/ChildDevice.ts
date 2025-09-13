@@ -52,15 +52,28 @@ export class ChildDeviceService {
 
   static async list(params?: { device_class?: string; device_series?: string }): Promise<ChildDevice[]> {
     try {
-      const { data, error } = await supabase
+      console.log('[ChildDeviceService] Fetching child devices with params:', params);
+      
+      // Build query with proper joins to respect RLS
+      let query = supabase
         .from('child_devices')
-        .select('*')
+        .select(`
+          *,
+          parent_devices!inner(id, owner_account)
+        `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      const { data, error } = await query;
+      console.log('[ChildDeviceService] Raw query result:', { data, error });
 
-      // Get device types and filter
+      if (error) {
+        console.error('[ChildDeviceService] Query error:', error);
+        throw error;
+      }
+
+      // Get device types
       const { data: deviceTypes } = await supabase.rpc('get_device_types');
+      console.log('[ChildDeviceService] Device types:', deviceTypes);
       
       const devicesWithTypes = data?.map(device => {
         const deviceType = (deviceTypes as DeviceType[])?.find(dt => dt.id === device.device_type_id);
@@ -70,19 +83,24 @@ export class ChildDeviceService {
         };
       }) || [];
 
+      console.log('[ChildDeviceService] Devices with types:', devicesWithTypes.length);
+
       // Apply filters
       let filteredDevices = devicesWithTypes;
       if (params?.device_class) {
         filteredDevices = devicesWithTypes.filter(d => d.device_type?.device_class === params.device_class);
+        console.log('[ChildDeviceService] After device_class filter:', filteredDevices.length);
       }
       if (params?.device_series) {
         filteredDevices = filteredDevices.filter(d => d.device_type?.device_series === params.device_series);
+        console.log('[ChildDeviceService] After device_series filter:', filteredDevices.length);
       }
 
+      console.log('[ChildDeviceService] Final filtered devices:', filteredDevices);
       return filteredDevices;
 
     } catch (error) {
-      console.error('Error fetching child devices:', error);
+      console.error('[ChildDeviceService] Error fetching child devices:', error);
       return [];
     }
   }

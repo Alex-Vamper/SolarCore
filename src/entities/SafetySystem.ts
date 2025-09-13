@@ -104,8 +104,14 @@ export class SafetySystemService {
 
   static async list(): Promise<SafetySystem[]> {
     return this.withRetry(async () => {
+      console.log('[SafetySystemService] Starting to list safety systems...');
       const devices = await ChildDeviceService.getSafetyDevices();
-      return devices.map(mapChildDeviceToSafetySystem);
+      console.log('[SafetySystemService] Raw safety devices from ChildDeviceService:', devices);
+      
+      const mappedSystems = devices.map(mapChildDeviceToSafetySystem);
+      console.log('[SafetySystemService] Mapped safety systems:', mappedSystems);
+      
+      return mappedSystems;
     });
   }
 
