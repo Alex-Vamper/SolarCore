@@ -153,12 +153,9 @@ export default function Safety() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Shield className="h-8 w-8 text-red-600" />
-          <div>
-            <h1 className="text-3xl font-bold">Safety & Security</h1>
-            <p className="text-muted-foreground">Monitor and manage your safety systems</p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold">Safety & Security</h1>
+          <p className="text-muted-foreground">Monitor and manage your safety systems</p>
         </div>
         
         <div className="flex items-center gap-2">
@@ -176,6 +173,16 @@ export default function Safety() {
           </Button>
         </div>
       </div>
+
+      {/* Security Overview */}
+      <SecurityOverview 
+        onSecurityModeToggle={() => {
+          toast.info("Security mode toggle not implemented yet");
+        }}
+        onSecuritySettings={() => {
+          toast.info("Security settings not implemented yet");
+        }}
+      />
 
       {/* Safety Systems Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -206,18 +213,6 @@ export default function Safety() {
           </Button>
         </div>
       )}
-
-      {/* Security Overview */}
-      <div className="border-t pt-6">
-        <SecurityOverview 
-          onSecurityModeToggle={() => {
-            toast.info("Security mode toggle not implemented yet");
-          }}
-          onSecuritySettings={() => {
-            toast.info("Security settings not implemented yet");
-          }}
-        />
-      </div>
 
       {/* Modals */}
       <AddSafetySystemModal
