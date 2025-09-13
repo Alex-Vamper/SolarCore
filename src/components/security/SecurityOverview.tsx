@@ -132,6 +132,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   const handleDoorToggle = async () => {
     // Check if security device is configured
     if (!securitySettings?.door_security_id) {
+      toast.error('Please configure a security device in settings first');
       return;
     }
     
@@ -142,13 +143,29 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
       // Update backend state via SecuritySystemService
       const { SecuritySystemService } = await import('@/entities/SecuritySystem');
       const securitySystems = await SecuritySystemService.list();
-      const securitySystem = securitySystems.find(s => s.system_id === securitySettings.door_security_id);
+      let securitySystem = securitySystems.find(s => s.system_id === securitySettings.door_security_id);
+      
+      // If no security system found, create one
+      if (!securitySystem) {
+        console.log('Creating new security system with ID:', securitySettings.door_security_id);
+        securitySystem = await SecuritySystemService.create({
+          system_id: securitySettings.door_security_id,
+          system_type: 'door_control',
+          lock_status: 'unlocked',
+          security_mode: 'home'
+        });
+        toast.success('Security system created and linked');
+      }
       
       if (securitySystem?.id) {
         await SecuritySystemService.update(securitySystem.id, {
           lock_status: newLockState ? 'locked' : 'unlocked',
           security_mode: newLockState ? 'away' : 'home',
           last_action: new Date().toISOString()
+        });
+        console.log('Security system updated:', securitySystem.id, {
+          lock_status: newLockState ? 'locked' : 'unlocked',
+          security_mode: newLockState ? 'away' : 'home'
         });
       }
       
@@ -173,6 +190,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   const handleSecurityToggle = async () => {
     // Check if security device is configured
     if (!securitySettings?.door_security_id) {
+      toast.error('Please configure a security device in settings first');
       return;
     }
     
@@ -183,13 +201,29 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
       // Update backend state via SecuritySystemService
       const { SecuritySystemService } = await import('@/entities/SecuritySystem');
       const securitySystems = await SecuritySystemService.list();
-      const securitySystem = securitySystems.find(s => s.system_id === securitySettings.door_security_id);
+      let securitySystem = securitySystems.find(s => s.system_id === securitySettings.door_security_id);
+      
+      // If no security system found, create one
+      if (!securitySystem) {
+        console.log('Creating new security system with ID:', securitySettings.door_security_id);
+        securitySystem = await SecuritySystemService.create({
+          system_id: securitySettings.door_security_id,
+          system_type: 'door_control',
+          lock_status: 'unlocked',
+          security_mode: 'home'
+        });
+        toast.success('Security system created and linked');
+      }
       
       if (securitySystem?.id) {
         await SecuritySystemService.update(securitySystem.id, {
           security_mode: newSecurityMode ? 'away' : 'home',
           lock_status: newSecurityMode ? 'locked' : (isDoorLocked ? 'locked' : 'unlocked'),
           last_action: new Date().toISOString()
+        });
+        console.log('Security system updated:', securitySystem.id, {
+          security_mode: newSecurityMode ? 'away' : 'home',
+          lock_status: newSecurityMode ? 'locked' : (isDoorLocked ? 'locked' : 'unlocked')
         });
       }
       
