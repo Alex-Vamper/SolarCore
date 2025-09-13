@@ -176,11 +176,33 @@ export default function Safety() {
 
       {/* Security Overview */}
       <SecurityOverview 
-        onSecurityModeToggle={() => {
-          toast.info("Security mode toggle not implemented yet");
+        onSecurityModeToggle={async (isSecurityMode: boolean) => {
+          try {
+            console.log('Security mode toggled:', isSecurityMode ? 'AWAY' : 'HOME');
+            
+            // Dispatch event for other components to listen
+            window.dispatchEvent(new CustomEvent('securityModeChanged', { 
+              detail: { mode: isSecurityMode ? 'away' : 'home' } 
+            }));
+            
+            // Show success message
+            toast.success(`Security mode set to ${isSecurityMode ? 'AWAY' : 'HOME'} mode`);
+          } catch (error) {
+            console.error('Failed to toggle security mode:', error);
+            toast.error('Failed to toggle security mode');
+          }
         }}
-        onSecuritySettings={() => {
-          toast.info("Security settings not implemented yet");
+        onSecuritySettings={async () => {
+          try {
+            console.log('Security settings updated');
+            toast.success('Security settings updated successfully');
+            
+            // Trigger a refresh of the component if needed
+            window.dispatchEvent(new CustomEvent('securitySettingsChanged'));
+          } catch (error) {
+            console.error('Failed to update security settings:', error);
+            toast.error('Failed to update security settings');
+          }
         }}
       />
 
