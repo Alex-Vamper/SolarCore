@@ -72,44 +72,81 @@ export class SecuritySystemService {
 
   static async create(securitySystem: SecuritySystem): Promise<SecuritySystem> {
     try {
-      // Check authentication
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        throw new Error('Authentication required');
+      console.log('Creating security system with ESP ID:', securitySystem.system_id);
+      
+      // Get current session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.user) {
+        console.error('Authentication error:', sessionError);
+        throw new Error('Authentication required - please log in again');
       }
 
-      // Find parent device based on system_id (ESP ID)
+      const user = sessionData.session.user;
+      console.log('Authenticated user:', user.id);
+
+      // First check if parent device exists for this user
       const { data: parentDevices, error: parentError } = await supabase
         .from('parent_devices')
         .select('*')
         .eq('esp_id', securitySystem.system_id)
         .eq('owner_account', user.id);
 
+      console.log('Parent device query result:', { parentDevices, parentError });
+
       if (parentError) {
         console.error('Error finding parent device:', parentError);
-        throw new Error('Failed to find parent device');
+        throw new Error(`Database error: ${parentError.message}`);
       }
 
       if (!parentDevices || parentDevices.length === 0) {
-        throw new Error(`No parent device found for ESP ID: ${securitySystem.system_id}. Please claim the device first.`);
+        // Try to claim the device first
+        console.log('No parent device found, attempting to claim...');
+        const { data: claimResult, error: claimError } = await supabase.rpc('claim_parent_device', {
+          p_esp_id: securitySystem.system_id
+        });
+        
+        console.log('Claim result:', { claimResult, claimError });
+        
+        if (claimError || !(claimResult as any)?.success) {
+          throw new Error(`Failed to claim device: ${(claimResult as any)?.message || claimError?.message}`);
+        }
+
+        // Re-fetch parent device after claiming
+        const { data: newParentDevices, error: newParentError } = await supabase
+          .from('parent_devices')
+          .select('*')
+          .eq('esp_id', securitySystem.system_id)
+          .eq('owner_account', user.id);
+        
+        if (newParentError || !newParentDevices || newParentDevices.length === 0) {
+          throw new Error('Failed to retrieve claimed device');
+        }
+        
+        parentDevices.push(...newParentDevices);
       }
 
       const parentDevice = parentDevices[0];
+      console.log('Using parent device:', parentDevice.id);
 
-      // Get device type for security/door_control
+      // Get device type for security - use 'door_control' as the series
       const { data: deviceTypes, error: typeError } = await supabase.rpc('get_device_types');
       if (typeError) {
         console.error('Error fetching device types:', typeError);
-        throw new Error('Failed to get device types');
+        throw new Error(`Failed to get device types: ${typeError.message}`);
       }
+
+      console.log('Available device types:', deviceTypes);
 
       const deviceType = (deviceTypes as DeviceType[])?.find(dt => 
         dt.device_class === 'security' && dt.device_series === 'door_control'
       );
       
       if (!deviceType) {
-        throw new Error('Security device type not found');
+        console.error('Available security types:', (deviceTypes as DeviceType[])?.filter(dt => dt.device_class === 'security'));
+        throw new Error('Security device type "door_control" not found in database');
       }
+
+      console.log('Using device type:', deviceType);
 
       // Use create_child_device RPC for proper creation with authentication
       const { data: createResult, error: createError } = await supabase.rpc('create_child_device', {
@@ -143,11 +180,17 @@ export class SecuritySystemService {
 
   static async update(id: string, securitySystem: Partial<SecuritySystem>): Promise<SecuritySystem> {
     try {
-      // Check authentication
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
-        throw new Error('Authentication required');
+      console.log('Updating security system:', id, securitySystem);
+      
+      // Get current session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.user) {
+        console.error('Authentication error:', sessionError);
+        throw new Error('Authentication required - please log in again');
       }
+
+      const user = sessionData.session.user;
+      console.log('Authenticated user for update:', user.id);
 
       // Use update_child_state RPC for proper update with authentication
       const { data: updateResult, error: updateError } = await supabase.rpc('update_child_state', {
@@ -159,9 +202,11 @@ export class SecuritySystemService {
         }
       });
 
+      console.log('Update result:', { updateResult, updateError });
+
       if (updateError || !(updateResult as any)?.success) {
         console.error('Error updating child device state:', updateError, updateResult);
-        throw new Error((updateResult as any)?.message || 'Failed to update security device');
+        throw new Error((updateResult as any)?.message || updateError?.message || 'Failed to update security device');
       }
 
       // Get the updated device
@@ -170,6 +215,7 @@ export class SecuritySystemService {
         throw new Error('Failed to retrieve updated security device');
       }
       
+      console.log('Successfully updated security device:', updatedDevice);
       return mapChildDeviceToSecuritySystem(updatedDevice);
     } catch (error) {
       console.error('Error updating security system:', error);

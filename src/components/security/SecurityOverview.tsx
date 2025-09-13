@@ -159,7 +159,8 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
           toast.success('Security system created and linked');
         } catch (createError) {
           console.error('Failed to create security system:', createError);
-          toast.error(`Failed to create security system: ${createError.message}`);
+          const errorMessage = createError.message || 'Unknown error occurred';
+          toast.error(`Failed to create security system: ${errorMessage}`);
           throw createError;
         }
       }
@@ -177,7 +178,8 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
           });
         } catch (updateError) {
           console.error('Failed to update security system:', updateError);
-          toast.error(`Failed to update security system: ${updateError.message}`);
+          const errorMessage = updateError.message || 'Unknown error occurred';
+          toast.error(`Failed to update security system: ${errorMessage}`);
           throw updateError;
         }
       }
@@ -194,7 +196,8 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
       }
     } catch (error) {
       console.error('Error updating security state:', error);
-      toast.error('Failed to update security state');
+      const errorMessage = error.message || 'Unknown error occurred';
+      toast.error(`Failed to update security state: ${errorMessage}`);
     } finally {
       setIsArming(false);
     }
@@ -230,7 +233,8 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
           toast.success('Security system created and linked');
         } catch (createError) {
           console.error('Failed to create security system:', createError);
-          toast.error(`Failed to create security system: ${createError.message}`);
+          const errorMessage = createError.message || 'Unknown error occurred';
+          toast.error(`Failed to create security system: ${errorMessage}`);
           throw createError;
         }
       }
@@ -248,7 +252,8 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
           });
         } catch (updateError) {
           console.error('Failed to update security system:', updateError);
-          toast.error(`Failed to update security system: ${updateError.message}`);
+          const errorMessage = updateError.message || 'Unknown error occurred';
+          toast.error(`Failed to update security system: ${errorMessage}`);
           throw updateError;
         }
       }
@@ -266,7 +271,8 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
       }
     } catch (error) {
       console.error('Error updating security mode:', error);
-      toast.error('Failed to update security mode');
+      const errorMessage = error.message || 'Unknown error occurred';
+      toast.error(`Failed to update security mode: ${errorMessage}`);
     } finally {
       setIsArming(false);
     }
