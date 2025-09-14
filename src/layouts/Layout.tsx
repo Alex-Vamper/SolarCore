@@ -23,6 +23,7 @@ import PostLaunchSplash from "@/components/PostLaunchSplash";  // 👈 import sp
 import { useSecurityState } from "@/hooks/useSecurityState";
 import { useCrossSystemSync } from "@/hooks/useCrossSystemSync";
 import solarcore from "../assets/SolarCore-1.svg";
+import { useAuth } from "@/hooks/useAuth";
 
 const navigationItems = [
   {
@@ -189,6 +190,7 @@ export default function Layout({ children }: LayoutProps) {
   // Preview key for development access
   const previewKey = import.meta.env.VITE_PREVIEW_KEY;
   const serverTimeUrl = import.meta.env.VITE_TIME_ENDPOINT ?? null;
+  const { session } = useAuth();
 
   return (
     <div className="min-h-screen bg-solarcore-gray flex flex-col lg:flex-row">
@@ -201,7 +203,7 @@ export default function Layout({ children }: LayoutProps) {
         <main className="flex-1 overflow-auto pb-24 lg:pb-6">
           {/* LaunchGate and PostLaunchSplash now use admin-controlled backend launch dates */}
           <LaunchGate serverTimeUrl={serverTimeUrl}>
-            <PostLaunchSplash>
+            <PostLaunchSplash userId={session?.user?.id ?? null}>
               {children || <Outlet />}
             </PostLaunchSplash>
           </LaunchGate>

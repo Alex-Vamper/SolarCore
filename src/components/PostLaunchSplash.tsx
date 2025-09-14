@@ -1,7 +1,9 @@
 // src/components/PostLaunchSplash.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLaunchStatus } from "@/hooks/useLaunchStatus";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   children?: React.ReactNode;
@@ -34,10 +36,14 @@ export default function PostLaunchSplash({
 }: Props) {
   const navigate = useNavigate();
   const { launchStatus, loading: launchLoading } = useLaunchStatus();
+  const { session } = useAuth();
   const [serverOffset, setServerOffset] = useState<number>(0);
   const [visible, setVisible] = useState<boolean>(false);
   const [showing, setShowing] = useState<boolean>(false);
   const [loadingServerTime, setLoadingServerTime] = useState<boolean>(true);
+  const [tick, setTick] = useState<number>(0);
+  const [dbCheckKey, setDbCheckKey] = useState<string | null>(null);
+  const [dbSeen, setDbSeen] = useState<boolean>(false);
 
   // Effective launch ISO (priority: prop > admin backend > default)
   const effectiveLaunchIso = useMemo(() => {
@@ -85,12 +91,19 @@ export default function PostLaunchSplash({
     };
   }, [serverTimeUrl, launchStatus]);
 
-  // Decide splash visibility
+  // Heartbeat tick to re-evaluate visibility without reload
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Decide splash visibility (evaluates on tick and config changes)
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (loadingServerTime || launchLoading) return;
 
-    const now = new Date(Date.now() + serverOffset);
+    const nowMs = Date.now() + serverOffset;
+    const now = new Date(nowMs);
     const launchDate = new Date(effectiveLaunchIso);
 
     if (now < launchDate) {
@@ -98,27 +111,49 @@ export default function PostLaunchSplash({
       return;
     }
 
-    // Day + user key
     const dayKey = getDateKey(now);
     const storageKey = userId
       ? `post_launch_splash_${userId}_${dayKey}`
       : `post_launch_splash_${dayKey}`;
 
+    // If already seen locally, hide and exit
     if (localStorage.getItem(storageKey)) {
       setVisible(false);
       return;
     }
 
-    setVisible(true);
-    setTimeout(() => setShowing(true), 1500);
-    const timer = setTimeout(() => {
-      localStorage.setItem(storageKey, "1");
-      setShowing(false);
-      setTimeout(() => setVisible(false), 500);
-    }, displayMs);
+    // If logged in and we haven't checked DB for this day, do a one-time check
+    if (session?.user?.id && dbCheckKey !== dayKey) {
+      setDbCheckKey(dayKey);
+      supabase
+        .from("launch_splash_seen")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .eq("day_key", dayKey)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (error) {
+            console.warn("Splash DB check failed, falling back to localStorage only", error);
+          }
+          setDbSeen(!!data);
+          if (data) {
+            setVisible(false);
+          } else {
+            setVisible(true);
+            setTimeout(() => setShowing(true), 1500);
+          }
+        });
+      return; // wait for DB response
+    }
 
-    return () => clearTimeout(timer);
-  }, [effectiveLaunchIso, serverOffset, loadingServerTime, userId, displayMs, launchLoading]);
+    // If not logged in or DB already checked
+    if (!dbSeen) {
+      setVisible(true);
+      setTimeout(() => setShowing(true), 1500);
+    } else {
+      setVisible(false);
+    }
+  }, [effectiveLaunchIso, serverOffset, userId, displayMs, launchLoading, loadingServerTime, tick, session?.user?.id, dbCheckKey, dbSeen]);
 
   // Time since launch
   const timeSince = useMemo(() => {
@@ -167,12 +202,21 @@ export default function PostLaunchSplash({
 
           <div className="flex justify-center gap-4 mt-6">
             <button
-              onClick={() => {
+              onClick={async () => {
                 const nowKey = getDateKey(new Date(Date.now() + serverOffset));
                 const storageKey = userId
                   ? `post_launch_splash_${userId}_${nowKey}`
                   : `post_launch_splash_${nowKey}`;
                 localStorage.setItem(storageKey, "1");
+                if (session?.user?.id) {
+                  try {
+                    await supabase.from("launch_splash_seen").insert({
+                      user_id: session.user.id,
+                      day_key: nowKey,
+                      seen_at: new Date(Date.now() + serverOffset).toISOString()
+                    });
+                  } catch {}
+                }
                 setShowing(false);
                 setTimeout(() => setVisible(false), 500);
               }}
@@ -182,12 +226,21 @@ export default function PostLaunchSplash({
             </button>
 
             <button
-              onClick={() => {
+              onClick={async () => {
                 const nowKey = getDateKey(new Date(Date.now() + serverOffset));
                 const storageKey = userId
                   ? `post_launch_splash_${userId}_${nowKey}`
                   : `post_launch_splash_${nowKey}`;
                 localStorage.setItem(storageKey, "1");
+                if (session?.user?.id) {
+                  try {
+                    await supabase.from("launch_splash_seen").insert({
+                      user_id: session.user.id,
+                      day_key: nowKey,
+                      seen_at: new Date(Date.now() + serverOffset).toISOString()
+                    });
+                  } catch {}
+                }
                 setShowing(false);
                 setTimeout(() => {
                   setVisible(false);

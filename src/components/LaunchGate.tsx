@@ -132,22 +132,29 @@ export default function LaunchGate({
 
   // Tick every second to update remainingMs and flip ready when time reached
   useEffect(() => {
+    let cancelled = false;
     const target = new Date(effectiveLaunchIso).getTime();
-    const id = setInterval(() => {
-      const clientNow = Date.now();
-      const effectiveNow = clientNow + nowOffsetMs;
+    const update = () => {
+      const effectiveNow = Date.now() + nowOffsetMs;
       const rem = target - effectiveNow;
-      setRemainingMs(rem);
-      
-      // Only set ready if backend explicitly says launched OR countdown reaches zero
-      if (launchStatus?.success && launchStatus.is_launched === true) {
-        setReady(true);
-      } else if (rem <= 0) {
-        setReady(true);
+      if (!cancelled) {
+        setRemainingMs(rem);
+        
+        // Only set ready if backend explicitly says launched OR countdown reaches zero
+        if (launchStatus?.success && launchStatus.is_launched === true) {
+          setReady(true);
+        } else if (rem <= 0) {
+          setReady(true);
+        }
       }
-    }, 1000);
-    return () => clearInterval(id);
-  }, [effectiveLaunchIso, nowOffsetMs, launchStatus]);
+    };
+
+    // Initial run immediately
+    update();
+
+    const id = setInterval(update, 1000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [effectiveLaunchIso, nowOffsetMs, launchStatus?.success, launchStatus?.is_launched]);
 
   // Show loading while fetching launch status (but only for a reasonable time)
   if (launchLoading && !launchStatus) {
