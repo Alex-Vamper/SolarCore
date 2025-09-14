@@ -91,13 +91,16 @@ export default function LaunchGate({
       return;
     }
 
-    // Update remaining time based on new launch date
+    // Update remaining time based on new launch date and reset ready state
     if (launchStatus?.success && launchStatus.launch_date) {
       const target = new Date(effectiveLaunchIso).getTime();
       const rem = target - (Date.now() + nowOffsetMs);
       setRemainingMs(rem);
-      // Only set ready if backend says we're launched OR countdown reaches zero
-      if (rem <= 0 && !launchStatus.is_launched) {
+      
+      // Reset ready state if we have a new future launch date
+      if (rem > 0 && !launchStatus.is_launched) {
+        setReady(false);
+      } else if (rem <= 0 && !launchStatus.is_launched) {
         setReady(true);
       }
     }
@@ -133,28 +136,35 @@ export default function LaunchGate({
   // Tick every second to update remainingMs and flip ready when time reached
   useEffect(() => {
     let cancelled = false;
-    const target = new Date(effectiveLaunchIso).getTime();
+    
     const update = () => {
+      if (cancelled) return;
+      
+      const target = new Date(effectiveLaunchIso).getTime();
       const effectiveNow = Date.now() + nowOffsetMs;
       const rem = target - effectiveNow;
-      if (!cancelled) {
-        setRemainingMs(rem);
-        
-        // Only set ready if backend explicitly says launched OR countdown reaches zero
-        if (launchStatus?.success && launchStatus.is_launched === true) {
-          setReady(true);
-        } else if (rem <= 0) {
-          setReady(true);
-        }
+      
+      setRemainingMs(rem);
+      
+      // Check ready state: backend says launched OR countdown reaches zero
+      if (launchStatus?.success && launchStatus.is_launched === true) {
+        setReady(true);
+      } else if (rem <= 0 && launchStatus?.success) {
+        // Only auto-launch if we have successful backend data
+        setReady(true);
       }
     };
 
     // Initial run immediately
     update();
 
+    // Update every second for real-time countdown
     const id = setInterval(update, 1000);
-    return () => { cancelled = true; clearInterval(id); };
-  }, [effectiveLaunchIso, nowOffsetMs, launchStatus?.success, launchStatus?.is_launched]);
+    return () => { 
+      cancelled = true; 
+      clearInterval(id); 
+    };
+  }, [effectiveLaunchIso, nowOffsetMs, launchStatus]);
 
   // Show loading while fetching launch status (but only for a reasonable time)
   if (launchLoading && !launchStatus) {

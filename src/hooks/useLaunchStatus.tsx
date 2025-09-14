@@ -16,6 +16,7 @@ export const useLaunchStatus = () => {
 
   const fetchLaunchStatus = async () => {
     try {
+      setError(null);
       const { data, error } = await supabase.rpc('public_get_launch_status' as any);
       
       if (error) {
@@ -47,7 +48,8 @@ export const useLaunchStatus = () => {
           schema: 'public',
           table: 'admin_launch_control'
         },
-        () => {
+        (payload) => {
+          console.log('Launch control changed:', payload);
           // Refetch when admin changes launch settings
           fetchLaunchStatus();
         }
@@ -55,7 +57,11 @@ export const useLaunchStatus = () => {
       .subscribe();
 
     // Also refresh every 30 seconds as fallback
-    const interval = setInterval(fetchLaunchStatus, 30000);
+    const interval = setInterval(() => {
+      if (!error) {
+        fetchLaunchStatus();
+      }
+    }, 30000);
 
     return () => {
       supabase.removeChannel(channel);

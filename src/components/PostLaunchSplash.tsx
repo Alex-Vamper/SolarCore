@@ -106,30 +106,34 @@ export default function PostLaunchSplash({
     const now = new Date(nowMs);
     const launchDate = new Date(effectiveLaunchIso);
 
-    if (now < launchDate) {
+    // Only show splash if launch has occurred and backend confirms launch
+    if (now < launchDate || !launchStatus?.is_launched) {
       setVisible(false);
       return;
     }
 
     const dayKey = getDateKey(now);
+    const launchDateKey = getDateKey(launchDate);
+    
+    // Create unique storage key that includes launch date to reset on new launches
     const storageKey = userId
-      ? `post_launch_splash_${userId}_${dayKey}`
-      : `post_launch_splash_${dayKey}`;
+      ? `post_launch_splash_${userId}_${launchDateKey}`
+      : `post_launch_splash_${launchDateKey}`;
 
-    // If already seen locally, hide and exit
+    // If already seen locally for this launch, hide and exit
     if (localStorage.getItem(storageKey)) {
       setVisible(false);
       return;
     }
 
-    // If logged in and we haven't checked DB for this day, do a one-time check
-    if (session?.user?.id && dbCheckKey !== dayKey) {
-      setDbCheckKey(dayKey);
+    // If logged in and we haven't checked DB for this launch date, do a one-time check
+    if (session?.user?.id && dbCheckKey !== launchDateKey) {
+      setDbCheckKey(launchDateKey);
       supabase
         .from("launch_splash_seen")
         .select("id")
         .eq("user_id", session.user.id)
-        .eq("day_key", dayKey)
+        .eq("day_key", launchDateKey)
         .maybeSingle()
         .then(({ data, error }) => {
           if (error) {
@@ -153,7 +157,7 @@ export default function PostLaunchSplash({
     } else {
       setVisible(false);
     }
-  }, [effectiveLaunchIso, serverOffset, userId, displayMs, launchLoading, loadingServerTime, tick, session?.user?.id, dbCheckKey, dbSeen]);
+  }, [effectiveLaunchIso, serverOffset, userId, displayMs, launchLoading, loadingServerTime, tick, session?.user?.id, dbCheckKey, dbSeen, launchStatus?.is_launched]);
 
   // Time since launch
   const timeSince = useMemo(() => {
@@ -203,16 +207,17 @@ export default function PostLaunchSplash({
           <div className="flex justify-center gap-4 mt-6">
             <button
               onClick={async () => {
-                const nowKey = getDateKey(new Date(Date.now() + serverOffset));
+                const launchDate = new Date(effectiveLaunchIso);
+                const launchDateKey = getDateKey(launchDate);
                 const storageKey = userId
-                  ? `post_launch_splash_${userId}_${nowKey}`
-                  : `post_launch_splash_${nowKey}`;
+                  ? `post_launch_splash_${userId}_${launchDateKey}`
+                  : `post_launch_splash_${launchDateKey}`;
                 localStorage.setItem(storageKey, "1");
                 if (session?.user?.id) {
                   try {
                     await supabase.from("launch_splash_seen").insert({
                       user_id: session.user.id,
-                      day_key: nowKey,
+                      day_key: launchDateKey,
                       seen_at: new Date(Date.now() + serverOffset).toISOString()
                     });
                   } catch {}
@@ -227,16 +232,17 @@ export default function PostLaunchSplash({
 
             <button
               onClick={async () => {
-                const nowKey = getDateKey(new Date(Date.now() + serverOffset));
+                const launchDate = new Date(effectiveLaunchIso);
+                const launchDateKey = getDateKey(launchDate);
                 const storageKey = userId
-                  ? `post_launch_splash_${userId}_${nowKey}`
-                  : `post_launch_splash_${nowKey}`;
+                  ? `post_launch_splash_${userId}_${launchDateKey}`
+                  : `post_launch_splash_${launchDateKey}`;
                 localStorage.setItem(storageKey, "1");
                 if (session?.user?.id) {
                   try {
                     await supabase.from("launch_splash_seen").insert({
                       user_id: session.user.id,
-                      day_key: nowKey,
+                      day_key: launchDateKey,
                       seen_at: new Date(Date.now() + serverOffset).toISOString()
                     });
                   } catch {}
