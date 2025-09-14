@@ -6,6 +6,8 @@ export class SecurityAutoLockService {
   private static timer: NodeJS.Timeout | null = null;
   private static isCountdownActive = false;
   private static countdownToast: string | number | null = null;
+  private static startTime: number | null = null;
+  private static countdownDuration = 90000; // 90 seconds in milliseconds
 
   /**
    * Start the 90-second auto-lock countdown
@@ -16,6 +18,7 @@ export class SecurityAutoLockService {
     this.cancelAutoLockCountdown();
 
     this.isCountdownActive = true;
+    this.startTime = Date.now();
     
     // Show countdown toast
     this.countdownToast = toast("Security Auto-Lock Armed", {
@@ -39,8 +42,9 @@ export class SecurityAutoLockService {
       } finally {
         this.isCountdownActive = false;
         this.timer = null;
+        this.startTime = null;
       }
-    }, 90000); // 90 seconds
+    }, this.countdownDuration);
 
     console.log('Auto-lock countdown started - devices will turn off in 90 seconds');
   }
@@ -56,6 +60,7 @@ export class SecurityAutoLockService {
 
     if (this.isCountdownActive) {
       this.isCountdownActive = false;
+      this.startTime = null;
       
       // Dismiss countdown toast
       if (this.countdownToast) {
@@ -174,9 +179,10 @@ export class SecurityAutoLockService {
    * Get remaining time in seconds (for UI display)
    */
   static getRemainingTime(): number {
-    if (!this.isCountdownActive || !this.timer) return 0;
-    // This is approximate since we don't track exact start time
-    return 90; // For simplicity, always show 90s when active
+    if (!this.isCountdownActive || !this.startTime) return 0;
+    const elapsed = Date.now() - this.startTime;
+    const remaining = Math.max(0, this.countdownDuration - elapsed);
+    return Math.ceil(remaining / 1000); // Convert to seconds and round up
   }
 
   /**

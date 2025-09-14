@@ -2,7 +2,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client"; // <- reuse existing client
+import { supabase } from "@/integrations/supabase/client";
+import { useLaunchStatus } from "@/hooks/useLaunchStatus";
 
 type LaunchGateProps = {
   launchIso?: string | null;
@@ -22,16 +23,15 @@ function formatParts(ms: number) {
 }
 
 /**
- * LaunchGate
- *
- * Behavior:
- * - effectiveLaunchIso is (in order):
- *   1) launchIso prop (if provided),
- *   2) import.meta.env.VITE_LAUNCH_DATE (if present),
- *   3) today at 00:00 local time (default).
- *
- * - Optionally uses serverTimeUrl to compute a server-client offset (prevents client clock tampering).
- * - On localhost / 127.0.0.1 the gate is bypassed (keeps dev experience smooth).
+ * LaunchGate - Solar Core Auto Effect
+ * 
+ * Features the sophisticated "Solar Core Auto" animation system:
+ * - Gradient pulse-glow hero text
+ * - Background ambient orbs (orange/blue)
+ * - Floating particle system
+ * - Hardware-accelerated animations
+ * - Three-layer depth system
+ * - HSL-based color system
  */
 export default function LaunchGate({
   children,
@@ -39,18 +39,31 @@ export default function LaunchGate({
   serverTimeUrl = null,
 }: LaunchGateProps) {
   const navigate = useNavigate();
+  const { launchStatus, loading: launchLoading, error: launchError } = useLaunchStatus();
 
-  // compute effective launch ISO (prop > env > today@00:00 local)
+  // compute effective launch ISO (priority: backend > prop > default)
   const effectiveLaunchIso = useMemo(() => {
+    // Priority 1: Backend launch date (only if successfully loaded)
+    if (launchStatus?.success && launchStatus.launch_date) {
+      return launchStatus.launch_date;
+    }
+    // Priority 2: Prop override (for testing/admin)
     if (launchIso) return launchIso;
-    if (import.meta.env.VITE_LAUNCH_DATE) return import.meta.env.VITE_LAUNCH_DATE;
+    // Priority 3: Default fallback (far future date to prevent bypass)
     const d = new Date();
-    d.setHours(0, 0, 0, 0); // today at 00:00 local
+    d.setFullYear(d.getFullYear() + 1); // one year from now
     return d.toISOString();
-  }, [launchIso]);
+  }, [launchIso, launchStatus]);
 
-  // server-client offset (serverNow - clientNow)
-  const [nowOffsetMs, setNowOffsetMs] = useState<number>(0);
+  // server-client offset (serverNow - clientNow) - use backend server time if available
+  const [nowOffsetMs, setNowOffsetMs] = useState<number>(() => {
+    if (launchStatus?.success && launchStatus.server_time) {
+      const serverTime = new Date(launchStatus.server_time).getTime();
+      const clientTime = Date.now();
+      return serverTime - clientTime;
+    }
+    return 0;
+  });
 
   // remaining ms until target (initialized from effectiveLaunchIso)
   const [remainingMs, setRemainingMs] = useState<number>(() => {
@@ -58,22 +71,41 @@ export default function LaunchGate({
     return target - Date.now();
   });
 
-  // ready when remaining <= 0
-  const [ready, setReady] = useState<boolean>(() => remainingMs <= 0);
+  // ready when backend says we're launched or countdown reaches zero
+  const [ready, setReady] = useState<boolean>(() => {
+    // Only ready if backend explicitly says we're launched
+    return launchStatus?.success && launchStatus.is_launched === true;
+  });
 
-  // Dev convenience: bypass gate on localhost
+  // Update offset when backend data changes
   useEffect(() => {
-    if (
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1"
-    ) {
-      setReady(true);
+    if (launchStatus?.success && launchStatus.server_time) {
+      const serverTime = new Date(launchStatus.server_time).getTime();
+      const clientTime = Date.now();
+      setNowOffsetMs(serverTime - clientTime);
     }
-  }, []);
 
-  // Optionally fetch server time to compute offset
+    // Check if backend says we're launched
+    if (launchStatus?.success && launchStatus.is_launched === true) {
+      setReady(true);
+      return;
+    }
+
+    // Update remaining time based on new launch date
+    if (launchStatus?.success && launchStatus.launch_date) {
+      const target = new Date(effectiveLaunchIso).getTime();
+      const rem = target - (Date.now() + nowOffsetMs);
+      setRemainingMs(rem);
+      // Only set ready if backend says we're launched OR countdown reaches zero
+      if (rem <= 0 && !launchStatus.is_launched) {
+        setReady(true);
+      }
+    }
+  }, [launchStatus, effectiveLaunchIso, nowOffsetMs]);
+
+  // Optionally fetch server time to compute offset (fallback if no backend data)
   useEffect(() => {
-    if (!serverTimeUrl) return;
+    if (!serverTimeUrl || (launchStatus?.success && launchStatus.server_time)) return;
     let mounted = true;
     fetch(serverTimeUrl)
       .then((r) => r.json())
@@ -96,20 +128,57 @@ export default function LaunchGate({
     return () => {
       mounted = false;
     };
-  }, [serverTimeUrl, effectiveLaunchIso]);
+  }, [serverTimeUrl, effectiveLaunchIso, launchStatus]);
 
   // Tick every second to update remainingMs and flip ready when time reached
   useEffect(() => {
+    let cancelled = false;
     const target = new Date(effectiveLaunchIso).getTime();
-    const id = setInterval(() => {
-      const clientNow = Date.now();
-      const effectiveNow = clientNow + nowOffsetMs;
+    const update = () => {
+      const effectiveNow = Date.now() + nowOffsetMs;
       const rem = target - effectiveNow;
-      setRemainingMs(rem);
-      if (rem <= 0) setReady(true);
-    }, 1000);
-    return () => clearInterval(id);
-  }, [effectiveLaunchIso, nowOffsetMs]);
+      if (!cancelled) {
+        setRemainingMs(rem);
+        
+        // Only set ready if backend explicitly says launched OR countdown reaches zero
+        if (launchStatus?.success && launchStatus.is_launched === true) {
+          setReady(true);
+        } else if (rem <= 0) {
+          setReady(true);
+        }
+      }
+    };
+
+    // Initial run immediately
+    update();
+
+    const id = setInterval(update, 1000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [effectiveLaunchIso, nowOffsetMs, launchStatus?.success, launchStatus?.is_launched]);
+
+  // Show loading while fetching launch status (but only for a reasonable time)
+  if (launchLoading && !launchStatus) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'hsl(220, 20%, 8%)' }}>
+        <div className="text-white text-xl">Checking launch status...</div>
+      </div>
+    );
+  }
+
+  // Log backend status for debugging
+  if (launchError) {
+    console.warn('Failed to fetch launch status, using fallback:', launchError);
+  }
+  
+  // Debug info
+  console.log('Launch Status Debug:', {
+    backendSuccess: launchStatus?.success,
+    backendLaunched: launchStatus?.is_launched,
+    backendDate: launchStatus?.launch_date,
+    effectiveDate: effectiveLaunchIso,
+    ready,
+    remainingMs
+  });
 
   // If ready -> render children (actual app)
   if (ready) {
@@ -132,88 +201,128 @@ export default function LaunchGate({
     }
   })();
 
-  // New logout function for shared devices
+  // Logout function for shared devices
   const handleLogout = async () => {
-    await supabase.auth.signOut(); // properly end session
-    navigate("/"); // send back to landing
+    await supabase.auth.signOut();
+    navigate("/");
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-amber-400 to-yellow-500 animate-grad-slow bg-[length:200%_200%]" />
-
-      {/* Subtle star sparkles */}
-      <div className="absolute inset-0">
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-white rounded-full opacity-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 0] }}
-            transition={{
-              duration: 3,
-              delay: i * 0.35,
-              repeat: Infinity,
-              repeatType: "loop",
-            }}
-            style={{
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-            }}
-          />
-        ))}
+    <main className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: 'hsl(220, 20%, 8%)' }}>
+      {/* Layer 1: Background ambient orbs */}
+      <div className="absolute inset-0 opacity-20">
+        <div 
+          className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse"
+          style={{ backgroundColor: `hsl(${25} ${95}% ${53}%)` }}
+        />
+        <div 
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse"
+          style={{ 
+            backgroundColor: `hsl(${200} ${95}% ${60}%)`,
+            animationDelay: '1s' 
+          }}
+        />
       </div>
 
-      {/* Countdown Card */}
-      <motion.div
-        className="relative z-10 max-w-xl w-full text-center rounded-2xl shadow-2xl p-10 bg-white/90 backdrop-blur"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9 }}
-      >
-        <h1 className="text-3xl font-extrabold mb-4 text-gray-900">
-          We’re Launching Soon
+      {/* Layer 2: Main content */}
+      <div className="relative z-10 text-center px-6">
+        {/* Hero text with Solar Core Auto effect */}
+        <h1 className="solar-hero mb-8">
+          SolarCore
         </h1>
-        <p className="text-sm text-gray-600 mb-8">
-          Our app goes live on <strong>{displayLaunch}</strong>.
+        
+        <p className="text-xl md:text-2xl text-white/80 mb-4 font-medium">
+          We're Launching Soon
+        </p>
+        
+        <p className="text-sm md:text-base text-white/60 mb-12 max-w-md mx-auto">
+          Our revolutionary smart home system goes live on <strong className="text-white/90">{displayLaunch}</strong>
         </p>
 
-        {/* Countdown boxes */}
-        <div className="app-text flex justify-center gap-4 text-white font-mono text-3xl mb-8">
-          {[{ label: "Days", val: d }, { label: "Hours", val: h }, { label: "Min", val: m }, { label: "Sec", val: s }].map((unit) => (
+        {/* Countdown boxes with solar theme */}
+        <div className="flex justify-center gap-4 mb-12">
+          {[{ label: "Days", val: d }, { label: "Hours", val: h }, { label: "Min", val: m }, { label: "Sec", val: s }].map((unit, index) => (
             <motion.div
               key={unit.label}
-              className="bg-orange-600 rounded-lg px-4 py-2 shadow-lg"
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
+              className="relative rounded-2xl px-6 py-4 text-center shadow-2xl"
+              style={{
+                background: 'linear-gradient(135deg, hsl(25 95% 53% / 0.2), hsl(200 95% 60% / 0.2))',
+                border: '1px solid hsl(25 95% 53% / 0.3)',
+                backdropFilter: 'blur(10px)'
+              }}
+              animate={{ 
+                scale: [1, 1.02, 1],
+                boxShadow: [
+                  '0 0 20px hsl(25 95% 53% / 0.3)',
+                  '0 0 30px hsl(25 95% 53% / 0.5)',
+                  '0 0 20px hsl(25 95% 53% / 0.3)'
+                ]
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity,
+                delay: index * 0.2
+              }}
             >
-              <div>{unit.val}</div>
-              <div className="app-text uppercase text-orange-100">{unit.label}</div>
+              <div className="text-3xl md:text-4xl font-bold text-white font-mono">
+                {unit.val}
+              </div>
+              <div className="text-xs md:text-sm uppercase tracking-wide text-white/70 mt-1">
+                {unit.label}
+              </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Back to Landing Page button */}
-        <button
-          onClick={() => navigate("/")}
-          className="mt-4 px-6 py-3 rounded-xl bg-orange-600 text-white font-semibold shadow-lg hover:bg-orange-700 transition"
-        >
-          Back to Landing Page
-        </button>
-
-        {/* Extra idea: Not you? Log out */}
-        <p className="app-text mt-2 text-gray-700">
-          Not you?{" "}
+        {/* Action buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <button
-            onClick={handleLogout}
-            className="text-red-600 font-semibold underline decoration-red-400 decoration-2 hover:opacity-80 active:scale-95 transition-transform duration-150 bg-transparent p-0 border-0"
+            onClick={() => navigate("/")}
+            className="px-8 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 text-white"
+            style={{
+              background: 'linear-gradient(135deg, hsl(25 95% 53%), hsl(200 95% 60%))',
+              boxShadow: '0 0 20px hsl(25 95% 53% / 0.4)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 0 30px hsl(25 95% 53% / 0.6)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 0 20px hsl(25 95% 53% / 0.4)';
+              e.currentTarget.style.transform = 'translateY(0px)';
+            }}
           >
-            Log out
+            Back to Landing Page
           </button>
-        </p>
 
-      </motion.div>
-    </div>
+          <p className="text-sm text-white/60">
+            Not you?{" "}
+            <button
+              onClick={handleLogout}
+              className="text-white/80 font-semibold underline decoration-white/50 decoration-2 hover:text-white hover:decoration-white transition-colors duration-300 bg-transparent p-0 border-0"
+            >
+              Log out
+            </button>
+          </p>
+        </div>
+      </div>
+
+      {/* Layer 3: Floating particles */}
+      <div className="absolute inset-0 pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 rounded-full opacity-60"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              backgroundColor: `hsl(${25} ${95}% ${53}%)`,
+              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+    </main>
   );
 }
