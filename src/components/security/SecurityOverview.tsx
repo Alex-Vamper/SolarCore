@@ -25,6 +25,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   const [showSettings, setShowSettings] = useState(false);
   const [securitySettings, setSecuritySettings] = useState(null);
   const [isAutoLockActive, setIsAutoLockActive] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(0);
 
   const speak = (text, repeat = 1) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -168,10 +169,44 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     setIsAutoLockActive(SecurityAutoLockService.isCountdownRunning());
   }, [isDoorLocked, isSecurityMode]);
 
-  // Cleanup on unmount
+  // Update countdown timer display
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    
+    if (isAutoLockActive) {
+      // Update remaining time immediately and then every second
+      const updateRemainingTime = () => {
+        const time = SecurityAutoLockService.getRemainingTime();
+        setRemainingTime(time);
+        
+        // Stop timer if countdown is complete
+        if (time <= 0) {
+          setIsAutoLockActive(false);
+          if (interval) {
+            clearInterval(interval);
+          }
+        }
+      };
+      
+      updateRemainingTime(); // Initial update
+      interval = setInterval(updateRemainingTime, 1000); // Update every second
+    } else {
+      setRemainingTime(0);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isAutoLockActive]);
+
+  // Cleanup on unmount - but preserve auto-lock countdown
   useEffect(() => {
     return () => {
-      SecurityAutoLockService.cleanup();
+      // Don't cleanup auto-lock service on component unmount
+      // The auto-lock should persist across page navigation
+      // SecurityAutoLockService.cleanup();
     };
   }, []);
 
@@ -456,7 +491,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
           {isAutoLockActive && (
             <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
               <p className="text-sm text-orange-800 font-inter">
-                <strong>Auto-Lock Countdown Active:</strong> All automation devices will turn off in 90 seconds. Change security mode to cancel. Devices in exceptions list will remain active.
+                <strong>Auto-Lock Countdown Active:</strong> All automation devices will turn off in <strong>{remainingTime} second{remainingTime !== 1 ? 's' : ''}</strong>. Change security mode to cancel. Devices in exceptions list will remain active.
               </p>
             </div>
           )}
