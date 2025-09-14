@@ -78,16 +78,6 @@ export default function LaunchGate({
     return launchStatus?.success && launchStatus.is_launched === true;
   });
 
-  // Dev convenience: bypass gate on localhost
-  useEffect(() => {
-    if (
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1"
-    ) {
-      setReady(true);
-    }
-  }, []);
-
   // Update offset when backend data changes
   useEffect(() => {
     if (launchStatus?.success && launchStatus.server_time) {
@@ -143,23 +133,19 @@ export default function LaunchGate({
 
   // Tick every second to update remainingMs and flip ready when time reached
   useEffect(() => {
-    // Skip countdown if backend says we're already launched
-    if (launchStatus?.success && launchStatus.is_launched === true) {
-      setReady(true);
-      return;
-    }
-
-    // Only run countdown if we have backend data
-    if (!launchStatus?.success || !launchStatus.launch_date) return;
-
     const target = new Date(effectiveLaunchIso).getTime();
     const id = setInterval(() => {
       const clientNow = Date.now();
       const effectiveNow = clientNow + nowOffsetMs;
       const rem = target - effectiveNow;
       setRemainingMs(rem);
-      // Only set ready when countdown reaches zero (backend will control launch state)
-      if (rem <= 0) setReady(true);
+      
+      // Only set ready if backend explicitly says launched OR countdown reaches zero
+      if (launchStatus?.success && launchStatus.is_launched === true) {
+        setReady(true);
+      } else if (rem <= 0) {
+        setReady(true);
+      }
     }, 1000);
     return () => clearInterval(id);
   }, [effectiveLaunchIso, nowOffsetMs, launchStatus]);
@@ -222,15 +208,15 @@ export default function LaunchGate({
 
       {/* Subtle star sparkles */}
       <div className="absolute inset-0">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(12)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 bg-white rounded-full opacity-0"
+            className="absolute w-1.5 h-1.5 bg-white rounded-full opacity-0"
             initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 1, 0] }}
+            animate={{ opacity: [0, 0.8, 0] }}
             transition={{
-              duration: 3,
-              delay: i * 0.35,
+              duration: 4,
+              delay: i * 0.8,
               repeat: Infinity,
               repeatType: "loop",
             }}
