@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { deviceStateService } from "@/lib/deviceStateService";
+import { deviceStateLogger } from "@/lib/deviceStateLogger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -84,20 +86,52 @@ const getMoodsForSeries = (series) => {
   ];
 };
 
-export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHandleProps }) {
+export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHandleProps, roomId }) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [optimisticState, setOptimisticState] = useState(appliance);
 
   const handleUpdate = async (updates) => {
+    if (isUpdating) {
+      deviceStateLogger.log('APPLIANCE_CONTROL', 'Update already in progress, ignoring click', { applianceId: appliance.id });
+      return;
+    }
+
     setIsUpdating(true);
+    
+    // Optimistic update for immediate UI feedback
+    const newState = { ...appliance, ...updates };
+    setOptimisticState(newState);
+    
+    deviceStateLogger.logDeviceUpdate('APPLIANCE_CONTROL', appliance.id, updates, false);
+
     try {
-      await onUpdate(appliance.id, updates);
+      // Use the provided onUpdate callback or fallback to direct service call
+      if (onUpdate) {
+        await onUpdate(appliance.id, updates);
+      } else if (roomId) {
+        // Fallback to direct service call if roomId is provided
+        const result = await deviceStateService.updateDeviceState(roomId, appliance.id, updates);
+        if (!result.success) {
+          throw new Error(result.error || 'Update failed');
+        }
+      }
+      
+      deviceStateLogger.log('APPLIANCE_CONTROL', 'Device update successful', { applianceId: appliance.id });
+    } catch (error) {
+      deviceStateLogger.logError('APPLIANCE_CONTROL', 'Device update failed', error);
+      // Rollback optimistic update on error
+      setOptimisticState(appliance);
+      throw error;
     } finally {
       setIsUpdating(false);
     }
   };
 
+  // Use optimistic state for immediate UI updates, fall back to appliance prop
+  const displayState = isUpdating ? optimisticState : appliance;
+
   const renderStandardDevice = () => {
-    const ApplianceIcon = getApplianceIcon(appliance.type, appliance.name);
+    const ApplianceIcon = getApplianceIcon(displayState.type, displayState.name);
     return (
       <Card className="glass-card border-0 shadow-lg">
         <CardContent className="p-4">
@@ -107,15 +141,15 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
                 <GripVertical className="w-5 h-5 text-gray-400" />
               </div>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                appliance.status ? 'bg-blue-100' : 'bg-gray-200'
+                displayState.status ? 'bg-blue-100' : 'bg-gray-200'
               }`}>
-                <ApplianceIcon className={`w-5 h-5 ${appliance.status ? 'text-blue-600' : 'text-gray-500'}`} />
+                <ApplianceIcon className={`w-5 h-5 ${displayState.status ? 'text-blue-600' : 'text-gray-500'}`} />
               </div>
               <div>
-                <div className="font-semibold text-gray-900 font-inter">{appliance.name}</div>
-                {appliance.series && (
+                <div className="font-semibold text-gray-900 font-inter">{displayState.name}</div>
+                {displayState.series && (
                   <div className="text-xs text-gray-500 font-inter">
-                    {appliance.series}
+                    {displayState.series}
                   </div>
                 )}
               </div>
@@ -130,13 +164,13 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Appliance</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete "{appliance.name}"? This action cannot be undone.
-                    </AlertDialogDescription>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{displayState.name}"? This action cannot be undone.
+                  </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onDelete(appliance.id)} className="bg-red-600 hover:bg-red-700">
+                    <AlertDialogAction onClick={() => onDelete(displayState.id)} className="bg-red-600 hover:bg-red-700">
                       Delete
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -144,12 +178,12 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
               </AlertDialog>
               <Button
                 size="icon"
-                onClick={() => handleUpdate({ status: !appliance.status })}
+                onClick={() => handleUpdate({ status: !displayState.status })}
                 className={`transition-all duration-300 rounded-full w-10 h-10 ${
-                  appliance.status
+                  displayState.status
                     ? 'bg-yellow-400 text-white shadow-lg shadow-yellow-400/50'
                     : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                }`}
+                } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={isUpdating}
               >
                 <Power className="w-5 h-5" />
@@ -162,14 +196,14 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
   };
 
   const renderSimplifiedLight = () => {
-    const moods = getMoodsForSeries(appliance.series);
-    const ApplianceIcon = getApplianceIcon(appliance.type);
+    const moods = getMoodsForSeries(displayState.series);
+    const ApplianceIcon = getApplianceIcon(displayState.type);
     
     const getCurrentMoodId = () => {
-      if (!appliance.status) return "off";
-      if (appliance.intensity <= 25) return "dim";
-      if (appliance.color_tint === 'cool') return "cool";
-      if (appliance.color_tint === 'warm') return "warm";
+      if (!displayState.status) return "off";
+      if (displayState.intensity <= 25) return "dim";
+      if (displayState.color_tint === 'cool') return "cool";
+      if (displayState.color_tint === 'warm') return "warm";
       return "on"; // Default to 'on' if it's on with normal intensity and white tint
     };
 
@@ -184,16 +218,16 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
                     <GripVertical className="w-5 h-5 text-gray-400" />
                 </div>
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  appliance.status ? 'bg-blue-100' : 'bg-gray-200'
+                  displayState.status ? 'bg-blue-100' : 'bg-gray-200'
                 }`}>
-                  <ApplianceIcon className={`w-5 h-5 ${appliance.status ? 'text-blue-600' : 'text-gray-500'}`} />
+                  <ApplianceIcon className={`w-5 h-5 ${displayState.status ? 'text-blue-600' : 'text-gray-500'}`} />
                 </div>
                 <div>
                   <CardTitle className="text-lg font-inter">
-                    <div className="font-semibold">{appliance.name}</div>
+                    <div className="font-semibold">{displayState.name}</div>
                   </CardTitle>
-                  {appliance.series && (
-                    <p className="text-xs text-gray-500 font-inter">{appliance.series}</p>
+                  {displayState.series && (
+                    <p className="text-xs text-gray-500 font-inter">{displayState.series}</p>
                   )}
                 </div>
             </div>
@@ -207,12 +241,12 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Light</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete "{appliance.name}"? This action cannot be undone.
+                    Are you sure you want to delete "{displayState.name}"? This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onDelete(appliance.id)} className="bg-red-600 hover:bg-red-700">
+                  <AlertDialogAction onClick={() => onDelete(displayState.id)} className="bg-red-600 hover:bg-red-700">
                     Delete
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -227,7 +261,7 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
               <span className="text-sm font-medium text-gray-700 font-inter">Auto Mode</span>
             </div>
             <Switch
-              checked={appliance.auto_mode}
+              checked={displayState.auto_mode}
               onCheckedChange={(checked) => handleUpdate({ auto_mode: checked })}
               disabled={isUpdating}
             />
@@ -256,7 +290,7 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
     );
   };
 
-  return SIMPLIFIED_LIGHT_SERIES.includes(appliance.series)
+  return SIMPLIFIED_LIGHT_SERIES.includes(displayState.series)
     ? renderSimplifiedLight()
     : renderStandardDevice();
 }

@@ -7,6 +7,8 @@ import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import { deviceCapabilitiesCache } from "@/lib/deviceCapabilitiesCache";
+import { deviceStateService } from "@/lib/deviceStateService";
+import { deviceStateLogger } from "@/lib/deviceStateLogger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -232,55 +234,38 @@ export default function RoomDetails() {
     }
 
     setIsLoading(true);
+    deviceStateLogger.log('ROOM_DETAILS', `Loading room ${roomId}`);
+    
     try {
       const currentUser = await User.me();
       const rooms = await Room.filter({ created_by: currentUser.email });
       const foundRoom = rooms.find(r => r.id === roomId);
 
       if (!foundRoom) {
+        deviceStateLogger.logError('ROOM_DETAILS', `Room ${roomId} not found`);
         navigate(createPageUrl("Automation"));
         return;
       }
 
-      // If appliances have child_device_ids, sync their states from backend
-      if (foundRoom.appliances && foundRoom.appliances.length > 0) {
-        const appliancesWithChildIds = foundRoom.appliances.filter(app => app.child_device_id);
-        
-        if (appliancesWithChildIds.length > 0) {
-          const childIds = appliancesWithChildIds.map(app => app.child_device_id);
-          
-          // Fetch child device states from backend
-          const { data: childDevices, error } = await supabase
-            .from('child_devices')
-            .select('id, state')
-            .in('id', childIds);
+      deviceStateLogger.log('ROOM_DETAILS', `Room found with ${foundRoom.appliances?.length || 0} appliances`);
 
-          if (!error && childDevices) {
-            // Update appliances with backend states
-            foundRoom.appliances = foundRoom.appliances.map(app => {
-              if (app.child_device_id) {
-                const childDevice = childDevices.find(cd => cd.id === app.child_device_id);
-                if (childDevice && childDevice.state) {
-                  const state = childDevice.state as any;
-                  return {
-                    ...app,
-                    status: state.status || false,
-                    intensity: state.intensity || app.intensity,
-                    color_tint: state.color_tint || app.color_tint,
-                    auto_mode: state.auto_mode || app.auto_mode,
-                    power_usage: state.power_usage || app.power_usage
-                  };
-                }
-              }
-              return app;
-            });
-          }
-        }
+      // Sync room with backend to ensure consistent state
+      const syncResult = await deviceStateService.syncRoomWithBackend(roomId);
+      if (syncResult.success && syncResult.appliancesUpdated > 0) {
+        deviceStateLogger.log('ROOM_DETAILS', `Synced ${syncResult.appliancesUpdated} appliances from backend`);
+        // Reload room data after sync
+        const updatedRoom = await Room.get(roomId);
+        setRoom(updatedRoom);
+      } else {
+        setRoom(foundRoom);
       }
 
-      setRoom(foundRoom);
+      if (syncResult.errors.length > 0) {
+        deviceStateLogger.logError('ROOM_DETAILS', 'Sync errors', syncResult.errors);
+      }
+
     } catch (error) {
-      console.error("Error loading room:", error);
+      deviceStateLogger.logError('ROOM_DETAILS', 'Failed to load room', error);
       navigate(createPageUrl("Automation"));
     }
     setIsLoading(false);
@@ -347,6 +332,8 @@ export default function RoomDetails() {
   const handleApplianceUpdate = async (applianceId, updates) => {
     if (!room) return;
 
+    deviceStateLogger.logDeviceUpdate('ROOM_DETAILS', applianceId, updates);
+
     try {
       // Check if user has a valid Ander device for device control
       const capabilities = await deviceCapabilitiesCache.getCapabilities();
@@ -359,52 +346,18 @@ export default function RoomDetails() {
         return;
       }
 
-      // Find the appliance to update
-      const appliance = room.appliances.find(app => app.id === applianceId);
+      // Use unified device state service
+      const result = await deviceStateService.updateDeviceState(room.id, applianceId, updates);
       
-      // Update in child_devices table if it has a child_device_id
-      if (appliance?.child_device_id) {
-        // Build state object with all properties
-        const newState = {
-          status: updates.status !== undefined ? updates.status : appliance.status,
-          intensity: updates.intensity !== undefined ? updates.intensity : appliance.intensity,
-          color_tint: updates.color_tint !== undefined ? updates.color_tint : appliance.color_tint,
-          auto_mode: updates.auto_mode !== undefined ? updates.auto_mode : appliance.auto_mode,
-          power_usage: updates.power_usage !== undefined ? updates.power_usage : appliance.power_usage,
-        };
-
-        // Update the child_device state in the backend using the update_child_state RPC
-        const { data: updateResult, error } = await supabase.rpc('update_child_state', {
-          p_child_id: appliance.child_device_id,
-          p_new_state: newState
-        }) as any;
-
-        if (error || !updateResult?.success) {
-          console.error("Error updating child device:", error || updateResult);
-          toast({
-            title: "Update Failed",
-            description: updateResult?.message || "Failed to sync device state with backend.",
-            variant: "destructive"
-          });
-          return;
-        }
+      if (!result.success) {
+        throw new Error(result.error || 'Update failed');
       }
 
-      // Update locally in room appliances
-      const updatedAppliances = room.appliances.map(app =>
-        app.id === applianceId ? { ...app, ...updates } : app
-      );
-
-      await Room.update(room.id, { appliances: updatedAppliances });
-      setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
+      // Reload room data to reflect changes
+      await loadRoom();
       
       // Invalidate cache when changes are made
       deviceCapabilitiesCache.invalidateCache();
-      
-      // Trigger update event for synchronization
-      window.dispatchEvent(new CustomEvent('applianceStateChanged', { 
-        detail: { roomId: room.id, applianceId } 
-      }));
     } catch (error) {
       console.error("Error updating appliance:", error);
       toast({
@@ -637,6 +590,7 @@ export default function RoomDetails() {
                                   appliance={appliance}
                                   onUpdate={handleApplianceUpdate}
                                   onDelete={handleApplianceDelete}
+                                  roomId={room.id}
                                   dragHandleProps={provided.dragHandleProps}
                                 />
                               </div>

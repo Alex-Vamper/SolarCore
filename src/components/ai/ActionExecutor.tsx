@@ -2,6 +2,8 @@
 import { User, Room, ChildDevice, SecuritySystem, UserSettings } from "@/entities/all";
 import { supabase } from "@/integrations/supabase/client";
 import { deviceCapabilitiesCache } from "@/lib/deviceCapabilitiesCache";
+import { deviceStateService } from "@/lib/deviceStateService";
+import { deviceStateLogger } from "@/lib/deviceStateLogger";
 
 class ActionExecutor {
     // Enhanced device availability checker using capabilities cache
@@ -126,79 +128,140 @@ class ActionExecutor {
             }
         };
 
-        // --- Generic Action Handlers ---
+        // --- Generic Action Handlers with Backend Sync ---
         const updateAllAppliances = async (type, status) => {
+            deviceStateLogger.logVoiceCommand(`updateAllAppliances_${type}`, transcript, { status });
+            
             let devicesUpdated = 0;
-            const updates = rooms.map(room => {
-                const hasDeviceType = room.appliances.some(app => app.type === type);
-                if (hasDeviceType) {
-                    const updatedAppliances = room.appliances.map(app => {
-                        if (app.type === type) {
-                            devicesUpdated++;
-                            return { ...app, status };
-                        }
-                        return app;
+            const roomUpdates = [];
+
+            for (const room of rooms) {
+                const appliancesToUpdate = room.appliances.filter(app => app.type === type);
+                if (appliancesToUpdate.length > 0) {
+                    const applianceUpdates = appliancesToUpdate.map(app => ({
+                        id: app.id,
+                        updates: { status }
+                    }));
+                    
+                    roomUpdates.push({
+                        roomId: room.id,
+                        applianceUpdates
                     });
-                    return Room.update(room.id, { appliances: updatedAppliances });
+                    
+                    devicesUpdated += appliancesToUpdate.length;
                 }
-                return Promise.resolve();
-            });
-            await Promise.all(updates);
+            }
             
             if (devicesUpdated === 0) {
+                deviceStateLogger.log('ACTION_EXECUTOR', `No ${type} devices found to update`);
                 return { success: false, reason: 'device_not_found' };
             }
+
+            // Use unified device state service for backend sync
+            const result = await deviceStateService.updateMultipleDevices(roomUpdates);
+            
+            if (!result.success) {
+                deviceStateLogger.logError('ACTION_EXECUTOR', `Failed to update ${type} devices`, result.errors);
+                return { success: false, reason: 'update_failed' };
+            }
+
+            deviceStateLogger.log('ACTION_EXECUTOR', `Successfully updated ${devicesUpdated} ${type} devices`);
             return { success: true, reason: `All ${type} ${status ? 'turned on' : 'turned off'}` };
         };
 
         const updateRoomAppliances = async (type, status) => {
+            deviceStateLogger.logVoiceCommand(`updateRoomAppliances_${type}`, transcript, { status, roomName });
+            
             if (!roomName) return { success: false, reason: "device_not_found" };
             const targetRoom = rooms.find(r => r.name.toLowerCase() === roomName);
             if (!targetRoom) return { success: false, reason: "device_not_found" };
 
-            let devicesUpdated = 0;
-            const updatedAppliances = targetRoom.appliances.map(app => {
-                if (app.type === type) {
-                    devicesUpdated++;
-                    return { ...app, status };
-                }
-                return app;
-            });
+            const appliancesToUpdate = targetRoom.appliances.filter(app => app.type === type);
             
-            if (devicesUpdated === 0) {
+            if (appliancesToUpdate.length === 0) {
+                deviceStateLogger.log('ACTION_EXECUTOR', `No ${type} devices found in ${roomName}`);
                 return { success: false, reason: "device_not_found" };
             }
+
+            const applianceUpdates = appliancesToUpdate.map(app => ({
+                id: app.id,
+                updates: { status }
+            }));
+
+            const roomUpdates = [{
+                roomId: targetRoom.id,
+                applianceUpdates
+            }];
+
+            // Use unified device state service for backend sync
+            const result = await deviceStateService.updateMultipleDevices(roomUpdates);
             
-            await Room.update(targetRoom.id, { appliances: updatedAppliances });
+            if (!result.success) {
+                deviceStateLogger.logError('ACTION_EXECUTOR', `Failed to update ${type} devices in ${roomName}`, result.errors);
+                return { success: false, reason: 'update_failed' };
+            }
+
+            deviceStateLogger.log('ACTION_EXECUTOR', `Successfully updated ${appliancesToUpdate.length} ${type} devices in ${roomName}`);
             return { success: true, reason: `${roomName} ${type} ${status ? 'turned on' : 'turned off'}` };
         };
 
         const updateAllDevices = async (status) => {
-             const updates = rooms.map(room => {
-                const updatedAppliances = room.appliances.map(app => ({ ...app, status }));
-                return Room.update(room.id, { appliances: updatedAppliances });
-            });
-            await Promise.all(updates);
+            deviceStateLogger.logVoiceCommand('updateAllDevices', transcript, { status });
+            
+            const roomUpdates = rooms.map(room => ({
+                roomId: room.id,
+                applianceUpdates: room.appliances.map(app => ({
+                    id: app.id,
+                    updates: { status }
+                }))
+            }));
+
+            // Use unified device state service for backend sync
+            const result = await deviceStateService.updateMultipleDevices(roomUpdates);
+            
+            if (!result.success) {
+                deviceStateLogger.logError('ACTION_EXECUTOR', 'Failed to update all devices', result.errors);
+                return { success: false, reason: 'update_failed' };
+            }
+
+            const totalDevices = rooms.reduce((total, room) => total + room.appliances.length, 0);
+            deviceStateLogger.log('ACTION_EXECUTOR', `Successfully updated ${totalDevices} devices`);
             return { success: true, reason: `All devices ${status ? 'turned on' : 'turned off'}` };
         };
         
         const updateSpecificSocket = async (status) => {
+            deviceStateLogger.logVoiceCommand('updateSpecificSocket', transcript, { status, roomNameForSocket, socketName });
+            
             if (!roomNameForSocket || !socketName) return { success: false, reason: "device_not_found" };
             const targetRoom = rooms.find(r => r.name.toLowerCase() === roomNameForSocket);
             if (!targetRoom) return { success: false, reason: "device_not_found" };
 
-            let deviceFound = false;
-            const updatedAppliances = targetRoom.appliances.map(app => {
-                if (app.type === 'smart_socket' && app.name.toLowerCase().includes(socketName)) {
-                    deviceFound = true;
-                    return { ...app, status };
-                }
-                return app;
-            });
+            const targetSocket = targetRoom.appliances.find(app => 
+                app.type === 'smart_socket' && app.name.toLowerCase().includes(socketName)
+            );
 
-            if (!deviceFound) return { success: false, reason: "device_not_found" };
+            if (!targetSocket) {
+                deviceStateLogger.log('ACTION_EXECUTOR', `Socket '${socketName}' not found in ${roomNameForSocket}`);
+                return { success: false, reason: "device_not_found" };
+            }
+
+            const roomUpdates = [{
+                roomId: targetRoom.id,
+                applianceUpdates: [{
+                    id: targetSocket.id,
+                    updates: { status }
+                }]
+            }];
+
+            // Use unified device state service for backend sync
+            const result = await deviceStateService.updateMultipleDevices(roomUpdates);
             
-            await Room.update(targetRoom.id, { appliances: updatedAppliances });
+            if (!result.success) {
+                deviceStateLogger.logError('ACTION_EXECUTOR', `Failed to update socket ${socketName}`, result.errors);
+                return { success: false, reason: 'update_failed' };
+            }
+
+            deviceStateLogger.log('ACTION_EXECUTOR', `Successfully updated socket ${socketName} in ${roomNameForSocket}`);
             return { success: true, reason: `${roomNameForSocket} ${socketName} socket ${status ? 'turned on' : 'turned off'}` };
         };
         
