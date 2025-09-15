@@ -176,56 +176,72 @@ class ActionExecutor {
             const targetRoom = rooms.find(r => r.name.toLowerCase() === roomName);
             if (!targetRoom) return { success: false, reason: "device_not_found" };
 
-            const appliancesToUpdate = targetRoom.appliances.filter(app => app.type === type);
+            // Filter appliances by type - ensure we only update the correct type
+            const appliancesToUpdate = targetRoom.appliances.filter(app => {
+                if (type === 'smart_lighting') {
+                    return app.type === 'smart_lighting';
+                } else if (type === 'smart_shading') {
+                    return app.type === 'smart_shading';
+                }
+                return app.type === type;
+            });
             
             if (appliancesToUpdate.length === 0) {
                 deviceStateLogger.log('ACTION_EXECUTOR', `No ${type} devices found in ${roomName}`);
                 return { success: false, reason: "device_not_found" };
             }
 
-            const applianceUpdates = appliancesToUpdate.map(app => ({
-                id: app.id,
-                updates: { status }
-            }));
-
-            const roomUpdates = [{
-                roomId: targetRoom.id,
-                applianceUpdates
-            }];
-
-            // Use unified device state service for backend sync
-            const result = await deviceStateService.updateMultipleDevices(roomUpdates);
+            // Update each device individually to prevent cross-contamination
+            const updatePromises = appliancesToUpdate.map(appliance => 
+                deviceStateService.updateDeviceState(targetRoom.id, appliance.id, { status })
+            );
             
-            if (!result.success) {
-                deviceStateLogger.logError('ACTION_EXECUTOR', `Failed to update ${type} devices in ${roomName}`, result.errors);
+            const results = await Promise.all(updatePromises);
+            const successCount = results.filter(r => r.success).length;
+            
+            if (successCount === 0) {
+                deviceStateLogger.logError('ACTION_EXECUTOR', `Failed to update any ${type} devices in ${roomName}`);
                 return { success: false, reason: 'update_failed' };
             }
+            
+            if (successCount < appliancesToUpdate.length) {
+                deviceStateLogger.log('ACTION_EXECUTOR', `Partially updated ${successCount} of ${appliancesToUpdate.length} ${type} devices in ${roomName}`);
+                return { success: true, reason: `Some ${roomName} ${type} ${status ? 'turned on' : 'turned off'}` };
+            }
 
-            deviceStateLogger.log('ACTION_EXECUTOR', `Successfully updated ${appliancesToUpdate.length} ${type} devices in ${roomName}`);
+            deviceStateLogger.log('ACTION_EXECUTOR', `Successfully updated ${successCount} ${type} devices in ${roomName}`);
             return { success: true, reason: `${roomName} ${type} ${status ? 'turned on' : 'turned off'}` };
         };
 
         const updateAllDevices = async (status) => {
             deviceStateLogger.logVoiceCommand('updateAllDevices', transcript, { status });
             
-            const roomUpdates = rooms.map(room => ({
-                roomId: room.id,
-                applianceUpdates: room.appliances.map(app => ({
-                    id: app.id,
-                    updates: { status }
-                }))
-            }));
-
-            // Use unified device state service for backend sync
-            const result = await deviceStateService.updateMultipleDevices(roomUpdates);
+            // Update each room's devices individually
+            const updatePromises = [];
             
-            if (!result.success) {
-                deviceStateLogger.logError('ACTION_EXECUTOR', 'Failed to update all devices', result.errors);
+            for (const room of rooms) {
+                for (const appliance of room.appliances) {
+                    updatePromises.push(
+                        deviceStateService.updateDeviceState(room.id, appliance.id, { status })
+                    );
+                }
+            }
+            
+            const results = await Promise.all(updatePromises);
+            const successCount = results.filter(r => r.success).length;
+            const totalDevices = updatePromises.length;
+            
+            if (successCount === 0) {
+                deviceStateLogger.logError('ACTION_EXECUTOR', 'Failed to update any devices');
                 return { success: false, reason: 'update_failed' };
             }
+            
+            if (successCount < totalDevices) {
+                deviceStateLogger.log('ACTION_EXECUTOR', `Partially updated ${successCount} of ${totalDevices} devices`);
+                return { success: true, reason: `Some devices ${status ? 'turned on' : 'turned off'}` };
+            }
 
-            const totalDevices = rooms.reduce((total, room) => total + room.appliances.length, 0);
-            deviceStateLogger.log('ACTION_EXECUTOR', `Successfully updated ${totalDevices} devices`);
+            deviceStateLogger.log('ACTION_EXECUTOR', `Successfully updated ${successCount} devices`);
             return { success: true, reason: `All devices ${status ? 'turned on' : 'turned off'}` };
         };
         
@@ -322,13 +338,19 @@ class ActionExecutor {
             case "all_devices_on": result = await updateAllDevices(true); break;
             case "all_devices_off": result = await updateAllDevices(false); break;
             
-            // Lighting
+            // Lighting - ensure proper device type filtering
             case "lights_all_on": result = await updateAllAppliances('smart_lighting', true); break;
             case "lights_all_off": result = await updateAllAppliances('smart_lighting', false); break;
-            case "lights_room_on": result = await updateRoomAppliances('smart_lighting', true); break;
-            case "lights_room_off": result = await updateRoomAppliances('smart_lighting', false); break;
+            case "lights_room_on": 
+                // Only update lighting devices in the specific room
+                result = await updateRoomAppliances('smart_lighting', true); 
+                break;
+            case "lights_room_off": 
+                // Only update lighting devices in the specific room
+                result = await updateRoomAppliances('smart_lighting', false); 
+                break;
 
-            // Shading - sync with safety systems
+            // Shading - ensure only window/shading devices are updated
             case "windows_all_open": 
                 result = await updateAllAppliances('smart_shading', true);
                 await syncShadesWithSafety('window', true);
@@ -338,10 +360,12 @@ class ActionExecutor {
                 await syncShadesWithSafety('window', false);
                 break;
             case "windows_room_open": 
+                // Only update shading devices in the specific room
                 result = await updateRoomAppliances('smart_shading', true);
                 await syncShadesWithSafety('window', true, roomName);
                 break;
             case "windows_room_close": 
+                // Only update shading devices in the specific room
                 result = await updateRoomAppliances('smart_shading', false);
                 await syncShadesWithSafety('window', false, roomName);
                 break;

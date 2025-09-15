@@ -212,15 +212,22 @@ class DeviceStateService {
           continue;
         }
 
+        // Create a copy of appliances to work with
         let updatedAppliances = [...room.appliances];
         const childDeviceUpdates: Array<{ id: string; state: any }> = [];
 
-        // Apply updates to appliances
+        // Apply updates ONLY to specified appliances - this is critical
         for (const applianceUpdate of roomUpdate.applianceUpdates) {
           const applianceIndex = updatedAppliances.findIndex(app => app.id === applianceUpdate.id);
           if (applianceIndex !== -1) {
             const oldAppliance = updatedAppliances[applianceIndex];
-            const newAppliance = { ...oldAppliance, ...applianceUpdate.updates };
+            
+            // Only update the specified fields, preserve all other properties
+            const newAppliance = { 
+              ...oldAppliance, 
+              ...applianceUpdate.updates 
+            };
+            
             updatedAppliances[applianceIndex] = newAppliance;
 
             deviceStateLogger.logStateChange(
@@ -245,11 +252,22 @@ class DeviceStateService {
                 }
               });
             }
+          } else {
+            deviceStateLogger.logError('DEVICE_STATE_SERVICE', `Appliance ${applianceUpdate.id} not found in room`);
+            errors.push(`Appliance ${applianceUpdate.id} not found`);
           }
         }
 
-        // Update room appliances
-        await Room.update(roomUpdate.roomId, { appliances: updatedAppliances });
+        // Update room appliances with the modified array
+        const { error: roomError } = await supabase
+          .from('rooms')
+          .update({ appliances: updatedAppliances as any })
+          .eq('id', roomUpdate.roomId);
+          
+        if (roomError) {
+          errors.push(`Failed to update room: ${roomError.message}`);
+          deviceStateLogger.logError('DEVICE_STATE_SERVICE', 'Failed to update room', roomError);
+        }
 
         // Update child devices in batch
         for (const childUpdate of childDeviceUpdates) {
@@ -260,6 +278,7 @@ class DeviceStateService {
 
           if (error) {
             errors.push(`Failed to update child device ${childUpdate.id}: ${error.message}`);
+            deviceStateLogger.logError('DEVICE_STATE_SERVICE', 'Failed to update child device', error);
           }
         }
       }

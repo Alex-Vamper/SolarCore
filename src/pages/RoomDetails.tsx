@@ -309,13 +309,32 @@ export default function RoomDetails() {
       }
 
       const allOn = room.appliances.every(app => app.status);
-      const updatedAppliances = room.appliances.map(app => ({
-        ...app,
-        status: !allOn
-      }));
-
-      await Room.update(room.id, { appliances: updatedAppliances });
-      setRoom(prev => ({ ...prev, appliances: updatedAppliances }));
+      const newStatus = !allOn;
+      
+      // Update each appliance individually using deviceStateService
+      // This ensures proper backend sync and prevents state contamination
+      const updatePromises = room.appliances.map(appliance => 
+        deviceStateService.updateDeviceState(room.id, appliance.id, { status: newStatus })
+      );
+      
+      const results = await Promise.all(updatePromises);
+      const allSuccessful = results.every(r => r.success);
+      
+      if (allSuccessful) {
+        // Reload room to get fresh state
+        await loadRoom();
+        
+        toast({
+          title: "Success",
+          description: `All devices turned ${newStatus ? 'on' : 'off'}`,
+        });
+      } else {
+        toast({
+          title: "Partial Update",
+          description: "Some devices may not have updated correctly.",
+          variant: "destructive"
+        });
+      }
       
       // Invalidate cache when changes are made
       deviceCapabilitiesCache.invalidateCache();
