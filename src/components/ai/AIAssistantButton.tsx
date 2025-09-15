@@ -78,8 +78,33 @@ export default function AIAssistantButton() {
     useEffect(() => {
         loadSettings();
         window.addEventListener('anderSettingsChanged', loadSettings);
-        return () => window.removeEventListener('anderSettingsChanged', loadSettings);
-    }, []);
+        
+        // Handle playing "All Systems Check" audio
+        const handlePlayAllSystemsCheck = async () => {
+            try {
+                const allCommands = await GlobalVoiceCommand.list();
+                const systemsCheckCommand = allCommands.find(c => 
+                    c.command_name === 'All Systems Check' || 
+                    c.command_name === 'all_systems_check'
+                );
+                
+                if (systemsCheckCommand && voiceResponseEnabled) {
+                    const responseText = systemsCheckCommand.response_text || "All systems are optimal";
+                    setResponseMessage(responseText);
+                    await voiceProcessor.current.speakResponse(responseText, systemsCheckCommand.audio_url);
+                }
+            } catch (error) {
+                console.error("Error playing systems check audio:", error);
+            }
+        };
+        
+        window.addEventListener('playAllSystemsCheckAudio', handlePlayAllSystemsCheck);
+        
+        return () => {
+            window.removeEventListener('anderSettingsChanged', loadSettings);
+            window.removeEventListener('playAllSystemsCheckAudio', handlePlayAllSystemsCheck);
+        };
+    }, [voiceResponseEnabled]);
 
     const handlePointerDown = (e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;

@@ -8,6 +8,7 @@ import { useSecurityState } from "@/hooks/useSecurityState";
 import { WindowControlService } from "@/services/WindowControlService";
 import { SystemsCheckService } from "@/services/SystemsCheckService";
 import SystemsCheckModal from "./SystemsCheckModal";
+import SystemsCheckStateService from "@/services/SystemsCheckState";
 import { 
   Lightbulb, 
   Move, 
@@ -15,7 +16,8 @@ import {
   Lock,
   Unlock,
   Loader2,
-  Eye
+  Eye,
+  X
 } from "lucide-react";
 
 interface QuickActionsProps {
@@ -31,11 +33,46 @@ export default function QuickActions({ onAction }: QuickActionsProps) {
   const [systemsCheckResults, setSystemsCheckResults] = useState<any[]>([]);
   const [systemsCheckText, setSystemsCheckText] = useState<string[]>([]);
   const [showSystemsResult, setShowSystemsResult] = useState(false);
+  const [persistentSystemsCheck, setPersistentSystemsCheck] = useState<any>(null);
   const { isDoorLocked, updateSecurityState } = useSecurityState();
 
   useEffect(() => {
     checkLightStatus();
     checkWindowStatus();
+    
+    // Load persistent systems check result
+    const result = SystemsCheckStateService.get();
+    if (result && result.isVisible) {
+      setPersistentSystemsCheck(result);
+      setShowSystemsResult(true);
+      setSystemsCheckResults(result.systems);
+    }
+    
+    // Listen for external systems check trigger (from voice command)
+    const handleExternalSystemsCheck = () => {
+      handleAction('systems_check');
+    };
+    
+    // Listen for systems check result updates
+    const handleResultUpdated = (event: CustomEvent) => {
+      const result = event.detail;
+      if (result && result.isVisible) {
+        setPersistentSystemsCheck(result);
+        setShowSystemsResult(true);
+        setSystemsCheckResults(result.systems);
+      } else {
+        setPersistentSystemsCheck(null);
+        setShowSystemsResult(false);
+      }
+    };
+    
+    window.addEventListener('triggerSystemsCheck', handleExternalSystemsCheck);
+    window.addEventListener('systemsCheckResultUpdated', handleResultUpdated as EventListener);
+    
+    return () => {
+      window.removeEventListener('triggerSystemsCheck', handleExternalSystemsCheck);
+      window.removeEventListener('systemsCheckResultUpdated', handleResultUpdated as EventListener);
+    };
   }, []);
 
   const checkWindowStatus = async () => {
@@ -133,6 +170,7 @@ export default function QuickActions({ onAction }: QuickActionsProps) {
     try {
       setSystemsCheckText([]);
       setShowSystemsResult(false);
+      setPersistentSystemsCheck(null);
       
       // Simulate checking systems with scrolling text
       const checkingMessages = [
@@ -154,9 +192,19 @@ export default function QuickActions({ onAction }: QuickActionsProps) {
       const results = await SystemsCheckService.checkAllSystems();
       setSystemsCheckResults(results);
       setShowSystemsResult(true);
+      
+      // Save to persistent state
+      SystemsCheckStateService.save(results);
 
-      // Play audio if enabled
-      await SystemsCheckService.playSystemsCheckAudio();
+      // Check if Ander AI and voice response are enabled
+      const userSettings = await UserSettings.list();
+      if (userSettings.length > 0) {
+        const settings = userSettings[0];
+        if (settings.ander_enabled && settings.voice_response_enabled) {
+          // Dispatch event to play the "All Systems Check" voice command audio
+          window.dispatchEvent(new CustomEvent('playAllSystemsCheckAudio'));
+        }
+      }
     } catch (error) {
       console.error("Error checking systems:", error);
       setShowSystemsResult(true);
@@ -186,28 +234,32 @@ export default function QuickActions({ onAction }: QuickActionsProps) {
       id: "toggle_lights",
       title: allLightsOn ? "Turn Off Lights" : "Turn On Lights",
       icon: Lightbulb,
-      color: allLightsOn ? "bg-yellow-500" : "bg-gray-400",
+      bgColor: allLightsOn ? "bg-yellow-500 hover:bg-yellow-600" : "bg-gray-500 hover:bg-gray-600",
+      iconColor: "text-white",
       description: allLightsOn ? "Turn off all lights" : "Turn on all lights"
     },
     {
       id: "window_control",
       title: windowsOpen ? "Close Windows" : "Open Windows",
       icon: Move,
-      color: windowsOpen ? "bg-blue-500" : "bg-gray-400",
+      bgColor: windowsOpen ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-500 hover:bg-gray-600",
+      iconColor: "text-white",
       description: windowsOpen ? "Close all windows" : "Open all windows"
     },
     {
       id: "systems_check",
       title: "Systems Check",
       icon: Shield,
-      color: "bg-green-500",
+      bgColor: "bg-green-500 hover:bg-green-600",
+      iconColor: "text-white",
       description: "Check all safety systems"
     },
     {
       id: "lock_toggle",
       title: isDoorLocked ? "Unlock House" : "Lock House",
       icon: isDoorLocked ? Unlock : Lock,
-      color: isDoorLocked ? "bg-orange-500" : "bg-blue-500",
+      bgColor: isDoorLocked ? "bg-orange-500 hover:bg-orange-600" : "bg-blue-600 hover:bg-blue-700",
+      iconColor: "text-white",
       description: isDoorLocked ? "Unlock doors and disable security" : "Lock doors and enable security"
     }
   ];
@@ -225,24 +277,29 @@ export default function QuickActions({ onAction }: QuickActionsProps) {
               const isLoading = loadingStates[action.id];
               
               return (
-                <Button
+                <button
                   key={action.id}
-                  variant="outline"
-                  className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-gray-50 transition-colors"
+                  className={`
+                    h-auto p-4 flex flex-col items-center gap-2 
+                    ${action.bgColor} 
+                    rounded-lg transition-all duration-200 transform 
+                    hover:scale-105 hover:shadow-lg hover:animate-shimmer
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    ${isLoading ? 'cursor-wait' : 'cursor-pointer'}
+                    relative overflow-hidden
+                  `}
                   onClick={() => handleAction(action.id)}
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <Loader2 className="app-icon animate-spin" />
+                    <Loader2 className="w-8 h-8 text-white animate-spin" />
                   ) : (
-                    <div className={`w-8 h-8 rounded-lg ${action.color} flex items-center justify-center`}>
-                      <IconComponent className="w-4 h-4 text-white" />
-                    </div>
+                    <IconComponent className={`w-8 h-8 ${action.iconColor}`} />
                   )}
-                  <span className="app-text font-medium text-center">
+                  <span className="text-white font-medium text-center text-sm">
                     {action.title}
                   </span>
-                </Button>
+                </button>
               );
             })}
           </div>
@@ -260,34 +317,47 @@ export default function QuickActions({ onAction }: QuickActionsProps) {
             </div>
           )}
 
-          {/* Systems Check Result */}
+          {/* Systems Check Result - Persistent */}
           {showSystemsResult && !loadingStates["systems_check"] && (
-            <div className="mt-4 p-4 bg-green-50 rounded-lg text-center">
-              <Shield className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <p className="app-text font-semibold text-green-800">
-                {systemsCheckResults.length > 0 ? "All systems are optimal." : "No safety systems found."}
-              </p>
-              {systemsCheckResults.length > 0 ? (
-                <button 
-                  className="app-text text-sm text-green-600 hover:underline mt-1"
-                  onClick={() => setSystemsCheckModalOpen(true)}
-                >
-                  View Details
-                </button>
-              ) : (
-                <p className="app-text text-sm text-gray-600 mt-2">
-                  Please purchase devices from{" "}
-                  <a 
-                    href="https://solar-core-powered-living.vercel.app" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:underline"
-                  >
-                    solar-core-powered-living.vercel.app
-                  </a>{" "}
-                  and add them on the Safety page.
+            <div className="mt-4 p-4 bg-green-50 rounded-lg relative">
+              <button
+                onClick={() => {
+                  SystemsCheckStateService.hide();
+                  setShowSystemsResult(false);
+                  setPersistentSystemsCheck(null);
+                }}
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Close systems check result"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="text-center">
+                <Shield className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                <p className="app-text font-semibold text-green-800">
+                  {systemsCheckResults.length > 0 ? "All systems are optimal." : "No safety systems found."}
                 </p>
-              )}
+                {systemsCheckResults.length > 0 ? (
+                  <button 
+                    className="app-text text-sm text-green-600 hover:underline mt-1"
+                    onClick={() => setSystemsCheckModalOpen(true)}
+                  >
+                    View Details
+                  </button>
+                ) : (
+                  <p className="app-text text-sm text-gray-600 mt-2">
+                    Please purchase devices from{" "}
+                    <a 
+                      href="https://solar-core-powered-living.vercel.app" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      solar-core-powered-living.vercel.app
+                    </a>{" "}
+                    and add them on the Safety page.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </CardContent>

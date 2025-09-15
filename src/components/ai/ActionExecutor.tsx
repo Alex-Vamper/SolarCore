@@ -309,11 +309,17 @@ class ActionExecutor {
 
             // Non-state-changing actions
             case "wake_up":
-            case "system_check":
             case "energy_report":
             case "introduction":
             case "help":
                 result = { success: true, reason: "Action completed" };
+                break;
+            
+            // System check - trigger the systems check in QuickActions
+            case "system_check":
+            case "all_systems_check":
+                window.dispatchEvent(new CustomEvent('triggerSystemsCheck'));
+                result = { success: true, reason: "Systems check initiated" };
                 break;
             
             default:
