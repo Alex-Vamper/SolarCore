@@ -114,22 +114,45 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
     try {
       // Validate ESP ID and create child device if provided
       if (securitySettings.door_security_id) {
-        const { data: claimResult } = await supabase.rpc('claim_parent_device', {
+        const { data: claimResult, error: claimError } = await supabase.rpc('claim_parent_device', {
           p_esp_id: securitySettings.door_security_id.trim()
-        }) as any;
+        });
 
-        if (!claimResult?.success) {
-          if (claimResult?.code === 'UNREGISTERED_DEVICE') {
+        console.log('Claim result:', claimResult, 'Error:', claimError);
+
+        if (claimError) {
+          console.error('RPC error:', claimError);
+          toast({
+            title: "Error",
+            description: "Failed to validate device. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const result = claimResult as any;
+        if (!result?.success) {
+          if (result?.code === 'UNREGISTERED_DEVICE') {
             toast({
               title: "Invalid Device ID",
               description: "This device ID is not registered. Please check the ID and try again.",
               variant: "destructive",
             });
             return;
-          } else if (claimResult?.code === 'ALREADY_CLAIMED' && claimResult?.message !== 'Device already claimed by you') {
+          } else if (result?.code === 'ALREADY_CLAIMED') {
+            // Check if it's claimed by current user
+            if (result?.message !== 'Device already claimed by you') {
+              toast({
+                title: "Device Already Claimed",
+                description: "This device is already claimed by another account.",
+                variant: "destructive",
+              });
+              return;
+            }
+          } else {
             toast({
-              title: "Device Already Claimed",
-              description: "This device is already claimed by another user.",
+              title: "Error",
+              description: result?.message || "Failed to claim device.",
               variant: "destructive",
             });
             return;
@@ -138,31 +161,47 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
 
         // Create security device in child_devices table if it doesn't exist
         try {
-          // Get security device type
-          const { data: deviceTypes } = await supabase.rpc('get_device_types');
-          const securityDeviceType = (deviceTypes as any[])?.find(dt => 
-            dt.device_class === 'security' && dt.device_series === 'door_control'
-          );
-          
-          if (securityDeviceType && claimResult?.parent_id) {
-            // Create child device for security system
-            const { data: createResult, error: createError } = await supabase.rpc('create_child_device', {
-              p_parent_id: claimResult.parent_id,
-              p_device_type_id: securityDeviceType.id,
-              p_device_name: securitySettings.door_security_id,
-              p_initial_state: {
-                system_type: 'door_control',
-                room_name: 'Front Door',
-                lock_status: 'unlocked',
-                security_mode: 'home'
-              }
-            });
+          // Check if child device already exists for this parent
+          const { data: existingDevices } = await supabase
+            .from('child_devices')
+            .select('*')
+            .eq('parent_id', result?.parent_id)
+            .eq('device_name', securitySettings.door_security_id);
 
-            if (createError || !(createResult as any)?.success) {
-              console.error('Create security device error:', createError, createResult);
-              // Don't fail the save if device already exists
-              if (!(createResult as any)?.message?.includes('already has a child device')) {
-                throw new Error((createResult as any)?.message || 'Failed to create security device');
+          if (!existingDevices || existingDevices.length === 0) {
+            // Get security device type
+            const { data: deviceTypes } = await supabase.rpc('get_device_types');
+            const securityDeviceType = (deviceTypes as any[])?.find(dt => 
+              dt.device_class === 'security' && dt.device_series === 'door_control'
+            );
+            
+            if (securityDeviceType && result?.parent_id) {
+              // Create child device for security system
+              const { data: createResult, error: createError } = await supabase.rpc('create_child_device', {
+                p_parent_id: result.parent_id,
+                p_device_type_id: securityDeviceType.id,
+                p_device_name: securitySettings.door_security_id,
+                p_initial_state: {
+                  system_type: 'door_control',
+                  room_name: 'Front Door',
+                  lock_status: 'unlocked',
+                  security_mode: 'home'
+                }
+              });
+
+              if (createError || !(createResult as any)?.success) {
+                console.error('Create security device error:', createError, createResult);
+                const errorMessage = (createResult as any)?.message || createError?.message || 'Failed to create security device';
+                
+                // Only show error if it's not about already existing device
+                if (!errorMessage.includes('already has a child device') && !errorMessage.includes('already exists')) {
+                  toast({
+                    title: "Error",
+                    description: errorMessage,
+                    variant: "destructive",
+                  });
+                  return;
+                }
               }
             }
           }

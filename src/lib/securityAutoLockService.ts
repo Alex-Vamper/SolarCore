@@ -83,9 +83,20 @@ export class SecurityAutoLockService {
     console.log('Executing auto-lock device shutdown...');
 
     try {
-      // Get user settings to check exceptions
+      // Get user settings to check exceptions and auto-shutdown setting
       const userSettings = await UserSettings.list();
-      const shutdownExceptions = userSettings[0]?.security_settings?.shutdown_exceptions || [];
+      const securitySettings = userSettings[0]?.security_settings || {};
+      
+      // Check if auto shutdown is enabled
+      if (!securitySettings.auto_shutdown_enabled) {
+        console.log('Auto-shutdown is disabled in security settings. Skipping device shutdown.');
+        toast.info("Auto-shutdown disabled", {
+          description: "Devices will remain in their current state."
+        });
+        return;
+      }
+      
+      const shutdownExceptions = securitySettings.shutdown_exceptions || [];
       
       // Get all user rooms
       const rooms = await Room.list();

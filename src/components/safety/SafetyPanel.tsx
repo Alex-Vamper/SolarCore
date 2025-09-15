@@ -73,6 +73,11 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
       icon: Flame,
       color: "bg-red-500",
     },
+    rain_detection: {
+      name: "Rain Detection",
+      icon: CloudRain,
+      color: "bg-blue-500",
+    },
     window_rain: {
       name: "Rain Detection",
       icon: Droplets,
@@ -209,7 +214,7 @@ export default function SafetyPanel({ system, onManualOverride, onSystemSettings
           )}
 
           {/* Rain System Specific */}
-          {systemType === "window_rain" && (
+          {(systemType === "rain_detection" || systemType === "window_rain") && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
