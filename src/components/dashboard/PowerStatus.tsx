@@ -18,6 +18,16 @@ export default function PowerStatus({ userSettings, energyData }: PowerStatusPro
   const powerSource = userSettings?.power_source || 'grid_only';
   const hasSolarId = userSettings?.solar_system_id;
   const hasGridId = userSettings?.grid_meter_id;
+  const setupCompleted = userSettings?.setup_completed;
+
+  // Display warning only if setup not completed and IDs not configured for digital power sources
+  const shouldShowWarning = () => {
+    if (powerSource === 'no_digital' || setupCompleted) return false;
+    if (powerSource === 'solar_only' && !hasSolarId) return true;
+    if (powerSource === 'grid_only' && !hasGridId) return true;
+    if (powerSource === 'solar_grid' && (!hasSolarId || !hasGridId)) return true;
+    return false;
+  };
   
   // Don't show if no digital connection
   if (powerSource === 'no_digital') {
@@ -57,15 +67,19 @@ export default function PowerStatus({ userSettings, energyData }: PowerStatusPro
     <Card className="glass-card border-0 shadow-lg">
       <CardHeader className="pb-3">
         <CardTitle className="app-heading flex items-center gap-2">
-          <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-            <Sun className="app-icon text-white" />
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${powerSource === 'grid_only' ? 'bg-blue-500' : 'bg-yellow-500'}`}>
+            {powerSource === 'grid_only' ? (
+              <Grid3x3 className="app-icon text-white" />
+            ) : (
+              <Sun className="app-icon text-white" />
+            )}
           </div>
           Power Status
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Warning if IDs not configured */}
-        {((powerSource === 'solar_only' || powerSource === 'solar_grid') && !hasSolarId) && (
+        {/* Warning if IDs not configured - only show if setup not completed */}
+        {shouldShowWarning() && (powerSource === 'solar_only' || powerSource === 'solar_grid') && !hasSolarId && (
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
             <p className="app-text text-yellow-800 flex items-center gap-2">
               <AlertCircle className="app-icon" />
@@ -73,7 +87,7 @@ export default function PowerStatus({ userSettings, energyData }: PowerStatusPro
             </p>
           </div>
         )}
-        {((powerSource === 'grid_only' || powerSource === 'solar_grid') && !hasGridId) && (
+        {shouldShowWarning() && (powerSource === 'grid_only' || powerSource === 'solar_grid') && !hasGridId && (
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-4">
             <p className="app-text text-blue-800 flex items-center gap-2">
               <AlertCircle className="app-icon" />

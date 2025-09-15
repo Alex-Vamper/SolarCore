@@ -128,13 +128,15 @@ export default function EnergyOverview({ energyData }) {
             <div>
               <h3 className="app-text font-semibold text-gray-900 mb-1">Energy Tip</h3>
               <p className="app-text text-gray-600">
-                {data.solar_percentage > 50 
-                  ? "Your solar panels are performing well today! Consider running heavy appliances now to maximize solar usage."
-                  : "Solar generation is low. Consider using energy-efficient appliances to reduce costs."
+                {powerSource === 'grid_only' 
+                  ? "You seem to be out of units. Consider using the Billings tab on the Energy page to top-up soon."
+                  : data.solar_percentage > 50 
+                    ? "Your solar panels are performing well today! Consider running heavy appliances now to maximize solar usage."
+                    : "Solar generation is low. Consider using energy-efficient appliances to reduce costs."
                 }
               </p>
               <Badge className="mt-2 bg-green-100 text-green-800 border-green-200">
-                {data.solar_percentage > 50 ? "Optimal time" : "Energy saving"}
+                {powerSource === 'grid_only' ? "Units low" : data.solar_percentage > 50 ? "Optimal time" : "Energy saving"}
               </Badge>
             </div>
           </div>
