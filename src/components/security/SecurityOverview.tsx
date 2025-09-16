@@ -154,20 +154,21 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   // Monitor security state changes for auto-lock
   useEffect(() => {
     const isLockedAndAway = isDoorLocked && isSecurityMode;
+    const autoShutdownEnabled = securitySettings?.auto_shutdown_enabled;
     
-    if (isLockedAndAway && !SecurityAutoLockService.isCountdownRunning()) {
-      // Start auto-lock countdown when entering "Locked & Away" state
+    if (isLockedAndAway && autoShutdownEnabled && !SecurityAutoLockService.isCountdownRunning()) {
+      // Start auto-lock countdown only when both conditions are met
       SecurityAutoLockService.startAutoLockCountdown();
       setIsAutoLockActive(true);
-    } else if (!isLockedAndAway && SecurityAutoLockService.isCountdownRunning()) {
-      // Cancel auto-lock countdown when leaving "Locked & Away" state
+    } else if ((!isLockedAndAway || !autoShutdownEnabled) && SecurityAutoLockService.isCountdownRunning()) {
+      // Cancel auto-lock countdown when conditions are no longer met
       SecurityAutoLockService.cancelAutoLockCountdown();
       setIsAutoLockActive(false);
     }
 
     // Update auto-lock status for UI display
     setIsAutoLockActive(SecurityAutoLockService.isCountdownRunning());
-  }, [isDoorLocked, isSecurityMode]);
+  }, [isDoorLocked, isSecurityMode, securitySettings?.auto_shutdown_enabled]);
 
   // Update countdown timer display
   useEffect(() => {
