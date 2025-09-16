@@ -20,7 +20,7 @@ import AIAssistantButton from "@/components/ai/AIAssistantButton";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import LaunchGate from "@/components/LaunchGate";
 import PostLaunchSplash from "@/components/PostLaunchSplash";  // 👈 import splash
-import { useSecurityState } from "@/hooks/useSecurityState";
+import { SecurityProvider } from "@/contexts/SecurityContext";
 import { useCrossSystemSync } from "@/hooks/useCrossSystemSync";
 import solarcore from "../assets/SolarCore-1.svg";
 import { useAuth } from "@/hooks/useAuth";
@@ -184,7 +184,6 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   // Initialize global hooks
-  useSecurityState(); // Initialize security state listener globally
   useCrossSystemSync(); // Initialize cross-system synchronization
   
   // Preview key for development access
@@ -193,25 +192,27 @@ export default function Layout({ children }: LayoutProps) {
   const { session } = useAuth();
 
   return (
-    <div className="min-h-screen bg-solarcore-gray flex flex-col lg:flex-row">
-      <ScrollToTop />
-      <SideNav />
-      <TopBar />
+    <SecurityProvider>
+      <div className="min-h-screen bg-solarcore-gray flex flex-col lg:flex-row">
+        <ScrollToTop />
+        <SideNav />
+        <TopBar />
 
-      <div className="flex-1 lg:pl-64">
-        <DesktopHeader />
-        <main className="flex-1 overflow-auto pb-24 lg:pb-6">
-          {/* LaunchGate and PostLaunchSplash now use admin-controlled backend launch dates */}
-          <LaunchGate serverTimeUrl={serverTimeUrl}>
-            <PostLaunchSplash userId={session?.user?.id ?? null}>
-              {children || <Outlet />}
-            </PostLaunchSplash>
-          </LaunchGate>
-        </main>
+        <div className="flex-1 lg:pl-64">
+          <DesktopHeader />
+          <main className="flex-1 overflow-auto pb-24 lg:pb-6">
+            {/* LaunchGate and PostLaunchSplash now use admin-controlled backend launch dates */}
+            <LaunchGate serverTimeUrl={serverTimeUrl}>
+              <PostLaunchSplash userId={session?.user?.id ?? null}>
+                {children || <Outlet />}
+              </PostLaunchSplash>
+            </LaunchGate>
+          </main>
+        </div>
+
+        <AIAssistantButton />
+        <BottomNav />
       </div>
-
-      <AIAssistantButton />
-      <BottomNav />
-    </div>
+    </SecurityProvider>
   );
 }

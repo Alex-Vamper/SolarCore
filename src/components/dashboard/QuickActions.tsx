@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Room, UserSettings } from "@/entities/all";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { useSecurityState } from "@/hooks/useSecurityState";
+import { useSecurityContext } from "@/contexts/SecurityContext";
 import { WindowControlService } from "@/services/WindowControlService";
 import { SystemsCheckService } from "@/services/SystemsCheckService";
 import SystemsCheckModal from "./SystemsCheckModal";
@@ -34,7 +34,7 @@ export default function QuickActions({ onAction }: QuickActionsProps) {
   const [systemsCheckText, setSystemsCheckText] = useState<string[]>([]);
   const [showSystemsResult, setShowSystemsResult] = useState(false);
   const [persistentSystemsCheck, setPersistentSystemsCheck] = useState<any>(null);
-  const { isDoorLocked, updateSecurityState } = useSecurityState();
+  const { isDoorLocked, updateSecurityState } = useSecurityContext();
 
   useEffect(() => {
     checkLightStatus();
