@@ -24,9 +24,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   const [isArming, setIsArming] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [securitySettings, setSecuritySettings] = useState(null);
-  const [isAutoLockActive, setIsAutoLockActive] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
-  const [autoLockSessionId, setAutoLockSessionId] = useState(null);
 
   const speak = (text, repeat = 1) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -79,20 +77,14 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
             const locked = securitySystem.lock_status === 'locked';
             const away = securitySystem.security_mode === 'away';
             
-            // Generate session ID when loading locked and away state from backend
-            const currentSessionId = `${locked}_${away}_${securitySystem.last_action || Date.now()}`;
-            const storedSessionId = localStorage.getItem('autoLockSessionId');
-            
             setIsDoorLocked(locked);
             setIsSecurityMode(away);
-            setAutoLockSessionId(currentSessionId);
-            
+
             localStorage.setItem('securityState', JSON.stringify({ 
               isDoorLocked: locked, 
               isSecurityMode: away,
-              sessionId: currentSessionId
+              sessionId: `${locked}_${away}_${securitySystem.last_action || Date.now()}`
             }));
-            localStorage.setItem('autoLockSessionId', currentSessionId);
           }
         } catch (err) {
           console.error('Error hydrating security state from backend:', err);
@@ -123,10 +115,10 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     const securityState = {
       isDoorLocked,
       isSecurityMode,
-      sessionId: autoLockSessionId
+      sessionId: `${isDoorLocked}_${isSecurityMode}_${Date.now()}`
     };
     localStorage.setItem('securityState', JSON.stringify(securityState));
-  }, [isDoorLocked, isSecurityMode, autoLockSessionId]);
+  }, [isDoorLocked, isSecurityMode]);
 
   // Listen for global state changes from voice commands
   useEffect(() => {
@@ -165,78 +157,28 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     };
   }, [onSecurityModeToggle]);
 
-  // Monitor security state changes for auto-lock
-  useEffect(() => {
-    const isLockedAndAway = isDoorLocked && isSecurityMode;
-    const autoShutdownEnabled = securitySettings?.auto_shutdown_enabled;
-    
-    // Check if auto-lock has already run for this session
-    const completedSessionsJson = localStorage.getItem('autoLockCompletedSessions');
-    const completedSessions = completedSessionsJson ? JSON.parse(completedSessionsJson) : [];
-    const hasAlreadyCompletedAutoLock = autoLockSessionId && completedSessions.includes(autoLockSessionId);
-    
-    if (isLockedAndAway && autoShutdownEnabled && !SecurityAutoLockService.isCountdownRunning() && !hasAlreadyCompletedAutoLock) {
-      // Start auto-lock countdown only when both conditions are met and hasn't run for this session
-      SecurityAutoLockService.startAutoLockCountdown();
-      setIsAutoLockActive(true);
-      
-      // Mark this session as having auto-lock started
-      if (autoLockSessionId) {
-        const startedSessionsJson = localStorage.getItem('autoLockStartedSessions');
-        const startedSessions = startedSessionsJson ? JSON.parse(startedSessionsJson) : [];
-        if (!startedSessions.includes(autoLockSessionId)) {
-          startedSessions.push(autoLockSessionId);
-          localStorage.setItem('autoLockStartedSessions', JSON.stringify(startedSessions));
-        }
-      }
-    } else if ((!isLockedAndAway || !autoShutdownEnabled) && SecurityAutoLockService.isCountdownRunning()) {
-      // Cancel auto-lock countdown when conditions are no longer met
-      SecurityAutoLockService.cancelAutoLockCountdown();
-      setIsAutoLockActive(false);
-    }
-
-    // Update auto-lock status for UI display
-    setIsAutoLockActive(SecurityAutoLockService.isCountdownRunning());
-  }, [isDoorLocked, isSecurityMode, securitySettings?.auto_shutdown_enabled, autoLockSessionId]);
-
-  // Update countdown timer display
+  // Update countdown timer display for UI
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     
-    if (isAutoLockActive) {
-      // Update remaining time immediately and then every second
-      const updateRemainingTime = () => {
-        const time = SecurityAutoLockService.getRemainingTime();
-        setRemainingTime(time);
-        
-        // Stop timer if countdown is complete
-        if (time <= 0) {
-          setIsAutoLockActive(false);
-          if (interval) {
-            clearInterval(interval);
-          }
-        }
-      };
+    const updateDisplay = () => {
+      const isActive = SecurityAutoLockService.isCountdownRunning();
+      const time = SecurityAutoLockService.getRemainingTime();
+      setRemainingTime(time);
       
-      updateRemainingTime(); // Initial update
-      interval = setInterval(updateRemainingTime, 1000); // Update every second
-    } else {
-      setRemainingTime(0);
-    }
+      // Continue updating if countdown is active
+      if (isActive && time > 0) {
+        interval = setTimeout(updateDisplay, 1000);
+      }
+    };
+
+    // Initial update and start interval
+    updateDisplay();
 
     return () => {
       if (interval) {
-        clearInterval(interval);
+        clearTimeout(interval);
       }
-    };
-  }, [isAutoLockActive]);
-
-  // Cleanup on unmount - but preserve auto-lock countdown
-  useEffect(() => {
-    return () => {
-      // Don't cleanup auto-lock service on component unmount
-      // The auto-lock should persist across page navigation
-      // SecurityAutoLockService.cleanup();
     };
   }, []);
 
@@ -295,10 +237,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
         }
       }
       
-      // Update local state and create new session ID for state changes
-      const newSessionId = `${newLockState}_${newLockState}_${Date.now()}`;
-      setAutoLockSessionId(newSessionId);
-      
+      // Update local state
       if (newLockState) {
         setIsDoorLocked(true);
         setIsSecurityMode(true);
@@ -376,10 +315,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
         }
       }
       
-      // Update local state and create new session ID for state changes
-      const newSessionId = `${newSecurityMode ? true : isDoorLocked}_${newSecurityMode}_${Date.now()}`;
-      setAutoLockSessionId(newSessionId);
-      
+      // Update local state
       if (newSecurityMode) {
         if (!isDoorLocked) {
           setIsDoorLocked(true);
@@ -488,14 +424,14 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
           {/* Security Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className={`text-center p-3 rounded-lg ${
-              isAutoLockActive ? "bg-orange-50 border border-orange-200" : "bg-blue-50"
+              SecurityAutoLockService.isCountdownRunning() ? "bg-orange-50 border border-orange-200" : "bg-blue-50"
             }`}>
               <Power className={`w-6 h-6 mx-auto mb-2 ${
-                isAutoLockActive ? "text-orange-600" : "text-blue-600"
+                SecurityAutoLockService.isCountdownRunning() ? "text-orange-600" : "text-blue-600"
               }`} />
               <div className="text-sm font-medium text-gray-900 font-inter">Auto Power Off</div>
               <div className="text-xs text-gray-500 font-inter">
-                {isAutoLockActive ? "Countdown Active" : isSecurityMode ? "Armed" : "Inactive"}
+                {SecurityAutoLockService.isCountdownRunning() ? "Countdown Active" : isSecurityMode ? "Armed" : "Inactive"}
               </div>
             </div>
             <div className="text-center p-3 bg-purple-50 rounded-lg">
@@ -524,7 +460,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
             </Button>
           </div>
 
-          {isSecurityMode && !isAutoLockActive && (
+          {isSecurityMode && !SecurityAutoLockService.isCountdownRunning() && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800 font-inter">
                 <strong>Away Mode Active:</strong> Main door is locked and security system is engaged. All non-essential appliances are powered off automatically. Safety systems remain active.
@@ -532,7 +468,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
             </div>
           )}
 
-          {isAutoLockActive && (
+          {SecurityAutoLockService.isCountdownRunning() && (
             <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
               <p className="text-sm text-orange-800 font-inter">
                 <strong>Auto-Lock Countdown Active:</strong> All automation devices will turn off in <strong>{remainingTime} second{remainingTime !== 1 ? 's' : ''}</strong>. Change security mode to cancel. Devices in exceptions list will remain active.
