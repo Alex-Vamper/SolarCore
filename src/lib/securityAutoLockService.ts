@@ -166,6 +166,20 @@ export class SecurityAutoLockService {
         }));
       }
 
+      // Mark auto-lock as completed for this session
+      const securityStateJson = localStorage.getItem('securityState');
+      if (securityStateJson) {
+        const securityState = JSON.parse(securityStateJson);
+        if (securityState.sessionId) {
+          const completedSessionsJson = localStorage.getItem('autoLockCompletedSessions');
+          const completedSessions = completedSessionsJson ? JSON.parse(completedSessionsJson) : [];
+          if (!completedSessions.includes(securityState.sessionId)) {
+            completedSessions.push(securityState.sessionId);
+            localStorage.setItem('autoLockCompletedSessions', JSON.stringify(completedSessions));
+          }
+        }
+      }
+
       // Show completion toast
       toast.success("Auto-lock completed", {
         description: `${totalDevicesShutdown} devices turned off. Exceptions preserved.`

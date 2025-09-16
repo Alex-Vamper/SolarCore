@@ -26,6 +26,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   const [securitySettings, setSecuritySettings] = useState(null);
   const [isAutoLockActive, setIsAutoLockActive] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
+  const [autoLockSessionId, setAutoLockSessionId] = useState(null);
 
   const speak = (text, repeat = 1) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -77,9 +78,21 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
           if (securitySystem) {
             const locked = securitySystem.lock_status === 'locked';
             const away = securitySystem.security_mode === 'away';
+            
+            // Generate session ID when loading locked and away state from backend
+            const currentSessionId = `${locked}_${away}_${securitySystem.last_action || Date.now()}`;
+            const storedSessionId = localStorage.getItem('autoLockSessionId');
+            
             setIsDoorLocked(locked);
             setIsSecurityMode(away);
-            localStorage.setItem('securityState', JSON.stringify({ isDoorLocked: locked, isSecurityMode: away }));
+            setAutoLockSessionId(currentSessionId);
+            
+            localStorage.setItem('securityState', JSON.stringify({ 
+              isDoorLocked: locked, 
+              isSecurityMode: away,
+              sessionId: currentSessionId
+            }));
+            localStorage.setItem('autoLockSessionId', currentSessionId);
           }
         } catch (err) {
           console.error('Error hydrating security state from backend:', err);
@@ -109,10 +122,11 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
   useEffect(() => {
     const securityState = {
       isDoorLocked,
-      isSecurityMode
+      isSecurityMode,
+      sessionId: autoLockSessionId
     };
     localStorage.setItem('securityState', JSON.stringify(securityState));
-  }, [isDoorLocked, isSecurityMode]);
+  }, [isDoorLocked, isSecurityMode, autoLockSessionId]);
 
   // Listen for global state changes from voice commands
   useEffect(() => {
@@ -156,10 +170,25 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     const isLockedAndAway = isDoorLocked && isSecurityMode;
     const autoShutdownEnabled = securitySettings?.auto_shutdown_enabled;
     
-    if (isLockedAndAway && autoShutdownEnabled && !SecurityAutoLockService.isCountdownRunning()) {
-      // Start auto-lock countdown only when both conditions are met
+    // Check if auto-lock has already run for this session
+    const completedSessionsJson = localStorage.getItem('autoLockCompletedSessions');
+    const completedSessions = completedSessionsJson ? JSON.parse(completedSessionsJson) : [];
+    const hasAlreadyCompletedAutoLock = autoLockSessionId && completedSessions.includes(autoLockSessionId);
+    
+    if (isLockedAndAway && autoShutdownEnabled && !SecurityAutoLockService.isCountdownRunning() && !hasAlreadyCompletedAutoLock) {
+      // Start auto-lock countdown only when both conditions are met and hasn't run for this session
       SecurityAutoLockService.startAutoLockCountdown();
       setIsAutoLockActive(true);
+      
+      // Mark this session as having auto-lock started
+      if (autoLockSessionId) {
+        const startedSessionsJson = localStorage.getItem('autoLockStartedSessions');
+        const startedSessions = startedSessionsJson ? JSON.parse(startedSessionsJson) : [];
+        if (!startedSessions.includes(autoLockSessionId)) {
+          startedSessions.push(autoLockSessionId);
+          localStorage.setItem('autoLockStartedSessions', JSON.stringify(startedSessions));
+        }
+      }
     } else if ((!isLockedAndAway || !autoShutdownEnabled) && SecurityAutoLockService.isCountdownRunning()) {
       // Cancel auto-lock countdown when conditions are no longer met
       SecurityAutoLockService.cancelAutoLockCountdown();
@@ -168,7 +197,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
 
     // Update auto-lock status for UI display
     setIsAutoLockActive(SecurityAutoLockService.isCountdownRunning());
-  }, [isDoorLocked, isSecurityMode, securitySettings?.auto_shutdown_enabled]);
+  }, [isDoorLocked, isSecurityMode, securitySettings?.auto_shutdown_enabled, autoLockSessionId]);
 
   // Update countdown timer display
   useEffect(() => {
@@ -266,7 +295,10 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
         }
       }
       
-      // Update local state
+      // Update local state and create new session ID for state changes
+      const newSessionId = `${newLockState}_${newLockState}_${Date.now()}`;
+      setAutoLockSessionId(newSessionId);
+      
       if (newLockState) {
         setIsDoorLocked(true);
         setIsSecurityMode(true);
@@ -275,6 +307,10 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
         setIsDoorLocked(false);
         setIsSecurityMode(false);
         await onSecurityModeToggle(false);
+        
+        // Clear completed sessions when unlocking (new security cycle)
+        localStorage.removeItem('autoLockCompletedSessions');
+        localStorage.removeItem('autoLockStartedSessions');
       }
     } catch (error) {
       console.error('Error updating security state:', error);
@@ -340,7 +376,10 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
         }
       }
       
-      // Update local state
+      // Update local state and create new session ID for state changes
+      const newSessionId = `${newSecurityMode ? true : isDoorLocked}_${newSecurityMode}_${Date.now()}`;
+      setAutoLockSessionId(newSessionId);
+      
       if (newSecurityMode) {
         if (!isDoorLocked) {
           setIsDoorLocked(true);
@@ -350,6 +389,10 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
       } else {
         setIsSecurityMode(false);
         await onSecurityModeToggle(false);
+        
+        // Clear completed sessions when switching to home mode (new security cycle)
+        localStorage.removeItem('autoLockCompletedSessions');
+        localStorage.removeItem('autoLockStartedSessions');
       }
     } catch (error) {
       console.error('Error updating security mode:', error);
