@@ -305,7 +305,7 @@ export default function Settings() {
                   </g>
                 </svg>
               </div>
-              S-C {/*Ander - Voice Commands*/}
+              Ander - Voice Commands
             </Button>
           </CardContent>
         </Card>
