@@ -1,7 +1,1 @@
 project_id = "kqlvmmvtskdevdsvzqiw"
-
-[functions.mqtt-bridge]
-verify_jwt = true
-
-[functions.process-audio-upload]
-verify_jwt = false
