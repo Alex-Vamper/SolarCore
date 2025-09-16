@@ -202,7 +202,55 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
                   });
                   return;
                 }
+              } else {
+                console.log('Security child device created successfully:', createResult);
+                
+                // Ensure user_settings security_settings is updated with the device info
+                try {
+                  const userSettings = await UserSettings.list();
+                  if (userSettings.length > 0) {
+                    const updatedSecuritySettings = {
+                      ...userSettings[0].security_settings,
+                      door_security_id: securitySettings.door_security_id,
+                      door_security_series: securitySettings.door_security_series,
+                      auto_shutdown_enabled: securitySettings.auto_shutdown_enabled,
+                      shutdown_exceptions: securitySettings.shutdown_exceptions
+                    };
+                    
+                    await UserSettings.update(userSettings[0].id!, {
+                      security_settings: updatedSecuritySettings
+                    });
+                    
+                    console.log('User settings updated with security device info');
+                  }
+                } catch (settingsError) {
+                  console.error('Error updating user settings:', settingsError);
+                }
               }
+            }
+          } else {
+            console.log('Security child device already exists, ensuring settings sync');
+            
+            // Device exists, ensure user_settings is synced
+            try {
+              const userSettings = await UserSettings.list();
+              if (userSettings.length > 0) {
+                const updatedSecuritySettings = {
+                  ...userSettings[0].security_settings,
+                  door_security_id: securitySettings.door_security_id,
+                  door_security_series: securitySettings.door_security_series,
+                  auto_shutdown_enabled: securitySettings.auto_shutdown_enabled,
+                  shutdown_exceptions: securitySettings.shutdown_exceptions
+                };
+                
+                await UserSettings.update(userSettings[0].id!, {
+                  security_settings: updatedSecuritySettings
+                });
+                
+                console.log('User settings synchronized with existing security device');
+              }
+            } catch (settingsError) {
+              console.error('Error synchronizing user settings:', settingsError);
             }
           }
         } catch (deviceError) {
@@ -232,6 +280,8 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
   };
 
   const toggleDeviceException = (deviceId) => {
+    if (!deviceId) return;
+    
     setSecuritySettings(prev => ({
       ...prev,
       shutdown_exceptions: prev.shutdown_exceptions.includes(deviceId)
@@ -416,9 +466,9 @@ export default function SecuritySettingsModal({ isOpen, onClose, onSave }) {
                             {device.room_name} • {device.series}
                           </div>
                         </div>
-                        <Switch
-                          checked={securitySettings.shutdown_exceptions.includes(device.id)}
-                          onCheckedChange={() => toggleDeviceException(device.id)}
+                         <Switch
+                          checked={securitySettings.shutdown_exceptions.includes(device.child_device_id || device.id)}
+                          onCheckedChange={() => toggleDeviceException(device.child_device_id || device.id)}
                         />
                       </div>
                     ))}
