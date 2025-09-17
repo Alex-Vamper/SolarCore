@@ -76,6 +76,7 @@ export default function Ander() {
   const logoClickTimer = useRef(null);
   const [isValidatingDeviceId, setIsValidatingDeviceId] = useState(false);
   const [deviceIdError, setDeviceIdError] = useState('');
+  const [deviceValidated, setDeviceValidated] = useState(false);
 
   const loadAllCommands = async () => {
     try {
@@ -140,8 +141,9 @@ export default function Ander() {
         const settings = settingsResult[0];
         setVoiceResponseEnabled(settings.voice_response_enabled ?? true);
         setAnderEnabled(settings.ander_enabled ?? false);
-        setSubscriptionPlan(settings.subscription_plan ?? 'free');
+        setSubscriptionPlan(settings.subscription_plan ?? 'none');
         setAnderDeviceId(settings.ander_device_id ?? '');
+        setDeviceValidated(!!settings.ander_device_id);
       }
     } catch (error) {
       console.error("Error loading user settings:", error);
@@ -352,24 +354,20 @@ export default function Ander() {
     }
   };
 
-  const validateAndUpdateDeviceId = async (deviceId: string) => {
-    const upperDeviceId = deviceId.toUpperCase();
-    setAnderDeviceId(upperDeviceId);
-    
-    if (!upperDeviceId) {
-      setDeviceIdError('');
-      await handleSettingUpdate({ ander_device_id: '' });
+  const handleValidateDevice = async () => {
+    if (!anderDeviceId) {
+      setDeviceIdError('Please enter a device ID');
       return;
     }
 
     // Simple validation for Ander IA device format
-    if (!upperDeviceId.startsWith('SC-GID-')) {
+    if (!anderDeviceId.startsWith('SC-GID-')) {
       setDeviceIdError('Invalid format. Ander IA device IDs start with SC-GID-');
       return;
     }
 
     // Extract the number part and validate it's in range
-    const numberPart = upperDeviceId.replace('SC-GID-', '');
+    const numberPart = anderDeviceId.replace('SC-GID-', '');
     const deviceNumber = parseInt(numberPart, 10);
     
     if (isNaN(deviceNumber) || deviceNumber < 1 || deviceNumber > 100 || numberPart.length !== 4) {
@@ -377,9 +375,43 @@ export default function Ander() {
       return;
     }
 
+    setIsValidatingDeviceId(true);
     setDeviceIdError('');
-    await handleSettingUpdate({ ander_device_id: upperDeviceId });
-    toast.success('Device ID validated successfully');
+
+    try {
+      await validateAndClaimDevice(anderDeviceId);
+      await handleSettingUpdate({ ander_device_id: anderDeviceId });
+      setDeviceValidated(true);
+      toast.success('Device ID validated and saved successfully!');
+    } catch (error) {
+      if (error.message.includes('already claimed')) {
+        setDeviceIdError('This device is already claimed by another account');
+        toast.error('Device already claimed by another account');
+      } else if (error.message.includes('not registered')) {
+        setDeviceIdError('Device ID not found in system registry');
+        toast.error('Device ID not registered in the system');
+      } else {
+        setDeviceIdError('Validation failed. Please try again.');
+        toast.error(error.message || 'Device validation failed');
+      }
+    } finally {
+      setIsValidatingDeviceId(false);
+    }
+  };
+
+  const handleDeleteDevice = async () => {
+    try {
+      setIsValidatingDeviceId(true);
+      await handleSettingUpdate({ ander_device_id: '' });
+      setAnderDeviceId('');
+      setDeviceValidated(false);
+      setDeviceIdError('');
+      toast.success('Device configuration removed');
+    } catch (error) {
+      toast.error('Failed to remove device configuration');
+    } finally {
+      setIsValidatingDeviceId(false);
+    }
   };
 
   const handleVoiceResponseToggle = async (enabled) => {
@@ -388,28 +420,30 @@ export default function Ander() {
   };
 
   const handleAnderToggle = async (enabled) => {
-    // If enabling Ander, validate device ID first
-    if (enabled && !anderDeviceId) {
-      toast.error("Please configure your Ander device ID first");
-      return;
-    }
-    
-    if (enabled && anderDeviceId) {
-      try {
-        await validateAndClaimDevice(anderDeviceId);
-      } catch (error) {
-        toast.error(error.message || "Device validation failed");
+    // If enabling, validate device ID is configured and validated
+    if (enabled) {
+      if (!anderDeviceId) {
+        toast.error("Please configure and validate your Ander device ID first");
+        return;
+      }
+
+      // Check if device has been validated (stored in backend)
+      const settingsResult = await UserSettings.list();
+      const currentSettings = settingsResult.length > 0 ? settingsResult[0] : null;
+      
+      if (!currentSettings?.ander_device_id) {
+        toast.error("Please validate your device ID first");
+        return;
+      }
+
+      // For first-time enablement, show subscription modal
+      if (!anderEnabled && (subscriptionPlan === 'none' || subscriptionPlan === null || subscriptionPlan === 'free')) {
+        setShowSubscriptionModal(true);
         return;
       }
     }
     
-    // If user is trying to enable Ander for the first time, check subscription plan
-    if (enabled && (subscriptionPlan === 'none' || subscriptionPlan === null)) {
-      setShowSubscriptionModal(true);
-      return;
-    }
-    
-    // Otherwise, just toggle the state
+    // Toggle the state
     setAnderEnabled(enabled);
     await handleSettingUpdate({ ander_enabled: enabled });
   };
@@ -539,7 +573,7 @@ export default function Ander() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                {subscriptionPlan !== 'none' && (
+                {subscriptionPlan !== 'none' && deviceValidated && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -552,7 +586,7 @@ export default function Ander() {
                 <Switch
                   checked={anderEnabled}
                   onCheckedChange={handleAnderToggle}
-                  disabled={isLoading || !anderDeviceId}
+                  disabled={isLoading || !deviceValidated}
                 />
               </div>
             </div>
@@ -579,17 +613,37 @@ export default function Ander() {
               Device Configuration
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="anderDeviceId" className="font-inter">Ander ESP ID (e.g., SC-GID-0001)</Label>
-                <Input
-                  id="anderDeviceId"
-                  placeholder="Enter your Ander IA device ID"
-                  value={anderDeviceId}
-                  onChange={(e) => validateAndUpdateDeviceId(e.target.value)}
-                  className="mt-1 font-inter uppercase"
-                  disabled={isValidatingDeviceId}
-                />
+                <div className="flex gap-2 mt-1">
+                  <Input
+                    id="anderDeviceId"
+                    placeholder="Enter your Ander IA device ID"
+                    value={anderDeviceId}
+                    onChange={(e) => setAnderDeviceId(e.target.value.toUpperCase())}
+                    className="font-inter uppercase"
+                    disabled={isValidatingDeviceId}
+                  />
+                  <Button
+                    onClick={handleValidateDevice}
+                    disabled={!anderDeviceId || isValidatingDeviceId}
+                    variant="outline"
+                    className="whitespace-nowrap"
+                  >
+                    {isValidatingDeviceId ? "Validating..." : "Validate"}
+                  </Button>
+                  {anderDeviceId && (
+                    <Button
+                      onClick={handleDeleteDevice}
+                      disabled={isValidatingDeviceId}
+                      variant="destructive"
+                      size="icon"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
                 {deviceIdError && (
                   <p className="text-xs text-red-600 mt-1 font-inter flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3" />
@@ -678,21 +732,21 @@ export default function Ander() {
             );
           })}
 
-          {/* Admin-Only Fallback Commands */}
+          {/* Admin-Only Fallback Commands - Only visible in admin mode */}
           {isAdminMode && adminCommands.length > 0 && (
-            <Card className="glass-card border-2 border-orange-300 bg-orange-50/30 shadow-lg">
+            <Card className="glass-card border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50 shadow-xl ring-2 ring-amber-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-inter text-orange-800 capitalize">
+                <CardTitle className="flex items-center gap-2 text-lg font-inter text-amber-900 capitalize font-bold">
                   <ShieldCheck className="w-5 h-5"/>
                   Admin Commands
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {adminCommands.map((command) => (
-                  <div key={command.id} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <div key={command.id} className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-300 shadow-sm">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-orange-100 text-orange-800 border-orange-300 font-inter whitespace-normal text-left">
+                        <Badge className="bg-amber-100 text-amber-900 border-amber-400 font-inter whitespace-normal text-left font-semibold">
                           {command.command_name === '_admin_didnt_understand_' && "Didn't Understand Command"}
                           {command.command_name === '_admin_device_not_found_' && "User does not have the device"}
                           {command.command_name === '_admin_subscription_required_' && "User's subscription plan does not support command"}
@@ -704,8 +758,8 @@ export default function Ander() {
                         <button onClick={() => handleEditCommand(command)} title="Edit command" className="text-blue-600 hover:text-blue-700"><Pencil className="w-4 h-4" /></button>
                       </div>
                     </div>
-                    <p className="text-sm font-inter mb-1 italic text-orange-700">"{command.response_text || command.response}"</p>
-                    <p className="text-xs text-orange-600 font-inter">System response for when this situation occurs</p>
+                     <p className="text-sm font-inter mb-1 italic text-amber-800">"{command.response_text || command.response}"</p>
+                     <p className="text-xs text-amber-700 font-inter font-medium">System response for when this situation occurs</p>
                   </div>
                 ))}
               </CardContent>

@@ -55,8 +55,9 @@ export class UserSettingsService {
            emergency_contacts: settings.emergency_contacts as Json,
            ander_button_position: settings.ander_button_position as Json,
            security_settings: settings.security_settings as Json,
-           // Set default ander_enabled to false for new users
-           ander_enabled: settings.ander_enabled ?? false
+            // Set default ander_enabled to false for new users
+            ander_enabled: settings.ander_enabled ?? false,
+            voice_response_enabled: settings.voice_response_enabled ?? true
          }, {
            onConflict: 'user_id'
          })
@@ -69,7 +70,8 @@ export class UserSettingsService {
         building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
         power_source: data.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
         emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {},
-        ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 }
+        ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 },
+        voice_response_enabled: data.ander_enabled ? (data.voice_response_enabled ?? true) : false
       };
     } catch (error) {
       console.error('Error upserting user settings:', error);
@@ -92,7 +94,8 @@ export class UserSettingsService {
         ...item,
         building_type: item.building_type as "home" | "school" | "office" | "hospital" | "other",
         power_source: item.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
-        emergency_contacts: typeof (item as any).emergency_contacts === 'object' ? (item as any).emergency_contacts : {}
+        emergency_contacts: typeof (item as any).emergency_contacts === 'object' ? (item as any).emergency_contacts : {},
+        voice_response_enabled: item.ander_enabled ? (item.voice_response_enabled ?? true) : false
       }));
     } catch (error) {
       console.error('Error fetching user settings:', error);
@@ -121,7 +124,8 @@ export class UserSettingsService {
         building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
         power_source: data.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
         emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {},
-        ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 }
+        ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 },
+        voice_response_enabled: data.ander_enabled ? (data.voice_response_enabled ?? true) : false
       };
     } catch (error) {
       console.error('Error creating user settings:', error);
@@ -152,7 +156,8 @@ export class UserSettingsService {
         building_type: data.building_type as "home" | "school" | "office" | "hospital" | "other",
         power_source: data.power_source as "solar_only" | "grid_only" | "solar_grid" | "no_digital" | undefined,
         emergency_contacts: typeof (data as any).emergency_contacts === 'object' ? (data as any).emergency_contacts : {},
-        ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 }
+        ander_button_position: typeof (data as any).ander_button_position === 'object' ? (data as any).ander_button_position : { x: 20, y: 20 },
+        voice_response_enabled: data.ander_enabled ? (data.voice_response_enabled ?? true) : false
       };
     } catch (error) {
       console.error('Error updating user settings:', error);

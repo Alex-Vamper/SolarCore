@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, UserSettings } from "@/entities/all";
 import { GlobalVoiceCommand } from "@/entities/GlobalVoiceCommand";
+import { WiFiNetwork } from "@/entities/WiFiNetwork";
 import VoiceCommandProcessor from './VoiceCommandProcessor';
 import ActionExecutor from './ActionExecutor'; // Import the new executor
 import { motion, AnimatePresence } from 'framer-motion';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from 'sonner';
 const AILogoSVG = () => (
     <svg width="24" height="24" viewBox="0 0 100 100" className="w-8 h-8">
       <defs>
@@ -43,6 +45,7 @@ export default function AIAssistantButton() {
     const dragStartPoint = useRef({ x: 0, y: 0 });
     const userSettingsRef = useRef(null); // To store user settings object
     const systemFallbacksRef = useRef<{ unrecognized?: any; device_not_found?: any }>({});
+    const [showWiFiSetupModal, setShowWiFiSetupModal] = useState(false);
     
     const isMobile = useIsMobile();
     const voiceProcessor = useRef(new VoiceCommandProcessor());
@@ -182,6 +185,10 @@ export default function AIAssistantButton() {
     const handleClick = async () => {
         if (hasMoved || isListening) return;
 
+        // Check WiFi setup before allowing AI usage
+        const wifiCheckPassed = await checkWiFiSetup();
+        if (!wifiCheckPassed) return;
+
         setIsListening(true);
         setResponseMessage('');
         
@@ -238,6 +245,25 @@ export default function AIAssistantButton() {
         return () => clearTimeout(timer);
     }, [responseMessage]);
 
+    const checkWiFiSetup = async () => {
+        try {
+            const wifiNetworks = await WiFiNetwork.list();
+            if (wifiNetworks.length === 0) {
+                toast.error("WiFi Setup Required", {
+                    description: "Please configure your WiFi networks in Advanced System Settings > Connectivity before using the AI assistant.",
+                    action: {
+                        label: "Go to Settings",
+                        onClick: () => window.location.href = "/app/advanced-system-settings"
+                    }
+                });
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error("Error checking WiFi setup:", error);
+            return true; // Allow usage if check fails
+        }
+    };
 
     const getTextBoxPosition = () => {
         const isOnLeftHalf = position.x < window.innerWidth / 2;

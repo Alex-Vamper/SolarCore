@@ -201,6 +201,7 @@ export default function Settings() {
               <Switch
                 checked={userSettings?.notifications_enabled ?? true}
                 onCheckedChange={(checked) => handleSaveSettings({ notifications_enabled: checked })}
+                disabled={!(userSettings?.ander_enabled ?? false)}
               />
             </div>
 
