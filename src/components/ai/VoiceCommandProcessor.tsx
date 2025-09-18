@@ -5,16 +5,32 @@ export default class VoiceCommandProcessor {
   private isListening: boolean;
   private currentAudio: HTMLAudioElement | null;
   private commands: any[];
+  private userSettings: any | null;
 
-  constructor(commands: any[] = []) {
+  constructor(commands: any[] = [], userSettings: any = null) {
     this.recognition = null;
     this.isListening = false;
     this.currentAudio = null;
     this.commands = commands;
+    this.userSettings = userSettings;
   }
 
   setCommands(commands: any[]) {
     this.commands = commands;
+  }
+
+  setUserSettings(userSettings: any) {
+    this.userSettings = userSettings;
+  }
+
+  private determineResponseType(audioUrl?: string): 'tts-only' | 'audio-preferred' {
+    // Free plan users get TTS only, regardless of audio availability
+    if (this.userSettings?.subscription_plan === 'free') {
+      return 'tts-only';
+    }
+    
+    // Premium/Enterprise users get audio preferred with TTS fallback
+    return 'audio-preferred';
   }
 
   startListening(timeoutMs = 8000) {
@@ -145,7 +161,15 @@ export default class VoiceCommandProcessor {
         this.currentAudio = null;
       }
 
-      // If audio URL is provided, play pre-recorded audio
+      // Determine response type based on subscription plan
+      const responseType = this.determineResponseType(audioUrl);
+      
+      // Force TTS for free plan users
+      if (responseType === 'tts-only') {
+        return this.speakWithTTS(response);
+      }
+
+      // Premium/Enterprise: If audio URL is provided, play pre-recorded audio
       if (audioUrl) {
         return new Promise((resolve, reject) => {
           this.currentAudio = new Audio(audioUrl);

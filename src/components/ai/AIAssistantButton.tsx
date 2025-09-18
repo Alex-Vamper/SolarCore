@@ -62,6 +62,9 @@ export default function AIAssistantButton() {
                 setVoiceResponseEnabled(settings.voice_response_enabled ?? true);
                 const buttonPos = settings.ander_button_position || { x: 20, y: 20 };
                 setPosition(buttonPos);
+                
+                // Update voice processor with user settings
+                voiceProcessor.current.setUserSettings(settings);
             } else {
                 setAnderEnabled(false);
             }
@@ -73,6 +76,9 @@ export default function AIAssistantButton() {
                 unrecognized: unrec ? { ...unrec, response: unrec.response_text } : null,
                 device_not_found: devNotFound ? { ...devNotFound, response: devNotFound.response_text } : null
             };
+            
+            // Update voice processor with commands
+            voiceProcessor.current.setCommands(allCommands);
         } catch (error) {
             setAnderEnabled(false); 
         }
