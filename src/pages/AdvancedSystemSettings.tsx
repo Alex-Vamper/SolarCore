@@ -6,12 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Zap, Grid3x3, CheckCircle, Sun, Battery, WifiOff, ArrowLeft, Save, Wifi, Plus } from "lucide-react";
+import { AlertCircle, Zap, Grid3x3, CheckCircle, Sun, Battery, WifiOff, ArrowLeft, Save, Wifi, Plus, Trash2 } from "lucide-react";
 import { PowerSystem } from "@/entities/PowerSystem";
 import { UserSettingsService } from "@/entities/UserSettings";
 import { WiFiNetwork } from "@/entities/WiFiNetwork";
+import { User } from "@/entities/all";
 import WiFiNetworkForm from "@/components/settings/WiFiNetworkForm";
 import WiFiNetworkList from "@/components/settings/WiFiNetworkList";
+import DeleteAccountModal from "@/components/settings/DeleteAccountModal";
 import { toast } from "sonner";
 
 const ENERGY_SOURCES = [
@@ -31,8 +33,10 @@ const SOLAR_PROVIDERS = [
 export default function AdvancedSystemSettings() {
   const navigate = useNavigate();
   const [userSettings, setUserSettings] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
   // Form state
   const [energySource, setEnergySource] = useState("");
@@ -54,7 +58,17 @@ export default function AdvancedSystemSettings() {
   useEffect(() => {
     loadSettings();
     loadWifiNetworks();
+    loadUser();
   }, []);
+
+  const loadUser = async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+    } catch (error) {
+      console.error("Error loading user:", error);
+    }
+  };
 
   const loadSettings = async () => {
     setIsLoading(true);
@@ -267,187 +281,186 @@ export default function AdvancedSystemSettings() {
 
           {/* Energy Sources Tab */}
           <TabsContent value="energy" className="space-y-6">
+            {/* Energy Source Selection */}
+            <Card className="glass-card border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle className="app-text flex items-center gap-2">
+                  <Battery className="app-icon text-primary" />
+                  Power Source Type
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {ENERGY_SOURCES.map((source) => (
+                    <button
+                      key={source.id}
+                      onClick={() => setEnergySource(source.id)}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        energySource === source.id
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-muted-foreground'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <div className={`w-10 h-10 ${source.color} rounded-lg flex items-center justify-center`}>
+                          <source.icon className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="app-text font-medium">{source.name}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Energy Source Selection */}
-        <Card className="glass-card border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="app-text flex items-center gap-2">
-              <Battery className="app-icon text-primary" />
-              Power Source Type
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              {ENERGY_SOURCES.map((source) => (
-                <button
-                  key={source.id}
-                  onClick={() => setEnergySource(source.id)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    energySource === source.id
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-muted-foreground'
-                  }`}
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <div className={`w-10 h-10 ${source.color} rounded-lg flex items-center justify-center`}>
-                      <source.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="app-text font-medium">{source.name}</span>
+            {/* No Digital Connection Notice */}
+            {energySource === 'no_digital' && (
+              <Card className="glass-card border-0 shadow-lg border-warning/50">
+                <CardHeader>
+                  <CardTitle className="app-text flex items-center gap-2">
+                    <AlertCircle className="app-icon text-warning" />
+                    No Digital Connection
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="app-text text-muted-foreground">
+                    You've chosen to proceed without digital connection. Some features will be unavailable, 
+                    but you can still use manual controls and basic features.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Solar System Configuration */}
+            {(energySource === 'solar_only' || energySource === 'solar_grid') && (
+              <Card className="glass-card border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="app-text flex items-center gap-2">
+                    <Sun className="app-icon text-yellow-500" />
+                    Solar System Configuration
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="solar-provider" className="app-text">Solar Provider</Label>
+                    <Select value={solarProvider} onValueChange={setSolarProvider}>
+                      <SelectTrigger id="solar-provider" className="mt-1">
+                        <SelectValue placeholder="Select your solar provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SOLAR_PROVIDERS.map((provider) => (
+                          <SelectItem key={provider.value} value={provider.value}>
+                            {provider.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* No Digital Connection Notice */}
-        {energySource === 'no_digital' && (
-          <Card className="glass-card border-0 shadow-lg border-warning/50">
-            <CardHeader>
-              <CardTitle className="app-text flex items-center gap-2">
-                <AlertCircle className="app-icon text-warning" />
-                No Digital Connection
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="app-text text-muted-foreground">
-                You've chosen to proceed without digital connection. Some features will be unavailable, 
-                but you can still use manual controls and basic features.
-              </p>
-            </CardContent>
-          </Card>
-        )}
+                  <div>
+                    <Label htmlFor="solar-id" className="app-text">Solar System ID</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        id="solar-id"
+                        placeholder="e.g., SC-SS-0001"
+                        value={solarSystemId}
+                        onChange={(e) => setSolarSystemId(e.target.value)}
+                        disabled={skipSolar || !solarProvider}
+                        className="app-text"
+                      />
+                      {solarSystemId && !skipSolar && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={validateSolarId}
+                          disabled={validating || solarValidated}
+                        >
+                          {solarValidated ? <CheckCircle className="app-icon text-green-500" /> : "Validate"}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
 
-        {/* Solar System Configuration */}
-        {(energySource === 'solar_only' || energySource === 'solar_grid') && (
-          <Card className="glass-card border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="app-text flex items-center gap-2">
-                <Sun className="app-icon text-yellow-500" />
-                Solar System Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="solar-provider" className="app-text">Solar Provider</Label>
-                <Select value={solarProvider} onValueChange={setSolarProvider}>
-                  <SelectTrigger id="solar-provider" className="mt-1">
-                    <SelectValue placeholder="Select your solar provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SOLAR_PROVIDERS.map((provider) => (
-                      <SelectItem key={provider.value} value={provider.value}>
-                        {provider.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="skip-solar"
+                      checked={skipSolar}
+                      onChange={(e) => {
+                        setSkipSolar(e.target.checked);
+                        if (e.target.checked) {
+                          setSolarSystemId("");
+                          setSolarValidated(false);
+                        }
+                      }}
+                      className="rounded border-muted-foreground"
+                    />
+                    <Label htmlFor="skip-solar" className="app-text text-muted-foreground cursor-pointer">
+                      I don't have/know my Solar System ID
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-              <div>
-                <Label htmlFor="solar-id" className="app-text">Solar System ID</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    id="solar-id"
-                    placeholder="e.g., SC-SS-0001"
-                    value={solarSystemId}
-                    onChange={(e) => setSolarSystemId(e.target.value)}
-                    disabled={skipSolar || !solarProvider}
-                    className="app-text"
-                  />
-                  {solarSystemId && !skipSolar && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={validateSolarId}
-                      disabled={validating || solarValidated}
-                    >
-                      {solarValidated ? <CheckCircle className="app-icon text-green-500" /> : "Validate"}
-                    </Button>
-                  )}
-                </div>
-              </div>
+            {/* Grid System Configuration */}
+            {(energySource === 'grid_only' || energySource === 'solar_grid') && (
+              <Card className="glass-card border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="app-text flex items-center gap-2">
+                    <Grid3x3 className="app-icon text-blue-500" />
+                    Grid Meter Configuration
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="grid-id" className="app-text">Grid Meter ID</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        id="grid-id"
+                        placeholder="e.g., NG-PM-0001"
+                        value={gridMeterId}
+                        onChange={(e) => setGridMeterId(e.target.value)}
+                        disabled={skipGrid}
+                        className="app-text"
+                      />
+                      {gridMeterId && !skipGrid && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={validateGridId}
+                          disabled={validating || gridValidated}
+                        >
+                          {gridValidated ? <CheckCircle className="app-icon text-green-500" /> : "Validate"}
+                        </Button>
+                      )}
+                    </div>
+                    <p className="app-text text-muted-foreground mt-1">
+                      Format: NG-PM-XXXX (National Grid - Prepaid Meter - ID)
+                    </p>
+                  </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="skip-solar"
-                  checked={skipSolar}
-                  onChange={(e) => {
-                    setSkipSolar(e.target.checked);
-                    if (e.target.checked) {
-                      setSolarSystemId("");
-                      setSolarValidated(false);
-                    }
-                  }}
-                  className="rounded border-muted-foreground"
-                />
-                <Label htmlFor="skip-solar" className="app-text text-muted-foreground cursor-pointer">
-                  I don't have/know my Solar System ID
-                </Label>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Grid System Configuration */}
-        {(energySource === 'grid_only' || energySource === 'solar_grid') && (
-          <Card className="glass-card border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="app-text flex items-center gap-2">
-                <Grid3x3 className="app-icon text-blue-500" />
-                Grid Meter Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="grid-id" className="app-text">Grid Meter ID</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    id="grid-id"
-                    placeholder="e.g., NG-PM-0001"
-                    value={gridMeterId}
-                    onChange={(e) => setGridMeterId(e.target.value)}
-                    disabled={skipGrid}
-                    className="app-text"
-                  />
-                  {gridMeterId && !skipGrid && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={validateGridId}
-                      disabled={validating || gridValidated}
-                    >
-                      {gridValidated ? <CheckCircle className="app-icon text-green-500" /> : "Validate"}
-                    </Button>
-                  )}
-                </div>
-                <p className="app-text text-muted-foreground mt-1">
-                  Format: NG-PM-XXXX (National Grid - Prepaid Meter - ID)
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="skip-grid"
-                  checked={skipGrid}
-                  onChange={(e) => {
-                    setSkipGrid(e.target.checked);
-                    if (e.target.checked) {
-                      setGridMeterId("");
-                      setGridValidated(false);
-                    }
-                  }}
-                  className="rounded border-muted-foreground"
-                />
-                <Label htmlFor="skip-grid" className="app-text text-muted-foreground cursor-pointer">
-                  I don't have/know my Grid Meter ID
-                </Label>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="skip-grid"
+                      checked={skipGrid}
+                      onChange={(e) => {
+                        setSkipGrid(e.target.checked);
+                        if (e.target.checked) {
+                          setGridMeterId("");
+                          setGridValidated(false);
+                        }
+                      }}
+                      className="rounded border-muted-foreground"
+                    />
+                    <Label htmlFor="skip-grid" className="app-text text-muted-foreground cursor-pointer">
+                      I don't have/know my Grid Meter ID
+                    </Label>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Save Button */}
             <div className="flex gap-3">
@@ -506,6 +519,32 @@ export default function AdvancedSystemSettings() {
                  </div>
                </CardContent>
              </Card>
+             
+             {/* Account Management */}
+             <Card className="glass-card border-0 shadow-lg border-red-200">
+               <CardHeader>
+                 <CardTitle className="app-text flex items-center gap-2 text-red-600">
+                   <Trash2 className="app-icon" />
+                   Account Management
+                 </CardTitle>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                   <h4 className="font-semibold text-red-800 mb-2">Danger Zone</h4>
+                   <p className="text-sm text-red-700 mb-4">
+                     Permanently delete your account and all associated data. This action cannot be undone.
+                   </p>
+                   <Button
+                     variant="destructive"
+                     onClick={() => setShowDeleteModal(true)}
+                     className="gap-2"
+                   >
+                     <Trash2 className="app-icon" />
+                     Delete Account
+                   </Button>
+                 </div>
+               </CardContent>
+             </Card>
            </TabsContent>
          </Tabs>
 
@@ -515,6 +554,13 @@ export default function AdvancedSystemSettings() {
            onClose={() => setWifiFormOpen(false)}
            network={editingNetwork}
            onSuccess={handleWifiFormSuccess}
+         />
+         
+         {/* Delete Account Modal */}
+         <DeleteAccountModal
+           isOpen={showDeleteModal}
+           onClose={() => setShowDeleteModal(false)}
+           user={user}
          />
       </div>
     </div>

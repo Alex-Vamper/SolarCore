@@ -18,11 +18,9 @@ import {
   FileText,
   Pencil,
   MessageSquare,
-  Star,
-  Trash2
+  Star
 } from "lucide-react";
 import EditAccountModal from "../components/settings/EditAccountModal";
-import DeleteAccountModal from "../components/settings/DeleteAccountModal";
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Settings() {
@@ -31,7 +29,6 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -175,25 +172,9 @@ export default function Settings() {
             >
               Advanced System Settings
             </Button>
-            
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteModal(true)}
-              className="w-full app-text mt-4"
-            >
-              <Trash2 className="app-icon mr-2" />
-              Delete Account
-            </Button>
-            
             <div className="p-3 bg-blue-50 rounded-lg">
               <p className="app-text text-blue-800">
                 Configure your power source type, system IDs, and energy settings.
-              </p>
-            </div>
-            
-            <div className="p-3 bg-red-50 rounded-lg border border-red-200 mt-2">
-              <p className="app-text text-red-800 text-sm">
-                <strong>Warning:</strong> Deleting your account will permanently remove all your data and cannot be undone.
               </p>
             </div>
           </CardContent>
@@ -350,12 +331,6 @@ export default function Settings() {
           user={user}
           userSettings={userSettings}
           onSave={handleSaveAccountInfo}
-        />
-        
-        <DeleteAccountModal
-          isOpen={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
-          user={user}
         />
       </div>
     </div>
