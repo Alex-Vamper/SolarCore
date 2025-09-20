@@ -80,16 +80,58 @@ serve(async (req) => {
 
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      // Look up user by email
-      const { data: userSearch, error: userError } = await supabase
+      // Look up user by email - first try preferred_email, then auth email
+      let userSearch;
+      let userError;
+      
+      // First try to find by preferred_email
+      const { data: preferredEmailSearch, error: preferredEmailError } = await supabase
         .from("user_settings")
         .select("id, user_id")
         .eq("preferred_email", customerEmail)
         .limit(1);
 
-      if (userError) {
-        console.error('Error finding user:', userError);
+      if (preferredEmailError) {
+        console.error('Error finding user by preferred_email:', preferredEmailError);
         return new Response('Database error', { status: 500, headers: corsHeaders });
+      }
+
+      if (preferredEmailSearch && preferredEmailSearch.length > 0) {
+        userSearch = preferredEmailSearch;
+        console.log('Found user by preferred_email:', customerEmail);
+      } else {
+        console.log('No user found by preferred_email, trying auth email lookup');
+        
+        // Fallback: find by auth email
+        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (authError) {
+          console.error('Error listing auth users:', authError);
+          return new Response('Database error', { status: 500, headers: corsHeaders });
+        }
+        
+        const authUser = authUsers.users.find(user => user.email === customerEmail);
+        
+        if (authUser) {
+          console.log('Found auth user with email:', customerEmail, 'user_id:', authUser.id);
+          
+          // Find or create user_settings for this auth user
+          const { data: settingsSearch, error: settingsError } = await supabase
+            .from("user_settings")
+            .select("id, user_id")
+            .eq("user_id", authUser.id)
+            .limit(1);
+            
+          if (settingsError) {
+            console.error('Error finding user_settings by user_id:', settingsError);
+            return new Response('Database error', { status: 500, headers: corsHeaders });
+          }
+          
+          userSearch = settingsSearch;
+          console.log('Found user_settings by user_id:', authUser.id);
+        } else {
+          console.log('No auth user found with email:', customerEmail);
+        }
       }
 
       if (userSearch && userSearch.length > 0) {
