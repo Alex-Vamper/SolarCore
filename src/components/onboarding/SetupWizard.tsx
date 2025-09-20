@@ -270,24 +270,39 @@ export default function SetupWizard({ onComplete }) {
 
         {/* Navigation */}
         {currentStep !== 3 && (
-          <div className="flex justify-between gap-4">
-            <Button
-              variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 0}
-              className="flex items-center gap-2 font-inter"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
-            <Button
-              onClick={nextStep}
-              disabled={!canProceed()}
-              className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 font-inter"
-            >
-              {currentStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
-              <ArrowRight className="w-4 h-4" />
-            </Button>
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-inter">
+                Visit our Store-Front for{" "}
+                <a
+                  href="https://solarcore-powered-living.vercel.app/videos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-yellow-600 hover:text-yellow-700 underline font-medium"
+                >
+                  Set-Up Tutorials
+                </a>
+              </p>
+            </div>
+            <div className="flex justify-between gap-4">
+              <Button
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+                className="flex items-center gap-2 font-inter"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <Button
+                onClick={nextStep}
+                disabled={!canProceed()}
+                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 font-inter"
+              >
+                {currentStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         )}
       </div>

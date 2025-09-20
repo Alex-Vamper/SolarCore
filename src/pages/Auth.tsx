@@ -45,9 +45,12 @@ export default function Auth() {
       const { error } = await User.signIn(formData.email, formData.password);
       
       if (error) {
+        const isInvalidCredentials = error.message?.includes("Invalid login credentials");
         toast({
           title: "Sign in failed",
-          description: error.message || "Please check your credentials and try again.",
+          description: isInvalidCredentials 
+            ? "Email not recognized. Please sign up first or check your email address."
+            : error.message || "Please check your credentials and try again.",
           variant: "destructive"
         });
       } else {
@@ -103,7 +106,7 @@ export default function Auth() {
       } else {
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account."
+          description: "Please check your email to confirm your account before signing in."
         });
         navigate('/app');
       }
