@@ -109,6 +109,21 @@ serve(async (req) => {
       return new Response('Server configuration error', { status: 500, headers: corsHeaders });
     }
 
+    // Clean and validate the Paystack secret key
+    const cleanedSecret = paystackSecret.trim().replace(/[^\x20-\x7E]/g, '');
+    console.log('Original secret length:', paystackSecret.length, 'Cleaned length:', cleanedSecret.length);
+    
+    if (!cleanedSecret || cleanedSecret.length < 10) {
+      console.error('Invalid PAYSTACK_SECRET_KEY format');
+      return new Response('Invalid payment configuration', { status: 500, headers: corsHeaders });
+    }
+
+    // Validate that the secret key looks like a valid Paystack key
+    if (!cleanedSecret.startsWith('sk_')) {
+      console.error('PAYSTACK_SECRET_KEY does not start with sk_');
+      return new Response('Invalid payment configuration', { status: 500, headers: corsHeaders });
+    }
+
     // Initialize Paystack transaction
     const initPayload = {
       email: userEmail,
@@ -123,16 +138,30 @@ serve(async (req) => {
 
     console.log('Initializing Paystack transaction:', initPayload);
 
-    const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${paystackSecret}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(initPayload),
-    });
-
-    const paystackData = await paystackResponse.json();
+    // Make the Paystack API call with better error handling
+    let paystackResponse;
+    let paystackData;
+    
+    try {
+      paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${cleanedSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(initPayload),
+      });
+      
+      paystackData = await paystackResponse.json();
+    } catch (fetchError) {
+      console.error('Fetch error when calling Paystack API:', fetchError);
+      console.error('Error details:', fetchError.message);
+      if (fetchError.message.includes('ByteString') || fetchError.message.includes('headers')) {
+        console.error('Header validation error - likely invalid characters in PAYSTACK_SECRET_KEY');
+        return new Response('Payment configuration error - please contact support', { status: 500, headers: corsHeaders });
+      }
+      return new Response('Payment service temporarily unavailable', { status: 500, headers: corsHeaders });
+    }
     
     if (!paystackResponse.ok) {
       console.error('Paystack API error:', paystackData);
