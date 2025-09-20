@@ -47,7 +47,9 @@ serve(async (req) => {
 
     console.log('Authenticated user:', user.id);
 
-    const { plan } = await req.json();
+    const requestBody = await req.json();
+    console.log('Request body:', requestBody);
+    const { plan } = requestBody;
     console.log('Payment plan requested:', plan);
     
     if (!plan || plan !== 'premium') {
@@ -55,30 +57,48 @@ serve(async (req) => {
       return new Response('Invalid plan specified', { status: 400, headers: corsHeaders });
     }
 
-    // First check if user_settings table exists and get user email from auth
-    console.log('Checking user settings for user:', user.id);
-    const { data: userSettings, error: settingsError } = await supabase
-      .from('user_settings')
-      .select('preferred_email')
-      .eq('user_id', user.id)
-      .single();
-
-    console.log('User settings query result:', { userSettings, settingsError });
-
     let userEmail;
-    if (settingsError || !userSettings?.preferred_email) {
-      console.log('No preferred email in user_settings, using auth email:', user.email);
-      // Fallback to auth email if user_settings doesn't have preferred_email
+    console.log('User email from auth:', user.email);
+
+    // Try to get email from user_settings first, fall back to auth email
+    try {
+      console.log('Checking user settings for user:', user.id);
+      const { data: userSettings, error: settingsError } = await supabase
+        .from('user_settings')
+        .select('preferred_email')
+        .eq('user_id', user.id)
+        .single();
+
+      console.log('User settings query result:', { userSettings, settingsError });
+
+      if (settingsError) {
+        console.log('Settings error (expected if no user_settings record):', settingsError.message);
+      }
+
+      if (userSettings?.preferred_email) {
+        userEmail = userSettings.preferred_email;
+        console.log('Using preferred email from user_settings:', userEmail);
+      } else {
+        // Fall back to auth email
+        if (!user.email) {
+          console.error('No email found in auth or user_settings for user:', user.id);
+          return new Response('User email not found', { status: 400, headers: corsHeaders });
+        }
+        userEmail = user.email;
+        console.log('Using email from auth:', userEmail);
+      }
+    } catch (error) {
+      console.error('Error querying user_settings:', error);
+      // Fall back to auth email
       if (!user.email) {
-        console.error('No email found in auth or user_settings for user:', user.id);
+        console.error('No email found in auth for user:', user.id);
         return new Response('User email not found', { status: 400, headers: corsHeaders });
       }
       userEmail = user.email;
-    } else {
-      userEmail = userSettings.preferred_email;
+      console.log('Using email from auth due to error:', userEmail);
     }
 
-    console.log('Creating transaction for:', userEmail);
+    console.log('Creating transaction for email:', userEmail);
 
     // Premium plan pricing (in kobo - multiply NGN by 100)
     const priceInKobo = 2000000; // NGN 20,000 = 2,000,000 kobo
