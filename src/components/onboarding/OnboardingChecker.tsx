@@ -45,8 +45,10 @@ export default function OnboardingChecker({ user, children }: OnboardingCheckerP
       const settingsData = {
         building_type: setupData.buildingType,
         building_name: setupData.buildingName || setupData.buildingType,
-        energy_mode: setupData.energySource === 'solar' ? 'solar_only' : 
-                    setupData.energySource === 'grid' ? 'grid_only' : 'auto_switch',
+        power_source: setupData.energySource, // Map directly to power_source
+        solar_system_id: setupData.solarSystemId || null,
+        grid_meter_id: setupData.gridMeterId || null,
+        solar_provider: setupData.solarProvider || null,
         total_rooms: setupData.rooms.length,
         setup_completed: true
       };

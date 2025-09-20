@@ -63,7 +63,9 @@ export default function SetupWizard({ onComplete }) {
     { title: "Complete Setup", icon: CheckCircle }
   ];
 
-  const progress = ((currentStep + 1) / steps.length) * 100;
+  const progress = currentStep === 3 && setupData.energySource === 'no_digital' 
+    ? 80 // Show 80% for no digital connection warning
+    : ((currentStep + 1) / steps.length) * 100;
   const StepIcon = steps[currentStep].icon;
 
   const addRoom = () => {
@@ -84,9 +86,7 @@ export default function SetupWizard({ onComplete }) {
   };
 
   const nextStep = () => {
-    if (currentStep === 2 && setupData.energySource === 'no_digital') {
-      setCurrentStep(4); // Skip to complete
-    } else if (currentStep < steps.length - 1) {
+    if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       onComplete(setupData);
@@ -250,6 +250,17 @@ export default function SetupWizard({ onComplete }) {
                   <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
                   <h3 className="text-xl font-semibold">Setup Complete!</h3>
                   <p className="text-gray-600">Your smart home system is ready to use.</p>
+                  {setupData.energySource === 'no_digital' && (
+                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-amber-800">
+                        <WifiOff className="w-5 h-5" />
+                        <span className="font-medium">No Digital Connection Selected</span>
+                      </div>
+                      <p className="text-sm text-amber-700 mt-2">
+                        You've chosen to operate without digital monitoring. Some smart features will be limited, but you can always enable them later in settings.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -266,6 +277,40 @@ export default function SetupWizard({ onComplete }) {
             onNext={nextStep}
             onBack={prevStep}
           />
+        )}
+
+        {/* Show 80% completion warning for No Digital Connection */}
+        {currentStep === 3 && setupData.energySource === 'no_digital' && (
+          <Card className="glass-card shadow-xl border-0 mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-lg font-inter">
+                <WifiOff className="w-6 h-6 text-amber-600" />
+                Important Notice
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <h4 className="font-semibold text-amber-800 mb-2">No Digital Connection Selected</h4>
+                <p className="text-sm text-amber-700 mb-3">
+                  You've chosen to operate without digital monitoring. This means:
+                </p>
+                <ul className="text-sm text-amber-700 space-y-1 ml-4">
+                  <li>• Real-time energy monitoring will be unavailable</li>
+                  <li>• Smart automation features will be limited</li>
+                  <li>• Remote control capabilities will be disabled</li>
+                  <li>• Energy usage analytics won't be available</li>
+                </ul>
+                <p className="text-sm text-amber-700 mt-3 font-medium">
+                  You can always enable digital features later in settings.
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-600">
+                  Click "Continue" to proceed with setup completion.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Navigation */}
@@ -300,6 +345,42 @@ export default function SetupWizard({ onComplete }) {
                 className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 font-inter"
               >
                 {currentStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Special navigation for No Digital Connection warning */}
+        {currentStep === 3 && setupData.energySource === 'no_digital' && (
+          <div className="space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-inter">
+                Visit our Store-Front for{" "}
+                <a
+                  href="https://solarcore-powered-living.vercel.app/videos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-yellow-600 hover:text-yellow-700 underline font-medium"
+                >
+                  Set-Up Tutorials
+                </a>
+              </p>
+            </div>
+            <div className="flex justify-between gap-4">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(2)}
+                className="flex items-center gap-2 font-inter"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <Button
+                onClick={nextStep}
+                className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 font-inter"
+              >
+                Continue
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
