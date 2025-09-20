@@ -88,6 +88,12 @@ export default function AIAssistantButton() {
         loadSettings();
         window.addEventListener('anderSettingsChanged', loadSettings);
         
+        // Handle subscription changes to update voice processor
+        const handleSubscriptionChanged = async () => {
+            console.log('Subscription status changed, reloading settings...');
+            await loadSettings();
+        };
+        
         // Handle playing "All Systems Check" audio
         const handlePlayAllSystemsCheck = async () => {
             try {
@@ -108,10 +114,12 @@ export default function AIAssistantButton() {
         };
         
         window.addEventListener('playAllSystemsCheckAudio', handlePlayAllSystemsCheck);
+        window.addEventListener('subscriptionChanged', handleSubscriptionChanged);
         
         return () => {
             window.removeEventListener('anderSettingsChanged', loadSettings);
             window.removeEventListener('playAllSystemsCheckAudio', handlePlayAllSystemsCheck);
+            window.removeEventListener('subscriptionChanged', handleSubscriptionChanged);
         };
     }, [voiceResponseEnabled]);
 

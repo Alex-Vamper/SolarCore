@@ -59,16 +59,19 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
         doorSecurityId = settings[0]?.security_settings?.door_security_id;
       }
 
-      // Load local state first for instant UI, then hydrate from backend
+      // Prioritize localStorage state (from voice commands) over backend for instant UI
       const savedSecurityState = localStorage.getItem('securityState');
       if (savedSecurityState) {
-        const state = JSON.parse(savedSecurityState);
-        setIsDoorLocked(!!state.isDoorLocked);
-        setIsSecurityMode(!!state.isSecurityMode);
-      }
-
-      // Hydrate from backend if a device is configured
-      if (doorSecurityId) {
+        try {
+          const state = JSON.parse(savedSecurityState);
+          setIsDoorLocked(!!state.isDoorLocked);
+          setIsSecurityMode(!!state.isSecurityMode);
+          console.log('Loaded security state from localStorage:', state);
+        } catch (error) {
+          console.error('Error parsing localStorage security state:', error);
+        }
+      } else if (doorSecurityId) {
+        // Only hydrate from backend if no localStorage state exists
         try {
           const { SecuritySystemService } = await import('@/entities/SecuritySystem');
           const securitySystems = await SecuritySystemService.list();
@@ -85,6 +88,7 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
               isSecurityMode: away,
               sessionId: `${locked}_${away}_${securitySystem.last_action || Date.now()}`
             }));
+            console.log('Hydrated security state from backend:', { locked, away });
           }
         } catch (err) {
           console.error('Error hydrating security state from backend:', err);

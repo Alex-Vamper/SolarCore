@@ -21,15 +21,29 @@ export default class VoiceCommandProcessor {
 
   setUserSettings(userSettings: any) {
     this.userSettings = userSettings;
+    console.log('Voice processor updated with user settings:', {
+      subscription_plan: userSettings?.subscription_plan,
+      voice_response_enabled: userSettings?.voice_response_enabled
+    });
   }
 
   private determineResponseType(audioUrl?: string): 'tts-only' | 'audio-preferred' {
+    const subscriptionPlan = this.userSettings?.subscription_plan || 'free';
+    
+    console.log('Determining response type:', {
+      subscription_plan: subscriptionPlan,
+      has_audio_url: !!audioUrl,
+      user_settings: this.userSettings ? 'loaded' : 'not_loaded'
+    });
+    
     // Free plan users get TTS only, regardless of audio availability
-    if (this.userSettings?.subscription_plan === 'free') {
+    if (subscriptionPlan === 'free') {
+      console.log('Using TTS-only for free plan user');
       return 'tts-only';
     }
     
     // Premium/Enterprise users get audio preferred with TTS fallback
+    console.log('Using audio-preferred for premium user');
     return 'audio-preferred';
   }
 

@@ -14,6 +14,7 @@ import { User, Building } from "lucide-react";
 export default function EditAccountModal({ isOpen, onClose, user, userSettings, onSave }) {
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
+    const [preferredEmail, setPreferredEmail] = useState("");
     const [buildingName, setBuildingName] = useState("");
     const [buildingType, setBuildingType] = useState("home");
     const [energyMode, setEnergyMode] = useState("auto_switch");
@@ -27,6 +28,7 @@ export default function EditAccountModal({ isOpen, onClose, user, userSettings, 
             setBuildingName(userSettings.building_name || "");
             setBuildingType(userSettings.building_type || "home");
             setEnergyMode(userSettings.energy_mode || "auto_switch");
+            setPreferredEmail(userSettings.preferred_email || user?.email || "");
         }
     }, [user, userSettings, isOpen]);
 
@@ -36,7 +38,8 @@ export default function EditAccountModal({ isOpen, onClose, user, userSettings, 
             settings: {
                 building_name: buildingName,
                 building_type: buildingType,
-                energy_mode: energyMode
+                energy_mode: energyMode,
+                preferred_email: preferredEmail
             }
         });
         onClose();
@@ -59,6 +62,14 @@ export default function EditAccountModal({ isOpen, onClose, user, userSettings, 
                      <div>
                         <Label>Email</Label>
                         <Input value={email} disabled />
+                    </div>
+                    <div>
+                        <Label>Preferred Email (for payments & notifications)</Label>
+                        <Input 
+                            value={preferredEmail} 
+                            onChange={e => setPreferredEmail(e.target.value)}
+                            placeholder="Enter your preferred email address"
+                        />
                     </div>
                      <div>
                         <Label>Building Name</Label>

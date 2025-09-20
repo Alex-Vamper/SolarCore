@@ -31,6 +31,9 @@ export default function PaymentCallback() {
           setStatus('success');
           // Notify other components that settings have changed
           window.dispatchEvent(new CustomEvent('anderSettingsChanged'));
+          window.dispatchEvent(new CustomEvent('subscriptionChanged', {
+            detail: { plan: 'premium', settings: settings[0] }
+          }));
         } else {
           // Wait a bit more and try again
           await new Promise(resolve => setTimeout(resolve, 3000));
@@ -39,6 +42,9 @@ export default function PaymentCallback() {
           if (updatedSettings.length > 0 && updatedSettings[0].subscription_plan === 'premium') {
             setStatus('success');
             window.dispatchEvent(new CustomEvent('anderSettingsChanged'));
+            window.dispatchEvent(new CustomEvent('subscriptionChanged', {
+              detail: { plan: 'premium', settings: updatedSettings[0] }
+            }));
           } else {
             setStatus('failed');
           }

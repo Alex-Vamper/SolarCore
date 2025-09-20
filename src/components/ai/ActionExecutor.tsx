@@ -282,26 +282,77 @@ class ActionExecutor {
         };
         
         const handleSecurityMode = async (mode) => {
-            if (mode === 'away') {
-                await updateAllDevices(false); // Turn off all devices
+            try {
+                if (mode === 'away') {
+                    await updateAllDevices(false); // Turn off all devices
+                }
+                
+                // Update backend security state
+                const settings = await UserSettings.list();
+                if (settings.length > 0 && settings[0].security_settings?.door_security_id) {
+                    const { SecuritySystemService } = await import('@/entities/SecuritySystem');
+                    const securitySystems = await SecuritySystemService.list();
+                    let securitySystem = securitySystems.find(s => s.system_id === settings[0].security_settings.door_security_id);
+                    
+                    if (!securitySystem) {
+                        // Create security system if it doesn't exist
+                        securitySystem = await SecuritySystemService.create({
+                            system_id: settings[0].security_settings.door_security_id,
+                            system_type: 'door_control',
+                            lock_status: 'unlocked',
+                            security_mode: 'home'
+                        });
+                    }
+                    
+                    // Update security mode in backend
+                    await SecuritySystemService.update(securitySystem.id, {
+                        security_mode: mode,
+                        lock_status: mode === 'away' ? 'locked' : securitySystem.lock_status,
+                        last_action: new Date().toISOString()
+                    });
+                }
+                
+                // Update localStorage with session ID for proper tracking
+                const sessionId = `${mode === 'away'}_${mode === 'away'}_${Date.now()}`;
+                const securityState = {
+                    isDoorLocked: mode === 'away',
+                    isSecurityMode: mode === 'away',
+                    sessionId
+                };
+                localStorage.setItem('securityState', JSON.stringify(securityState));
+                
+                // Dispatch event for UI to update
+                window.dispatchEvent(new CustomEvent('securityModeChanged', { detail: { mode } }));
+                return { success: true, reason: `${mode} mode activated` };
+            } catch (error) {
+                console.error('Error updating security mode:', error);
+                // Still dispatch event for UI consistency
+                window.dispatchEvent(new CustomEvent('securityModeChanged', { detail: { mode } }));
+                return { success: true, reason: `${mode} mode activated` };
             }
-            // Dispatch event for UI to update
-            window.dispatchEvent(new CustomEvent('securityModeChanged', { detail: { mode } }));
-            return { success: true, reason: `${mode} mode activated` };
         }
         
         const handleLockDoor = async (lock) => {
             try {
+                // Get user settings to find configured security device
+                const settings = await UserSettings.list();
+                let doorSecurityId = 'door_lock_001'; // Default fallback
+                
+                if (settings.length > 0 && settings[0].security_settings?.door_security_id) {
+                    doorSecurityId = settings[0].security_settings.door_security_id;
+                }
+                
                 // Check for existing security system or create one
-                const securitySystems = await SecuritySystem.list();
+                const { SecuritySystemService } = await import('@/entities/SecuritySystem');
+                const securitySystems = await SecuritySystemService.list();
                 let doorLockSystem = securitySystems.find(sys => 
-                    sys.system_type === 'door_control'
+                    sys.system_id === doorSecurityId
                 );
                 
                 if (!doorLockSystem) {
-                    // Create a door lock system in child_devices
-                    doorLockSystem = await SecuritySystem.create({
-                        system_id: 'door_lock_001',
+                    // Create a door lock system
+                    doorLockSystem = await SecuritySystemService.create({
+                        system_id: doorSecurityId,
                         system_type: 'door_control',
                         lock_status: 'unlocked',
                         security_mode: 'home'
@@ -309,11 +360,20 @@ class ActionExecutor {
                 }
                 
                 // Update the security system state
-                await SecuritySystem.update(doorLockSystem.id, { 
+                await SecuritySystemService.update(doorLockSystem.id, { 
                     lock_status: lock ? 'locked' : 'unlocked',
                     security_mode: lock ? 'away' : 'home',
-                    last_action: `door_${lock ? 'locked' : 'unlocked'}_${new Date().toISOString()}`
+                    last_action: new Date().toISOString()
                 });
+                
+                // Update localStorage with session ID for proper tracking
+                const sessionId = `${lock}_${lock ? true : false}_${Date.now()}`;
+                const securityState = {
+                    isDoorLocked: lock,
+                    isSecurityMode: lock ? true : false,
+                    sessionId
+                };
+                localStorage.setItem('securityState', JSON.stringify(securityState));
                 
                 // Dispatch events for SecurityOverview to listen
                 if(lock) {

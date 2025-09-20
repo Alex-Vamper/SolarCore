@@ -25,6 +25,7 @@ import Ander from "@/pages/Ander";
 import AdvancedSystemSettings from "@/pages/AdvancedSystemSettings";
 import OnboardingChecker from "@/components/onboarding/OnboardingChecker";
 import PaymentCallback from "@/components/PaymentCallback";
+import PaymentSuccess from "@/components/subscriptions/PaymentSuccess";
 
 const queryClient = new QueryClient();
 
@@ -145,6 +146,7 @@ function AppContent() {
     <TooltipProvider>
       <NotificationProvider>
         <RouterProvider router={router} />
+        <PaymentSuccess />
         <Toaster />
       </NotificationProvider>
     </TooltipProvider>
