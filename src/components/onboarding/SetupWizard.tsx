@@ -320,7 +320,7 @@ export default function SetupWizard({ onComplete }) {
               <p className="text-sm text-gray-600 font-inter">
                 Visit our Store-Front for{" "}
                 <a
-                  href="https://solarcore-powered-living.vercel.app/videos"
+                  href="https://solarcore-powered-living.vercel.app/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-yellow-600 hover:text-yellow-700 underline font-medium"
