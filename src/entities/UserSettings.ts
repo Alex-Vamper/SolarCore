@@ -32,6 +32,9 @@ export interface UserSettings {
   solar_system_id?: string;
   grid_meter_id?: string;
   security_settings?: any;
+  paystack_reference?: string;
+  paystack_customer_code?: string;
+  subscription_amount_kobo?: number;
   last_login_at?: string;
   created_at?: string;
   updated_at?: string;

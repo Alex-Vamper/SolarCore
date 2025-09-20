@@ -24,6 +24,7 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import Ander from "@/pages/Ander";
 import AdvancedSystemSettings from "@/pages/AdvancedSystemSettings";
 import OnboardingChecker from "@/components/onboarding/OnboardingChecker";
+import PaymentCallback from "@/components/PaymentCallback";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,14 @@ const router = createBrowserRouter([
   {
     path: "/auth",
     element: <Auth />
+  },
+  {
+    path: "/payment/callback",
+    element: (
+      <ProtectedRoute>
+        <PaymentCallback />
+      </ProtectedRoute>
+    )
   },
   {
     path: "/app",

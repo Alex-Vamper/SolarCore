@@ -21,6 +21,7 @@ export type Database = {
           command_category: string
           command_name: string
           command_text: string
+          created_at: string
           created_by: string
           created_date: string
           id: string
@@ -28,6 +29,7 @@ export type Database = {
           keywords: string[] | null
           last_used: string | null
           response_text: string
+          updated_at: string
           updated_date: string
           usage_count: number
         }
@@ -37,6 +39,7 @@ export type Database = {
           command_category?: string
           command_name: string
           command_text: string
+          created_at?: string
           created_by: string
           created_date?: string
           id?: string
@@ -44,6 +47,7 @@ export type Database = {
           keywords?: string[] | null
           last_used?: string | null
           response_text: string
+          updated_at?: string
           updated_date?: string
           usage_count?: number
         }
@@ -53,6 +57,7 @@ export type Database = {
           command_category?: string
           command_name?: string
           command_text?: string
+          created_at?: string
           created_by?: string
           created_date?: string
           id?: string
@@ -60,6 +65,7 @@ export type Database = {
           keywords?: string[] | null
           last_used?: string | null
           response_text?: string
+          updated_at?: string
           updated_date?: string
           usage_count?: number
         }
@@ -676,6 +682,393 @@ export type Database = {
         }
         Relationships: []
       }
+      store_consultation_requests: {
+        Row: {
+          admin_notes: string | null
+          assigned_to: string | null
+          company: string | null
+          consultation_type: string
+          created_at: string
+          follow_up_date: string | null
+          id: string
+          ip_address: unknown | null
+          preferred_date: string | null
+          preferred_time: string | null
+          priority: string
+          project_scope: string | null
+          scheduled_date: string | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+          user_email: string
+          user_name: string
+          user_phone: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          company?: string | null
+          consultation_type: string
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          ip_address?: unknown | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          priority?: string
+          project_scope?: string | null
+          scheduled_date?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_email: string
+          user_name: string
+          user_phone?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          company?: string | null
+          consultation_type?: string
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          ip_address?: unknown | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          priority?: string
+          project_scope?: string | null
+          scheduled_date?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_email?: string
+          user_name?: string
+          user_phone?: string | null
+        }
+        Relationships: []
+      }
+      store_contact_messages: {
+        Row: {
+          admin_notes: string | null
+          assigned_to: string | null
+          contact_type: string | null
+          created_at: string
+          follow_up_date: string | null
+          id: string
+          ip_address: unknown | null
+          message: string
+          priority: string
+          response_sent: boolean | null
+          status: string
+          subject: string
+          updated_at: string
+          user_agent: string | null
+          user_email: string
+          user_name: string
+          user_phone: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          contact_type?: string | null
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          ip_address?: unknown | null
+          message: string
+          priority?: string
+          response_sent?: boolean | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_agent?: string | null
+          user_email: string
+          user_name: string
+          user_phone?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          contact_type?: string | null
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          ip_address?: unknown | null
+          message?: string
+          priority?: string
+          response_sent?: boolean | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_email?: string
+          user_name?: string
+          user_phone?: string | null
+        }
+        Relationships: []
+      }
+      store_demo_requests: {
+        Row: {
+          admin_notes: string | null
+          assigned_to: string | null
+          company: string | null
+          created_at: string
+          demo_type: string | null
+          follow_up_date: string | null
+          id: string
+          ip_address: unknown | null
+          location_preference: string | null
+          preferred_date: string | null
+          preferred_time: string | null
+          priority: string
+          product_name: string
+          scheduled_date: string | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+          user_email: string
+          user_name: string
+          user_phone: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          demo_type?: string | null
+          follow_up_date?: string | null
+          id?: string
+          ip_address?: unknown | null
+          location_preference?: string | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          priority?: string
+          product_name: string
+          scheduled_date?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_email: string
+          user_name: string
+          user_phone?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          demo_type?: string | null
+          follow_up_date?: string | null
+          id?: string
+          ip_address?: unknown | null
+          location_preference?: string | null
+          preferred_date?: string | null
+          preferred_time?: string | null
+          priority?: string
+          product_name?: string
+          scheduled_date?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_email?: string
+          user_name?: string
+          user_phone?: string | null
+        }
+        Relationships: []
+      }
+      store_newsletter_subscriptions: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          email: string
+          id: string
+          interests: Json | null
+          ip_address: unknown | null
+          name: string | null
+          status: string
+          subscription_source: string | null
+          unsubscribed_at: string | null
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          interests?: Json | null
+          ip_address?: unknown | null
+          name?: string | null
+          status?: string
+          subscription_source?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          interests?: Json | null
+          ip_address?: unknown | null
+          name?: string | null
+          status?: string
+          subscription_source?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      store_product_interests: {
+        Row: {
+          created_at: string
+          id: string
+          interest_type: string
+          ip_address: unknown | null
+          page_url: string | null
+          product_name: string
+          referrer: string | null
+          session_data: Json | null
+          user_agent: string | null
+          user_email: string | null
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interest_type: string
+          ip_address?: unknown | null
+          page_url?: string | null
+          product_name: string
+          referrer?: string | null
+          session_data?: Json | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interest_type?: string
+          ip_address?: unknown | null
+          page_url?: string | null
+          product_name?: string
+          referrer?: string | null
+          session_data?: Json | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
+      store_quote_requests: {
+        Row: {
+          admin_notes: string | null
+          assigned_to: string | null
+          company: string | null
+          created_at: string
+          follow_up_date: string | null
+          id: string
+          ip_address: unknown | null
+          preferred_contact: string | null
+          priority: string
+          product_name: string | null
+          project_details: string | null
+          status: string
+          tier_name: string | null
+          updated_at: string
+          user_agent: string | null
+          user_email: string
+          user_name: string
+          user_phone: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          ip_address?: unknown | null
+          preferred_contact?: string | null
+          priority?: string
+          product_name?: string | null
+          project_details?: string | null
+          status?: string
+          tier_name?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_email: string
+          user_name: string
+          user_phone?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          follow_up_date?: string | null
+          id?: string
+          ip_address?: unknown | null
+          preferred_contact?: string | null
+          priority?: string
+          product_name?: string | null
+          project_details?: string | null
+          status?: string
+          tier_name?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_email?: string
+          user_name?: string
+          user_phone?: string | null
+        }
+        Relationships: []
+      }
+      store_specification_downloads: {
+        Row: {
+          created_at: string
+          download_count: number
+          file_path: string
+          id: string
+          ip_address: unknown | null
+          last_downloaded_at: string
+          product_name: string
+          referrer: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          download_count?: number
+          file_path: string
+          id?: string
+          ip_address?: unknown | null
+          last_downloaded_at?: string
+          product_name: string
+          referrer?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          download_count?: number
+          file_path?: string
+          id?: string
+          ip_address?: unknown | null
+          last_downloaded_at?: string
+          product_name?: string
+          referrer?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       user_notification_reads: {
         Row: {
           created_at: string | null
@@ -716,6 +1109,8 @@ export type Database = {
           id: string
           last_login_at: string | null
           notifications_enabled: boolean | null
+          paystack_customer_code: string | null
+          paystack_reference: string | null
           power_source: string | null
           preferred_email: string | null
           preferred_email_enabled: boolean | null
@@ -725,6 +1120,7 @@ export type Database = {
           setup_completed: boolean | null
           solar_system_id: string | null
           stripe_customer_id: string | null
+          subscription_amount_kobo: number | null
           subscription_end_date: string | null
           subscription_plan: string | null
           subscription_start_date: string | null
@@ -750,6 +1146,8 @@ export type Database = {
           id?: string
           last_login_at?: string | null
           notifications_enabled?: boolean | null
+          paystack_customer_code?: string | null
+          paystack_reference?: string | null
           power_source?: string | null
           preferred_email?: string | null
           preferred_email_enabled?: boolean | null
@@ -759,6 +1157,7 @@ export type Database = {
           setup_completed?: boolean | null
           solar_system_id?: string | null
           stripe_customer_id?: string | null
+          subscription_amount_kobo?: number | null
           subscription_end_date?: string | null
           subscription_plan?: string | null
           subscription_start_date?: string | null
@@ -784,6 +1183,8 @@ export type Database = {
           id?: string
           last_login_at?: string | null
           notifications_enabled?: boolean | null
+          paystack_customer_code?: string | null
+          paystack_reference?: string | null
           power_source?: string | null
           preferred_email?: string | null
           preferred_email_enabled?: boolean | null
@@ -793,6 +1194,7 @@ export type Database = {
           setup_completed?: boolean | null
           solar_system_id?: string | null
           stripe_customer_id?: string | null
+          subscription_amount_kobo?: number | null
           subscription_end_date?: string | null
           subscription_plan?: string | null
           subscription_start_date?: string | null

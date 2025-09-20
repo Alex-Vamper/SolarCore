@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Loader2
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function PaymentModal({ isOpen, onClose, onSuccess, plan, amount }) {
   const [step, setStep] = useState('payment'); // 'payment', 'processing', 'success'
@@ -68,10 +69,32 @@ export default function PaymentModal({ isOpen, onClose, onSuccess, plan, amount 
     
     setStep('processing');
     
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    setStep('success');
+    try {
+      // Create transaction with backend
+      const { data, error } = await supabase.functions.invoke('create-transaction', {
+        body: { plan: 'premium' }
+      });
+
+      if (error) {
+        console.error('Error creating transaction:', error);
+        alert('Failed to initialize payment. Please try again.');
+        setStep('payment');
+        return;
+      }
+
+      if (data.success && data.authorization_url) {
+        // Redirect to Paystack checkout
+        window.location.href = data.authorization_url;
+      } else {
+        console.error('Invalid response from payment service');
+        alert('Failed to initialize payment. Please try again.');
+        setStep('payment');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('Payment failed. Please try again.');
+      setStep('payment');
+    }
   };
 
   const handleSuccess = () => {
