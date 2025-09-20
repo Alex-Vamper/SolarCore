@@ -17,11 +17,10 @@ export default function OnboardingChecker({ user, children }: OnboardingCheckerP
 
   const checkOnboardingStatus = async () => {
     try {
-      // Check if user has completed onboarding in the profiles table
-      const userData = await User.me();
       // Check UserSettings for setup_completed status
-      const settingsResult = await UserSettings.filter({ created_by: userData.email });
+      const settingsResult = await UserSettings.list();
       const hasCompletedSetup = settingsResult.length > 0 && settingsResult[0].setup_completed;
+      console.log('Setup status check:', { settingsResult, hasCompletedSetup });
       setIsOnboarded(hasCompletedSetup || false);
     } catch (error) {
       console.error("Error checking onboarding status:", error);
@@ -53,12 +52,8 @@ export default function OnboardingChecker({ user, children }: OnboardingCheckerP
         setup_completed: true
       };
 
-      const existingSettings = await UserSettings.filter({ created_by: user.email });
-      if (existingSettings.length > 0) {
-        await UserSettings.update(existingSettings[0].id, settingsData);
-      } else {
-        await UserSettings.create(settingsData);
-      }
+      console.log('Creating/updating user settings:', settingsData);
+      await UserSettings.upsert(settingsData);
       
       setIsOnboarded(true);
     } catch (error) {

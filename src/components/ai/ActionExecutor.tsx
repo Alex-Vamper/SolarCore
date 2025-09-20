@@ -283,46 +283,25 @@ class ActionExecutor {
         
         const handleSecurityMode = async (mode) => {
             try {
+                console.log(`Security mode change requested: ${mode}`);
+                
                 if (mode === 'away') {
                     await updateAllDevices(false); // Turn off all devices
                 }
                 
-                // Update backend security state
-                const settings = await UserSettings.list();
-                if (settings.length > 0 && settings[0].security_settings?.door_security_id) {
-                    const { SecuritySystemService } = await import('@/entities/SecuritySystem');
-                    const securitySystems = await SecuritySystemService.list();
-                    let securitySystem = securitySystems.find(s => s.system_id === settings[0].security_settings.door_security_id);
-                    
-                    if (!securitySystem) {
-                        // Create security system if it doesn't exist
-                        securitySystem = await SecuritySystemService.create({
-                            system_id: settings[0].security_settings.door_security_id,
-                            system_type: 'door_control',
-                            lock_status: 'unlocked',
-                            security_mode: 'home'
-                        });
-                    }
-                    
-                    // Update security mode in backend
-                    await SecuritySystemService.update(securitySystem.id, {
-                        security_mode: mode,
-                        lock_status: mode === 'away' ? 'locked' : securitySystem.lock_status,
-                        last_action: new Date().toISOString()
-                    });
-                }
+                // Import and use the centralized security state manager
+                const { SecurityStateManager } = await import('@/hooks/useSecurityStateCentralized');
+                const manager = SecurityStateManager.getInstance();
                 
-                // Update localStorage with session ID for proper tracking
-                const sessionId = `${mode === 'away'}_${mode === 'away'}_${Date.now()}`;
-                const securityState = {
-                    isDoorLocked: mode === 'away',
-                    isSecurityMode: mode === 'away',
-                    sessionId
-                };
-                localStorage.setItem('securityState', JSON.stringify(securityState));
+                // Update through the centralized manager (this will persist to backend)
+                manager.triggerSecurityModeChange(mode as 'home' | 'away');
                 
-                // Dispatch event for UI to update
-                window.dispatchEvent(new CustomEvent('securityModeChanged', { detail: { mode } }));
+                // Also dispatch the event for any legacy listeners
+                const event = new CustomEvent('securityModeChanged', {
+                    detail: { mode }
+                });
+                window.dispatchEvent(event);
+                
                 return { success: true, reason: `${mode} mode activated` };
             } catch (error) {
                 console.error('Error updating security mode:', error);
@@ -334,46 +313,14 @@ class ActionExecutor {
         
         const handleLockDoor = async (lock) => {
             try {
-                // Get user settings to find configured security device
-                const settings = await UserSettings.list();
-                let doorSecurityId = 'door_lock_001'; // Default fallback
+                console.log(`Door ${lock ? 'lock' : 'unlock'} requested`);
                 
-                if (settings.length > 0 && settings[0].security_settings?.door_security_id) {
-                    doorSecurityId = settings[0].security_settings.door_security_id;
-                }
+                // Import and use the centralized security state manager
+                const { SecurityStateManager } = await import('@/hooks/useSecurityStateCentralized');
+                const manager = SecurityStateManager.getInstance();
                 
-                // Check for existing security system or create one
-                const { SecuritySystemService } = await import('@/entities/SecuritySystem');
-                const securitySystems = await SecuritySystemService.list();
-                let doorLockSystem = securitySystems.find(sys => 
-                    sys.system_id === doorSecurityId
-                );
-                
-                if (!doorLockSystem) {
-                    // Create a door lock system
-                    doorLockSystem = await SecuritySystemService.create({
-                        system_id: doorSecurityId,
-                        system_type: 'door_control',
-                        lock_status: 'unlocked',
-                        security_mode: 'home'
-                    });
-                }
-                
-                // Update the security system state
-                await SecuritySystemService.update(doorLockSystem.id, { 
-                    lock_status: lock ? 'locked' : 'unlocked',
-                    security_mode: lock ? 'away' : 'home',
-                    last_action: new Date().toISOString()
-                });
-                
-                // Update localStorage with session ID for proper tracking
-                const sessionId = `${lock}_${lock ? true : false}_${Date.now()}`;
-                const securityState = {
-                    isDoorLocked: lock,
-                    isSecurityMode: lock ? true : false,
-                    sessionId
-                };
-                localStorage.setItem('securityState', JSON.stringify(securityState));
+                // Update through the centralized manager (this will persist to backend)
+                manager.triggerDoorLock(lock);
                 
                 // Dispatch events for SecurityOverview to listen
                 if(lock) {

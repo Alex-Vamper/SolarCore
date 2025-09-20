@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,10 +16,10 @@ import { UserSettings } from "@/entities/all";
 import { toast } from "sonner";
 import SecuritySettingsModal from "./SecuritySettingsModal";
 import { SecurityAutoLockService } from "@/lib/securityAutoLockService";
+import { useSecurityStateCentralized } from "@/hooks/useSecurityStateCentralized";
 
 export default function SecurityOverview({ onSecurityModeToggle, onSecuritySettings }) {
-  const [isDoorLocked, setIsDoorLocked] = useState(false);
-  const [isSecurityMode, setIsSecurityMode] = useState(false);
+  const { isDoorLocked, isSecurityMode, updateSecurityState } = useSecurityStateCentralized();
   const [isArming, setIsArming] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [securitySettings, setSecuritySettings] = useState(null);
@@ -48,64 +47,26 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     doSpeak();
   };
 
-  // Load security state and settings from localStorage and database
-  const loadSecurityData = async () => {
+  // Load security settings
+  const loadSecuritySettings = async () => {
     try {
-      // Load user settings for security configuration
       const settings = await UserSettings.list();
-      let doorSecurityId: string | undefined;
       if (settings.length > 0) {
         setSecuritySettings(settings[0].security_settings);
-        doorSecurityId = settings[0]?.security_settings?.door_security_id;
-      }
-
-      // Prioritize localStorage state (from voice commands) over backend for instant UI
-      const savedSecurityState = localStorage.getItem('securityState');
-      if (savedSecurityState) {
-        try {
-          const state = JSON.parse(savedSecurityState);
-          setIsDoorLocked(!!state.isDoorLocked);
-          setIsSecurityMode(!!state.isSecurityMode);
-          console.log('Loaded security state from localStorage:', state);
-        } catch (error) {
-          console.error('Error parsing localStorage security state:', error);
-        }
-      } else if (doorSecurityId) {
-        // Only hydrate from backend if no localStorage state exists
-        try {
-          const { SecuritySystemService } = await import('@/entities/SecuritySystem');
-          const securitySystems = await SecuritySystemService.list();
-          const securitySystem = securitySystems.find(s => s.system_id === doorSecurityId);
-          if (securitySystem) {
-            const locked = securitySystem.lock_status === 'locked';
-            const away = securitySystem.security_mode === 'away';
-            
-            setIsDoorLocked(locked);
-            setIsSecurityMode(away);
-
-            localStorage.setItem('securityState', JSON.stringify({ 
-              isDoorLocked: locked, 
-              isSecurityMode: away,
-              sessionId: `${locked}_${away}_${securitySystem.last_action || Date.now()}`
-            }));
-            console.log('Hydrated security state from backend:', { locked, away });
-          }
-        } catch (err) {
-          console.error('Error hydrating security state from backend:', err);
-        }
       }
     } catch (error) {
       console.error('Error loading security settings:', error);
     }
   };
+
   useEffect(() => {
-    loadSecurityData();
+    loadSecuritySettings();
   }, []);
 
   // Listen for settings changes
   useEffect(() => {
     const handleSecuritySettingsChanged = () => {
-      loadSecurityData();
+      loadSecuritySettings();
     };
 
     window.addEventListener('securitySettingsChanged', handleSecuritySettingsChanged);
@@ -113,53 +74,6 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
       window.removeEventListener('securitySettingsChanged', handleSecuritySettingsChanged);
     };
   }, []);
-
-  // Save security state to localStorage whenever it changes
-  useEffect(() => {
-    const securityState = {
-      isDoorLocked,
-      isSecurityMode,
-      sessionId: `${isDoorLocked}_${isSecurityMode}_${Date.now()}`
-    };
-    localStorage.setItem('securityState', JSON.stringify(securityState));
-  }, [isDoorLocked, isSecurityMode]);
-
-  // Listen for global state changes from voice commands
-  useEffect(() => {
-    const handleDoorLocked = (event) => {
-      const locked = event.detail.locked;
-      setIsDoorLocked(locked);
-      if (locked) {
-          setIsSecurityMode(true);
-          onSecurityModeToggle(true);
-      }
-    };
-
-    const handleDoorUnlocked = (event) => {
-      setIsDoorLocked(false);
-      setIsSecurityMode(false);
-      onSecurityModeToggle(false);
-    }
-
-    const handleSecurityModeChanged = (event) => {
-      const mode = event.detail.mode;
-      setIsSecurityMode(mode === 'away');
-      onSecurityModeToggle(mode === 'away');
-      if (mode === 'away') {
-          setIsDoorLocked(true); // Locking the door is part of away mode
-      }
-    };
-
-    window.addEventListener('doorLocked', handleDoorLocked);
-    window.addEventListener('doorUnlocked', handleDoorUnlocked);
-    window.addEventListener('securityModeChanged', handleSecurityModeChanged);
-
-    return () => {
-      window.removeEventListener('doorLocked', handleDoorLocked);
-      window.removeEventListener('doorUnlocked', handleDoorUnlocked);
-      window.removeEventListener('securityModeChanged', handleSecurityModeChanged);
-    };
-  }, [onSecurityModeToggle]);
 
   // Update countdown timer display for UI
   useEffect(() => {
@@ -197,58 +111,15 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     const newLockState = !isDoorLocked;
     
     try {
-      // Update backend state via SecuritySystemService
-      const { SecuritySystemService } = await import('@/entities/SecuritySystem');
-      const securitySystems = await SecuritySystemService.list();
-      let securitySystem = securitySystems.find(s => s.system_id === securitySettings.door_security_id);
-      
-      // If no security system found, create one
-      if (!securitySystem) {
-        console.log('Creating new security system with ID:', securitySettings.door_security_id);
-        try {
-          securitySystem = await SecuritySystemService.create({
-            system_id: securitySettings.door_security_id,
-            system_type: 'door_control',
-            lock_status: 'unlocked',
-            security_mode: 'home'
-          });
-          console.log('Security system created successfully:', securitySystem);
-          toast.success('Security system created and linked');
-        } catch (createError) {
-          console.error('Failed to create security system:', createError);
-          const errorMessage = createError.message || 'Unknown error occurred';
-          toast.error(`Failed to create security system: ${errorMessage}`);
-          throw createError;
-        }
-      }
-      
-      if (securitySystem?.id) {
-        try {
-          await SecuritySystemService.update(securitySystem.id, {
-            lock_status: newLockState ? 'locked' : 'unlocked',
-            security_mode: newLockState ? 'away' : 'home',
-            last_action: new Date().toISOString()
-          });
-          console.log('Security system updated:', securitySystem.id, {
-            lock_status: newLockState ? 'locked' : 'unlocked',
-            security_mode: newLockState ? 'away' : 'home'
-          });
-        } catch (updateError) {
-          console.error('Failed to update security system:', updateError);
-          const errorMessage = updateError.message || 'Unknown error occurred';
-          toast.error(`Failed to update security system: ${errorMessage}`);
-          throw updateError;
-        }
-      }
-      
-      // Update local state
+      // Update through centralized state manager
+      updateSecurityState({
+        isDoorLocked: newLockState,
+        isSecurityMode: newLockState ? true : isSecurityMode
+      });
+
       if (newLockState) {
-        setIsDoorLocked(true);
-        setIsSecurityMode(true);
         await onSecurityModeToggle(true);
       } else {
-        setIsDoorLocked(false);
-        setIsSecurityMode(false);
         await onSecurityModeToggle(false);
         
         // Clear completed sessions when unlocking (new security cycle)
@@ -275,59 +146,15 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
     const newSecurityMode = !isSecurityMode;
 
     try {
-      // Update backend state via SecuritySystemService
-      const { SecuritySystemService } = await import('@/entities/SecuritySystem');
-      const securitySystems = await SecuritySystemService.list();
-      let securitySystem = securitySystems.find(s => s.system_id === securitySettings.door_security_id);
+      // Update through centralized state manager
+      updateSecurityState({
+        isDoorLocked: newSecurityMode ? true : isDoorLocked,
+        isSecurityMode: newSecurityMode
+      });
       
-      // If no security system found, create one
-      if (!securitySystem) {
-        console.log('Creating new security system with ID:', securitySettings.door_security_id);
-        try {
-          securitySystem = await SecuritySystemService.create({
-            system_id: securitySettings.door_security_id,
-            system_type: 'door_control',
-            lock_status: 'unlocked',
-            security_mode: 'home'
-          });
-          console.log('Security system created successfully:', securitySystem);
-          toast.success('Security system created and linked');
-        } catch (createError) {
-          console.error('Failed to create security system:', createError);
-          const errorMessage = createError.message || 'Unknown error occurred';
-          toast.error(`Failed to create security system: ${errorMessage}`);
-          throw createError;
-        }
-      }
-      
-      if (securitySystem?.id) {
-        try {
-          await SecuritySystemService.update(securitySystem.id, {
-            security_mode: newSecurityMode ? 'away' : 'home',
-            lock_status: newSecurityMode ? 'locked' : (isDoorLocked ? 'locked' : 'unlocked'),
-            last_action: new Date().toISOString()
-          });
-          console.log('Security system updated:', securitySystem.id, {
-            security_mode: newSecurityMode ? 'away' : 'home',
-            lock_status: newSecurityMode ? 'locked' : (isDoorLocked ? 'locked' : 'unlocked')
-          });
-        } catch (updateError) {
-          console.error('Failed to update security system:', updateError);
-          const errorMessage = updateError.message || 'Unknown error occurred';
-          toast.error(`Failed to update security system: ${errorMessage}`);
-          throw updateError;
-        }
-      }
-      
-      // Update local state
       if (newSecurityMode) {
-        if (!isDoorLocked) {
-          setIsDoorLocked(true);
-        }
-        setIsSecurityMode(true);
         await onSecurityModeToggle(true);
       } else {
-        setIsSecurityMode(false);
         await onSecurityModeToggle(false);
         
         // Clear completed sessions when switching to home mode (new security cycle)
@@ -464,36 +291,49 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
             </Button>
           </div>
 
-          {isSecurityMode && !SecurityAutoLockService.isCountdownRunning() && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800 font-inter">
-                <strong>Away Mode Active:</strong> Main door is locked and security system is engaged. All non-essential appliances are powered off automatically. Safety systems remain active.
+          {/* Countdown Display */}
+          {SecurityAutoLockService.isCountdownRunning() && remainingTime > 0 && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Power className="w-5 h-5 text-orange-600" />
+                  <span className="font-medium text-orange-800 font-inter">Auto Power Off</span>
+                </div>
+                <div className="text-orange-800 font-mono">
+                  {Math.floor(remainingTime / 60).toString().padStart(2, '0')}:
+                  {(remainingTime % 60).toString().padStart(2, '0')}
+                </div>
+              </div>
+              <p className="text-sm text-orange-700 mt-2 font-inter">
+                All devices will automatically turn off when the timer reaches zero.
               </p>
-            </div>
-          )}
-
-          {SecurityAutoLockService.isCountdownRunning() && (
-            <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-              <p className="text-sm text-orange-800 font-inter">
-                <strong>Auto-Lock Countdown Active:</strong> All automation devices will turn off in <strong>{remainingTime} second{remainingTime !== 1 ? 's' : ''}</strong>. Change security mode to cancel. Devices in exceptions list will remain active.
-              </p>
-            </div>
-          )}
-
-          {isDoorLocked && !isSecurityMode && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800 font-inter">
-                <strong>Home Mode:</strong> Door is locked but you're still home. Toggle to Away mode when leaving to power down all systems.
-              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  SecurityAutoLockService.cancelAutoLockCountdown();
+                  toast.success('Auto power off cancelled');
+                }}
+                className="mt-3 border-orange-300 text-orange-700 hover:bg-orange-100 font-inter"
+              >
+                Cancel Auto Power Off
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
-      <SecuritySettingsModal
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        onSave={onSecuritySettings}
-       />
+
+      {showSettings && (
+        <SecuritySettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          onSave={(settings) => {
+            setSecuritySettings(settings);
+            onSecuritySettings?.(settings);
+            setShowSettings(false);
+          }}
+        />
+      )}
     </>
   );
 }
