@@ -67,32 +67,39 @@ export default function PaymentModal({ isOpen, onClose, onSuccess, plan, amount 
   const handlePayment = async () => {
     if (!validateForm()) return;
     
+    console.log('Starting payment process...');
     setStep('processing');
     
     try {
+      console.log('Invoking create-transaction function...');
       // Create transaction with backend
       const { data, error } = await supabase.functions.invoke('create-transaction', {
         body: { plan: 'premium' }
       });
 
+      console.log('Function response:', { data, error });
+
       if (error) {
         console.error('Error creating transaction:', error);
-        alert('Failed to initialize payment. Please try again.');
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        alert(`Failed to initialize payment: ${error.message || 'Please try again.'}`);
         setStep('payment');
         return;
       }
 
-      if (data.success && data.authorization_url) {
+      if (data?.success && data?.authorization_url) {
+        console.log('Payment URL received, redirecting to:', data.authorization_url);
         // Redirect to Paystack checkout
         window.location.href = data.authorization_url;
       } else {
-        console.error('Invalid response from payment service');
+        console.error('Invalid response from payment service:', data);
         alert('Failed to initialize payment. Please try again.');
         setStep('payment');
       }
     } catch (error) {
       console.error('Payment error:', error);
-      alert('Payment failed. Please try again.');
+      console.error('Error stack:', error.stack);
+      alert(`Payment failed: ${error.message || 'Please try again.'}`);
       setStep('payment');
     }
   };

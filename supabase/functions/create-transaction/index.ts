@@ -48,24 +48,36 @@ serve(async (req) => {
     console.log('Authenticated user:', user.id);
 
     const { plan } = await req.json();
+    console.log('Payment plan requested:', plan);
     
     if (!plan || plan !== 'premium') {
+      console.error('Invalid plan specified:', plan);
       return new Response('Invalid plan specified', { status: 400, headers: corsHeaders });
     }
 
-    // Get user settings to find email
+    // First check if user_settings table exists and get user email from auth
+    console.log('Checking user settings for user:', user.id);
     const { data: userSettings, error: settingsError } = await supabase
       .from('user_settings')
       .select('preferred_email')
       .eq('user_id', user.id)
       .single();
 
+    console.log('User settings query result:', { userSettings, settingsError });
+
+    let userEmail;
     if (settingsError || !userSettings?.preferred_email) {
-      console.error('User settings error:', settingsError);
-      return new Response('User email not found', { status: 400, headers: corsHeaders });
+      console.log('No preferred email in user_settings, using auth email:', user.email);
+      // Fallback to auth email if user_settings doesn't have preferred_email
+      if (!user.email) {
+        console.error('No email found in auth or user_settings for user:', user.id);
+        return new Response('User email not found', { status: 400, headers: corsHeaders });
+      }
+      userEmail = user.email;
+    } else {
+      userEmail = userSettings.preferred_email;
     }
 
-    const userEmail = userSettings.preferred_email;
     console.log('Creating transaction for:', userEmail);
 
     // Premium plan pricing (in kobo - multiply NGN by 100)
