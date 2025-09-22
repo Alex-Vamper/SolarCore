@@ -69,7 +69,8 @@ export default function AIAssistantButton() {
                 setAnderEnabled(false);
             }
             
-            const allCommands = await GlobalVoiceCommand.list();
+            // Load commands with subscription filtering
+            const allCommands = await GlobalVoiceCommand.list(settingsResult.length > 0 ? settingsResult[0] : undefined);
             const unrec = allCommands.find(c => c.command_name === '_admin_didnt_understand_') || null;
             const devNotFound = allCommands.find(c => c.command_name === '_admin_device_not_found_') || null;
             systemFallbacksRef.current = {
@@ -77,7 +78,7 @@ export default function AIAssistantButton() {
                 device_not_found: devNotFound ? { ...devNotFound, response: devNotFound.response_text } : null
             };
             
-            // Update voice processor with commands
+            // Update voice processor with filtered commands
             voiceProcessor.current.setCommands(allCommands);
         } catch (error) {
             setAnderEnabled(false); 

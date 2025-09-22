@@ -18,6 +18,11 @@ export type Database = {
         Row: {
           action_type: string | null
           audio_url: string | null
+          audio_url_english: string | null
+          audio_url_hausa: string | null
+          audio_url_igbo: string | null
+          audio_url_pidgin: string | null
+          audio_url_yoruba: string | null
           command_category: string
           command_name: string
           command_text: string
@@ -36,6 +41,11 @@ export type Database = {
         Insert: {
           action_type?: string | null
           audio_url?: string | null
+          audio_url_english?: string | null
+          audio_url_hausa?: string | null
+          audio_url_igbo?: string | null
+          audio_url_pidgin?: string | null
+          audio_url_yoruba?: string | null
           command_category?: string
           command_name: string
           command_text: string
@@ -54,6 +64,11 @@ export type Database = {
         Update: {
           action_type?: string | null
           audio_url?: string | null
+          audio_url_english?: string | null
+          audio_url_hausa?: string | null
+          audio_url_igbo?: string | null
+          audio_url_pidgin?: string | null
+          audio_url_yoruba?: string | null
           command_category?: string
           command_name?: string
           command_text?: string
@@ -1114,6 +1129,7 @@ export type Database = {
           power_source: string | null
           preferred_email: string | null
           preferred_email_enabled: boolean | null
+          preferred_language: string | null
           preferred_whatsapp: string | null
           preferred_whatsapp_enabled: boolean | null
           security_settings: Json | null
@@ -1151,6 +1167,7 @@ export type Database = {
           power_source?: string | null
           preferred_email?: string | null
           preferred_email_enabled?: boolean | null
+          preferred_language?: string | null
           preferred_whatsapp?: string | null
           preferred_whatsapp_enabled?: boolean | null
           security_settings?: Json | null
@@ -1188,6 +1205,7 @@ export type Database = {
           power_source?: string | null
           preferred_email?: string | null
           preferred_email_enabled?: boolean | null
+          preferred_language?: string | null
           preferred_whatsapp?: string | null
           preferred_whatsapp_enabled?: boolean | null
           security_settings?: Json | null

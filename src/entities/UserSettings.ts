@@ -38,6 +38,7 @@ export interface UserSettings {
   last_login_at?: string;
   created_at?: string;
   updated_at?: string;
+  preferred_language?: string;
 }
 
 export class UserSettingsService {

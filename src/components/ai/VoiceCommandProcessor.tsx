@@ -105,14 +105,18 @@ export default class VoiceCommandProcessor {
   async processCommand(transcript) {
     try {
       // Use commands from constructor or fetch global commands if not provided
-      const commands = this.commands.length > 0 ? this.commands : await GlobalVoiceCommand.list();
+      const commands = this.commands.length > 0 ? this.commands : await GlobalVoiceCommand.list(this.userSettings);
       const matchedCommand = this.findBestMatch(transcript.toLowerCase(), commands);
       
       if (matchedCommand) {
+        // Get language-specific audio URL
+        const preferredLanguage = this.userSettings?.preferred_language || 'english';
+        const audioUrl = this.getAudioUrlForLanguage(matchedCommand, preferredLanguage);
+        
         return {
           command: matchedCommand,
           response: matchedCommand.response_text || matchedCommand.response,
-          audioUrl: matchedCommand.audio_url,
+          audioUrl: audioUrl,
           matched: true
         };
       } else {
@@ -130,6 +134,18 @@ export default class VoiceCommandProcessor {
         matched: false
       };
     }
+  }
+
+  getAudioUrlForLanguage(command, language = 'english') {
+    const languageMap = {
+      'english': command.audio_url_english || command.audio_url,
+      'hausa': command.audio_url_hausa || command.audio_url_english || command.audio_url,
+      'yoruba': command.audio_url_yoruba || command.audio_url_english || command.audio_url,
+      'igbo': command.audio_url_igbo || command.audio_url_english || command.audio_url,
+      'pidgin': command.audio_url_pidgin || command.audio_url_english || command.audio_url
+    };
+    
+    return languageMap[language] || command.audio_url_english || command.audio_url;
   }
 
   findBestMatch(transcript, commands) {

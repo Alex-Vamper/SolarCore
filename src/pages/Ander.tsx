@@ -15,6 +15,8 @@ import SubscriptionModal from '../components/subscriptions/SubscriptionModal';
 import AdminPasswordModal from '../components/voice/AdminPasswordModal';
 import AudioUploadModal from '../components/voice/AudioUploadModal';
 import CommandEditorModal from '../components/voice/CommandEditorModal';
+import LanguageSelector from '../components/voice/LanguageSelector';
+import SubscriptionFeatureInfo from '../components/voice/SubscriptionFeatureInfo';
 import { useVoiceCommandInitializer } from "@/components/ai/VoiceCommandInitializer";
 import { useCrossSystemSync } from "@/hooks/useCrossSystemSync";
 import { GlobalVoiceCommand } from "@/entities/GlobalVoiceCommand";
@@ -77,24 +79,19 @@ export default function Ander() {
   const [isValidatingDeviceId, setIsValidatingDeviceId] = useState(false);
   const [deviceIdError, setDeviceIdError] = useState('');
   const [deviceValidated, setDeviceValidated] = useState(false);
+  const [preferredLanguage, setPreferredLanguage] = useState('english');
 
   const loadAllCommands = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch global commands from admin_ander_commands
-      const { data: allCommands, error } = await supabase
-        .from('admin_ander_commands')
-        .select('*')
-        .eq('is_active', true)
-        .order('command_category', { ascending: true })
-        .order('command_name', { ascending: true });
+      // Get current user settings for subscription filtering
+      const settingsResult = await UserSettings.list();
+      const userSettings = settingsResult.length > 0 ? settingsResult[0] : undefined;
 
-      if (error) {
-        console.error('Error loading commands:', error);
-        return;
-      }
+      // Fetch global commands with subscription filtering
+      const allCommands = await GlobalVoiceCommand.list(userSettings);
 
       // Separate admin and user commands
       const adminCmds = allCommands.filter(cmd => 
@@ -144,6 +141,7 @@ export default function Ander() {
         setSubscriptionPlan(settings.subscription_plan ?? 'none');
         setAnderDeviceId(settings.ander_device_id ?? '');
         setDeviceValidated(!!settings.ander_device_id);
+        setPreferredLanguage(settings.preferred_language ?? 'english');
       }
     } catch (error) {
       console.error("Error loading user settings:", error);
@@ -463,6 +461,16 @@ export default function Ander() {
     setShowSubscriptionModal(true);
   };
 
+  const handleLanguageChange = async (language: string) => {
+    setPreferredLanguage(language);
+    await handleSettingUpdate({ preferred_language: language });
+    
+    // Trigger settings change event to reload voice processor
+    window.dispatchEvent(new CustomEvent('anderSettingsChanged'));
+    
+    toast.success(`Voice response language changed to ${language}`);
+  };
+
   const getPlanDisplayInfo = () => {
     switch (subscriptionPlan) {
       case 'free':
@@ -605,6 +613,19 @@ export default function Ander() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Subscription Feature Information */}
+        <SubscriptionFeatureInfo
+          subscriptionPlan={subscriptionPlan}
+          onUpgrade={handleChangePlan}
+        />
+
+        {/* Language Selection - Premium only */}
+        <LanguageSelector
+          selectedLanguage={preferredLanguage}
+          onLanguageChange={handleLanguageChange}
+          isPremium={subscriptionPlan === 'premium' || subscriptionPlan === 'enterprise'}
+        />
 
         <Card className="glass-card border-0 shadow-lg">
           <CardHeader>
