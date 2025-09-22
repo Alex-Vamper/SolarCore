@@ -291,33 +291,69 @@ export default function SecurityOverview({ onSecurityModeToggle, onSecuritySetti
             </Button>
           </div>
 
-          {/* Countdown Display */}
-          {SecurityAutoLockService.isCountdownRunning() && remainingTime > 0 && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Power className="w-5 h-5 text-orange-600" />
-                  <span className="font-medium text-orange-800 font-inter">Auto Power Off</span>
+          {/* Current Status Display */}
+          {(isDoorLocked || isSecurityMode) && (
+            <div className={`rounded-lg p-4 ${
+              isDoorLocked && isSecurityMode 
+                ? "bg-orange-50 border border-orange-200" 
+                : "bg-blue-50 border border-blue-200"
+            }`}>
+              {/* Locked & Away Mode */}
+              {isDoorLocked && isSecurityMode && (
+                <>
+                  {SecurityAutoLockService.isCountdownRunning() && remainingTime > 0 ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Power className="w-5 h-5 text-orange-600" />
+                          <span className="font-medium text-orange-800 font-inter">Auto-Lock Countdown Active</span>
+                        </div>
+                        <div className="text-orange-800 font-mono">
+                          {Math.floor(remainingTime / 60).toString().padStart(2, '0')}:
+                          {(remainingTime % 60).toString().padStart(2, '0')}
+                        </div>
+                      </div>
+                      <p className="text-sm text-orange-700 font-inter">
+                        All automation devices will turn off in {remainingTime} seconds. Change security mode to cancel. Devices in exceptions list will remain active.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          SecurityAutoLockService.cancelAutoLockCountdown();
+                          toast.success('Auto power off cancelled');
+                        }}
+                        className="mt-3 border-orange-300 text-orange-700 hover:bg-orange-100 font-inter"
+                      >
+                        Cancel Auto Power Off
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="w-5 h-5 text-orange-600" />
+                        <span className="font-medium text-orange-800 font-inter">Away Mode Active</span>
+                      </div>
+                      <p className="text-sm text-orange-700 font-inter">
+                        Main door is locked and security system is engaged. All non-essential appliances are powered off automatically. Safety systems remain active.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Locked & Home Mode */}
+              {isDoorLocked && !isSecurityMode && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Home className="w-5 h-5 text-blue-600" />
+                    <span className="font-medium text-blue-800 font-inter">Home Mode</span>
+                  </div>
+                  <p className="text-sm text-blue-700 font-inter">
+                    Door is locked but you're still home. Toggle to Away mode when leaving to power down all systems.
+                  </p>
                 </div>
-                <div className="text-orange-800 font-mono">
-                  {Math.floor(remainingTime / 60).toString().padStart(2, '0')}:
-                  {(remainingTime % 60).toString().padStart(2, '0')}
-                </div>
-              </div>
-              <p className="text-sm text-orange-700 mt-2 font-inter">
-                All devices will automatically turn off when the timer reaches zero.
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  SecurityAutoLockService.cancelAutoLockCountdown();
-                  toast.success('Auto power off cancelled');
-                }}
-                className="mt-3 border-orange-300 text-orange-700 hover:bg-orange-100 font-inter"
-              >
-                Cancel Auto Power Off
-              </Button>
+              )}
             </div>
           )}
         </CardContent>
