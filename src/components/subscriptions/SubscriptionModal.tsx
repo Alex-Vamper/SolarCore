@@ -31,7 +31,7 @@ const plans = [
   {
     name: 'Premium Plan',
     subtitle: 'Personalized Smart Living',
-    price: '₦20,000/Month', // Updated to match backend pricing
+    price: '₦500/Month', // Updated to match backend pricing
     features: [
       'Everything in Free, plus:',
       'Custom Voice Packs (choose personality, accent, tone)',
@@ -120,7 +120,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan }) {
         onClose={handlePaymentClose}
         onSuccess={handlePaymentSuccess}
         plan="premium"
-        amount={20000} // Amount updated to match backend pricing
+        amount={500} // Amount updated to match backend pricing
       />
     );
   }

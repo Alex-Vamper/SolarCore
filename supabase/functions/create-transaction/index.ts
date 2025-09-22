@@ -101,7 +101,7 @@ serve(async (req) => {
     console.log('Creating transaction for email:', userEmail);
 
     // Premium plan pricing (in kobo - multiply NGN by 100)
-    const priceInKobo = 2000000; // NGN 20,000 = 2,000,000 kobo
+    const priceInKobo = 50000; // NGN 500 = 50,000 kobo
 
     const paystackSecret = Deno.env.get('PAYSTACK_SECRET_KEY');
     if (!paystackSecret) {
