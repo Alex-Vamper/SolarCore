@@ -47,7 +47,6 @@ export default function OnboardingChecker({ user, children }: OnboardingCheckerP
         power_source: setupData.energySource, // Map directly to power_source
         solar_system_id: setupData.solarSystemId || null,
         grid_meter_id: setupData.gridMeterId || null,
-        solar_provider: setupData.solarProvider || null,
         total_rooms: setupData.rooms.length,
         setup_completed: true
       };
