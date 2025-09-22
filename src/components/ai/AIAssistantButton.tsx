@@ -212,30 +212,94 @@ export default function AIAssistantButton() {
             setIsListening(false);
             
             if (result?.transcript) {
-                const commandResult = await voiceProcessor.current.processCommand(result.transcript);
+                console.log('AIAssistantButton: Processing transcript:', result.transcript);
                 
-                if (commandResult.matched) {
-                    const actionResult = await ActionExecutor.execute(commandResult.command, result.transcript);
+                const processingResult = await voiceProcessor.current.processCommand(result.transcript);
+                console.log('AIAssistantButton: Command processing result:', {
+                    matched: processingResult.matched,
+                    command_name: processingResult.command?.command_name,
+                    restricted: processingResult.restricted,
+                    has_audio: !!processingResult.audioUrl
+                });
 
-                    let finalResponseCommand = commandResult.command;
-                    if (!actionResult.success && actionResult.reason === 'device_not_found' && systemFallbacksRef.current?.device_not_found) {
-                        finalResponseCommand = systemFallbacksRef.current.device_not_found;
-                    }
-
-                    const responseText = finalResponseCommand.response || finalResponseCommand.response_text || commandResult.response;
-                    setResponseMessage(responseText);
-                    if (voiceResponseEnabled) {
-                        await voiceProcessor.current.speakResponse(responseText, finalResponseCommand.audio_url);
-                    }
-                } else {
-                    const fallback = systemFallbacksRef.current?.unrecognized;
-                    if (fallback) {
-                        setResponseMessage(fallback.response);
+                if (processingResult.matched) {
+                    // Handle restricted commands (subscription required)
+                    if (processingResult.restricted) {
+                        console.log('AIAssistantButton: Command is restricted, returning subscription message');
+                        setResponseMessage(processingResult.response);
                         if (voiceResponseEnabled) {
-                           await voiceProcessor.current.speakResponse(fallback.response, fallback.audio_url);
+                            await voiceProcessor.current.speakResponse(processingResult.response, processingResult.audioUrl);
+                        }
+                        return;
+                    }
+
+                    // Execute fallback commands directly (like unrecognized or device not found responses)
+                    if (processingResult.command.action_type === 'fallback') {
+                        console.log('AIAssistantButton: Executing fallback command');
+                        setResponseMessage(processingResult.response);
+                        if (voiceResponseEnabled) {
+                            await voiceProcessor.current.speakResponse(processingResult.response, processingResult.audioUrl);
+                        }
+                        return;
+                    }
+                    
+                    console.log('AIAssistantButton: Executing command action...', {
+                        action_type: processingResult.command.action_type,
+                        command_name: processingResult.command.command_name
+                    });
+
+                    // Execute the command using ActionExecutor
+                    const actionResult = await ActionExecutor.execute(processingResult.command, result.transcript);
+                    console.log('AIAssistantButton: Action execution result:', actionResult);
+                    
+                    if (actionResult.success) {
+                        // Success response with audio
+                        setResponseMessage(processingResult.response);
+                        if (voiceResponseEnabled) {
+                            await voiceProcessor.current.speakResponse(processingResult.response, processingResult.audioUrl);
                         }
                     } else {
-                        setResponseMessage(commandResult.response); 
+                        // Handle execution failures with appropriate fallback responses
+                        let fallbackResponse = null;
+                        
+                        if (actionResult.reason === 'device_not_found' && systemFallbacksRef.current.device_not_found) {
+                            fallbackResponse = systemFallbacksRef.current.device_not_found;
+                        } else {
+                            // Use the original command response as fallback
+                            fallbackResponse = {
+                                response: processingResult.response,
+                                audioUrl: processingResult.audioUrl
+                            };
+                        }
+                        
+                        console.log('AIAssistantButton: Using fallback response for failed execution:', {
+                            reason: actionResult.reason,
+                            fallback: fallbackResponse?.response?.substring(0, 50) + '...'
+                        });
+                        
+                        setResponseMessage(fallbackResponse.response);
+                        if (voiceResponseEnabled) {
+                            const audioUrl = GlobalVoiceCommand.getAudioUrlForLanguage(
+                                fallbackResponse, 
+                                userSettingsRef.current?.preferred_language || 'english'
+                            );
+                            await voiceProcessor.current.speakResponse(fallbackResponse.response, audioUrl);
+                        }
+                    }
+                } else {
+                    // Command not recognized - use fallback
+                    const fallbackResponse = systemFallbacksRef.current.unrecognized || {
+                        response: "I didn't understand that command. Please try again."
+                    };
+                    
+                    console.log('AIAssistantButton: Command not recognized, using fallback:', fallbackResponse.response);
+                    setResponseMessage(fallbackResponse.response);
+                    if (voiceResponseEnabled) {
+                        const audioUrl = GlobalVoiceCommand.getAudioUrlForLanguage(
+                            fallbackResponse, 
+                            userSettingsRef.current?.preferred_language || 'english'
+                        );
+                        await voiceProcessor.current.speakResponse(fallbackResponse.response, audioUrl);
                     }
                 }
             } else {

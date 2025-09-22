@@ -54,45 +54,44 @@ export class GlobalVoiceCommandService {
   }
 
   private static filterCommandsBySubscription(commands: GlobalVoiceCommand[], userSettings?: any): GlobalVoiceCommand[] {
-    if (!userSettings) return commands;
+    // Always return all commands - filtering is now done during execution
+    return commands;
+  }
+
+  static isCommandRestricted(command: GlobalVoiceCommand, userSettings?: any): boolean {
+    if (!userSettings) return false;
 
     const subscriptionPlan = userSettings.subscription_plan || 'free';
     
-    // If free plan, filter out specific device commands (only allow global commands)
+    // Premium users can access all commands
+    if (subscriptionPlan !== 'free') return false;
+    
+    // Free plan restrictions
     if (subscriptionPlan === 'free') {
-      return commands.filter(cmd => {
-        // Allow all system_control commands
-        if (cmd.command_category === 'system_control') return true;
-        
-        // For other categories, only allow commands that don't target specific devices
-        const cmdName = cmd.command_name.toLowerCase();
-        const keywords = cmd.keywords?.join(' ').toLowerCase() || '';
-        
-        // Allow "all" commands - global room commands
-        if (cmdName.includes('all') || keywords.includes('all')) return true;
-        
-        // Allow room-level commands (not specific device commands)
-        const isRoomLevel = [
-          'living room lights', 'bedroom lights', 'kitchen lights', 'dining room lights',
-          'living room sockets', 'bedroom sockets', 'kitchen sockets', 'dining room sockets',
-          'living room ac', 'bedroom ac', 'kitchen ac', 'dining room ac',
-          'living room windows', 'bedroom windows', 'kitchen windows', 'dining room windows',
-          'living room curtains', 'bedroom curtains', 'kitchen curtains', 'dining room curtains'
-        ].some(roomCmd => cmdName.includes(roomCmd) || keywords.includes(roomCmd));
-        
-        if (isRoomLevel) return true;
-        
-        // Block specific device commands (e.g., "ceiling lights", "wall lights", "TV socket")
-        const isSpecificDevice = [
-          'ceiling', 'wall', 'tv socket', 'dispenser socket', 'free socket'
-        ].some(specific => cmdName.includes(specific) || keywords.includes(specific));
-        
-        return !isSpecificDevice;
-      });
+      // Block all energy_management commands
+      if (command.command_category === 'energy_management') return true;
+      
+      // Block all safety_and_security commands except lock_front_door
+      if (command.command_category === 'safety_and_security' && command.command_name !== 'lock_front_door') {
+        return true;
+      }
+      
+      // Block specific device socket commands (socket_specific_* action types)
+      if (command.action_type?.includes('socket_specific')) return true;
+      
+      // Block specific device commands based on keywords
+      const cmdName = command.command_name.toLowerCase();
+      const keywords = command.keywords?.join(' ').toLowerCase() || '';
+      
+      // Block specific device commands (tv socket, dispenser socket, free socket)
+      const isSpecificDevice = [
+        'tv socket', 'dispenser socket', 'free socket'
+      ].some(specific => cmdName.includes(specific) || keywords.includes(specific));
+      
+      return isSpecificDevice;
     }
     
-    // Premium users get all commands
-    return commands;
+    return false;
   }
 
   static getAudioUrlForLanguage(command: GlobalVoiceCommand, language: string = 'english'): string | undefined {

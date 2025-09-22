@@ -33,8 +33,15 @@ class ActionExecutor {
 
     async execute(command, transcript) {
         if (!command || !command.action_type) {
+            console.log('ActionExecutor: No command or action_type provided', { command, transcript });
             return { success: false, message: "No action type defined." };
         }
+
+        console.log('ActionExecutor: Processing command', {
+            command_name: command.command_name,
+            action_type: command.action_type,
+            transcript: transcript
+        });
         
         // Extract room name for room-specific availability checks
         const extractRoomName = () => {
@@ -149,23 +156,40 @@ class ActionExecutor {
                     });
                     
                     devicesUpdated += appliancesToUpdate.length;
+                    
+                    console.log(`ActionExecutor: Found ${appliancesToUpdate.length} ${type} devices in room ${room.name}`, {
+                        room_id: room.id,
+                        room_name: room.name,
+                        devices: appliancesToUpdate.map(app => ({ id: app.id, name: app.name, current_status: app.status }))
+                    });
                 }
             }
             
             if (devicesUpdated === 0) {
                 deviceStateLogger.log('ACTION_EXECUTOR', `No ${type} devices found to update`);
+                console.log(`ActionExecutor: No ${type} devices found across ${rooms.length} rooms`);
                 return { success: false, reason: 'device_not_found' };
             }
 
+            console.log(`ActionExecutor: Updating ${devicesUpdated} ${type} devices across ${roomUpdates.length} rooms`);
+            
             // Use unified device state service for backend sync
             const result = await deviceStateService.updateMultipleDevices(roomUpdates);
             
             if (!result.success) {
                 deviceStateLogger.logError('ACTION_EXECUTOR', `Failed to update ${type} devices`, result.errors);
+                console.error(`ActionExecutor: Backend sync failed for ${type} devices:`, result.errors);
                 return { success: false, reason: 'update_failed' };
             }
 
             deviceStateLogger.log('ACTION_EXECUTOR', `Successfully updated ${devicesUpdated} ${type} devices`);
+            console.log(`ActionExecutor: Successfully updated ${devicesUpdated} ${type} devices`);
+            
+            // Dispatch UI update event
+            window.dispatchEvent(new CustomEvent('deviceStateChanged', {
+                detail: { type: 'bulk_update', deviceType: type, devicesUpdated, success: true }
+            }));
+            
             return { success: true, reason: `All ${type} ${status ? 'turned on' : 'turned off'}` };
         };
 
@@ -216,33 +240,63 @@ class ActionExecutor {
         const updateAllDevices = async (status) => {
             deviceStateLogger.logVoiceCommand('updateAllDevices', transcript, { status });
             
+            console.log(`ActionExecutor: Starting updateAllDevices with status=${status}`);
+            console.log(`ActionExecutor: Found ${rooms.length} rooms to process`);
+            
             // Update each room's devices individually
             const updatePromises = [];
+            let totalDevices = 0;
             
             for (const room of rooms) {
+                console.log(`ActionExecutor: Processing room ${room.name} with ${room.appliances.length} appliances`);
+                
                 for (const appliance of room.appliances) {
+                    totalDevices++;
+                    console.log(`ActionExecutor: Adding update for device ${appliance.name} (${appliance.type}) in ${room.name}`, {
+                        current_status: appliance.status,
+                        new_status: status
+                    });
+                    
                     updatePromises.push(
                         deviceStateService.updateDeviceState(room.id, appliance.id, { status })
                     );
                 }
             }
             
+            console.log(`ActionExecutor: Executing ${updatePromises.length} device updates`);
+            
             const results = await Promise.all(updatePromises);
             const successCount = results.filter(r => r.success).length;
-            const totalDevices = updatePromises.length;
+            const failureCount = results.filter(r => !r.success).length;
+            
+            console.log(`ActionExecutor: Update results - ${successCount} successful, ${failureCount} failed out of ${totalDevices} total`);
             
             if (successCount === 0) {
                 deviceStateLogger.logError('ACTION_EXECUTOR', 'Failed to update any devices');
+                console.error('ActionExecutor: All device updates failed');
                 return { success: false, reason: 'update_failed' };
             }
             
             if (successCount < totalDevices) {
                 deviceStateLogger.log('ACTION_EXECUTOR', `Partially updated ${successCount} of ${totalDevices} devices`);
-                return { success: true, reason: `Some devices ${status ? 'turned on' : 'turned off'}` };
+                console.warn(`ActionExecutor: Partial success - ${successCount} of ${totalDevices} devices updated`);
+            } else {
+                console.log(`ActionExecutor: All ${totalDevices} devices updated successfully`);
             }
 
             deviceStateLogger.log('ACTION_EXECUTOR', `Successfully updated ${successCount} devices`);
-            return { success: true, reason: `All devices ${status ? 'turned on' : 'turned off'}` };
+            
+            // Dispatch UI update event with detailed info
+            window.dispatchEvent(new CustomEvent('deviceStateChanged', {
+                detail: { 
+                    type: 'bulk_update', 
+                    devicesUpdated: successCount, 
+                    totalDevices: totalDevices,
+                    success: true 
+                }
+            }));
+            
+            return { success: true, reason: `${successCount} devices ${status ? 'turned on' : 'turned off'}` };
         };
         
         const updateSpecificSocket = async (status) => {
@@ -387,11 +441,19 @@ class ActionExecutor {
             case "ac_room_on": result = await updateRoomAppliances('smart_hvac', true); break;
             case "ac_room_off": result = await updateRoomAppliances('smart_hvac', false); break;
 
-            // Sockets
+            // Socket Control - enhanced logging and specific device support
             case "sockets_all_on": result = await updateAllAppliances('smart_socket', true); break;
             case "sockets_all_off": result = await updateAllAppliances('smart_socket', false); break;
             case "sockets_room_on": result = await updateRoomAppliances('smart_socket', true); break;
             case "sockets_room_off": result = await updateRoomAppliances('smart_socket', false); break;
+            case "socket_specific_on": 
+                console.log('ActionExecutor: Processing specific socket ON command');
+                result = await updateSpecificSocket(true); 
+                break;
+            case "socket_specific_off": 
+                console.log('ActionExecutor: Processing specific socket OFF command');
+                result = await updateSpecificSocket(false); 
+                break;
             case "socket_specific_on": result = await updateSpecificSocket(true); break;
             case "socket_specific_off": result = await updateSpecificSocket(false); break;
 
@@ -441,6 +503,12 @@ class ActionExecutor {
             }));
         }
 
+        console.log('ActionExecutor: Command execution completed', {
+            action_type: command.action_type,
+            success: result.success,
+            reason: result.reason || 'success'
+        });
+        
         return result;
     }
 }

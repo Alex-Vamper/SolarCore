@@ -109,7 +109,35 @@ export default class VoiceCommandProcessor {
       const matchedCommand = this.findBestMatch(transcript.toLowerCase(), commands);
       
       if (matchedCommand) {
-        // Get language-specific audio URL
+        // Check if command is restricted for free users
+        if (GlobalVoiceCommand.isCommandRestricted(matchedCommand, this.userSettings)) {
+          // Find the subscription required command
+          const subscriptionRequiredCommand = commands.find(cmd => 
+            cmd.command_name === '_admin_subscription_required_'
+          );
+          
+          if (subscriptionRequiredCommand) {
+            const preferredLanguage = this.userSettings?.preferred_language || 'english';
+            const audioUrl = this.getAudioUrlForLanguage(subscriptionRequiredCommand, preferredLanguage);
+            
+            return {
+              command: subscriptionRequiredCommand,
+              response: subscriptionRequiredCommand.response_text,
+              audioUrl: audioUrl,
+              matched: true,
+              restricted: true
+            };
+          } else {
+            return {
+              command: matchedCommand,
+              response: "This command requires a premium subscription. Please upgrade your plan to use this feature.",
+              matched: true,
+              restricted: true
+            };
+          }
+        }
+        
+        // Get language-specific audio URL for allowed commands
         const preferredLanguage = this.userSettings?.preferred_language || 'english';
         const audioUrl = this.getAudioUrlForLanguage(matchedCommand, preferredLanguage);
         
