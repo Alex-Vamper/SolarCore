@@ -63,26 +63,39 @@ export default function CameraViewModal({
     setIsConnecting(true);
     setConnectionError('');
     
-    // Handle IP with or without port
-    const hasPort = ipAddress.includes(':');
-    const baseUrl = hasPort ? `http://${ipAddress}` : `http://${ipAddress}:8080`;
-    
-    console.log('Attempting to connect to camera:', baseUrl);
-    
-    // Set up the stream URL and save IP
-    setStreamUrl(baseUrl + '/video');
-    setUseIframe(false);
-    setIsStreamActive(true);
-    onIpSave(ipAddress);
-    setIsConnecting(false);
-    
-    // Show initial connection message
-    setConnectionError('Loading stream... If nothing appears, browser security may be blocking HTTP content. Try opening the IP in a new tab first.');
+    try {
+      // Handle IP with or without port
+      const hasPort = ipAddress.includes(':');
+      const baseUrl = hasPort ? `http://${ipAddress}` : `http://${ipAddress}:8080`;
+      
+      console.log('Attempting to connect to camera:', baseUrl);
+      
+      // Set up the stream URL and save IP
+      setStreamUrl(baseUrl + '/video');
+      setUseIframe(false);
+      setIsStreamActive(true);
+      onIpSave(ipAddress);
+      
+      // Show initial connection message
+      setConnectionError('Loading stream... If nothing appears, browser security may be blocking HTTP content. Try opening the IP in a new tab first.');
+    } catch (error) {
+      console.error('Error in handleConnect:', error);
+      setConnectionError('Failed to connect. Please check the IP address and try again.');
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const handleImageError = (error: any) => {
     console.error('Camera stream failed to load:', error);
-    setConnectionError(`Stream failed to load. This is likely due to browser security blocking HTTP content on HTTPS sites. Try opening http://${ipAddress}${!ipAddress.includes(':') ? ':8080' : ''}/video in a new browser tab first.`);
+    try {
+      const port = ipAddress && ipAddress.includes(':') ? '' : ':8080';
+      const fullUrl = `http://${ipAddress || 'IP_ADDRESS'}${port}/video`;
+      setConnectionError(`Stream failed to load. This is likely due to browser security blocking HTTP content on HTTPS sites. Try opening ${fullUrl} in a new browser tab first.`);
+    } catch (err) {
+      console.error('Error in handleImageError:', err);
+      setConnectionError('Stream failed to load. Browser security may be blocking HTTP content. Try opening the camera IP in a new browser tab first.');
+    }
   };
 
   const handleClose = () => {
