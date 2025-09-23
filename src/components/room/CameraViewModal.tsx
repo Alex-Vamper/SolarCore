@@ -41,9 +41,11 @@ export default function CameraViewModal({
   const [isStreamActive, setIsStreamActive] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
 
-  const validateIpFormat = (ip: string) => {
+  const validateIpFormat = (input: string) => {
+    // Remove port if present for IP validation
+    const ipOnly = input.includes(':') ? input.split(':')[0] : input;
     const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-    return ipRegex.test(ip) && ip.split('.').every(octet => parseInt(octet) <= 255);
+    return ipRegex.test(ipOnly) && ipOnly.split('.').every(octet => parseInt(octet) <= 255);
   };
 
   const handleConnect = async () => {
@@ -53,22 +55,18 @@ export default function CameraViewModal({
     }
 
     if (!validateIpFormat(ipAddress)) {
-      setConnectionError('Please enter a valid IP address (e.g., 192.168.1.100)');
+      setConnectionError('Please enter a valid IP address (e.g., 192.168.1.100 or 192.168.1.100:8080)');
       return;
     }
 
     setIsConnecting(true);
     setConnectionError('');
     
-    const url = `http://${ipAddress}:8080/video`;
+    // Handle IP with or without port
+    const hasPort = ipAddress.includes(':');
+    const url = hasPort ? `http://${ipAddress}/video` : `http://${ipAddress}:8080/video`;
     
     try {
-      // Test if the stream is reachable
-      const response = await fetch(url, { 
-        method: 'HEAD',
-        mode: 'no-cors' // Handle CORS for initial check
-      });
-      
       setStreamUrl(url);
       setIsStreamActive(true);
       onIpSave(ipAddress);
@@ -81,7 +79,7 @@ export default function CameraViewModal({
     }
   };
 
-  const handleVideoError = () => {
+  const handleImageError = () => {
     setConnectionError('Stream failed to load. Check camera connection.');
     setIsStreamActive(false);
   };
@@ -120,7 +118,7 @@ export default function CameraViewModal({
                   <div className="flex gap-2">
                     <Input
                       id="ip-address"
-                      placeholder="192.168.1.100"
+                      placeholder="192.168.1.100 or 192.168.1.100:8080"
                       value={ipAddress}
                       onChange={(e) => setIpAddress(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
@@ -161,16 +159,13 @@ export default function CameraViewModal({
               <div className="space-y-4">
                 <div className="relative bg-black rounded-lg overflow-hidden" 
                      style={{ aspectRatio: '16/9' }}>
-                  <video
+                  <img
                     src={streamUrl}
-                    autoPlay
-                    controls
+                    alt="Live camera stream"
                     className="w-full h-full object-contain"
-                    onError={handleVideoError}
-                    onLoadStart={() => setConnectionError('')}
-                  >
-                    Your browser does not support the video element.
-                  </video>
+                    onError={handleImageError}
+                    onLoad={() => setConnectionError('')}
+                  />
                   
                   <div className="absolute top-4 right-4">
                     <div className="flex items-center gap-2 bg-green-500 text-white px-3 py-1 rounded-full text-sm">
@@ -183,7 +178,7 @@ export default function CameraViewModal({
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Wifi className="w-4 h-4 text-green-600" />
-                    Connected to: {ipAddress}:8080
+                    Connected to: {ipAddress}{!ipAddress.includes(':') ? ':8080' : ''}
                   </div>
                   <Button 
                     variant="outline" 
