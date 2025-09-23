@@ -40,6 +40,7 @@ export default function CameraViewModal({
   const [connectionError, setConnectionError] = useState('');
   const [isStreamActive, setIsStreamActive] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
+  const [useIframe, setUseIframe] = useState(false);
 
   const validateIpFormat = (input: string) => {
     // Remove port if present for IP validation
@@ -64,19 +65,39 @@ export default function CameraViewModal({
     
     // Handle IP with or without port
     const hasPort = ipAddress.includes(':');
-    const url = hasPort ? `http://${ipAddress}/video` : `http://${ipAddress}:8080/video`;
+    const baseUrl = hasPort ? `http://${ipAddress}` : `http://${ipAddress}:8080`;
     
-    try {
-      setStreamUrl(url);
+    // Try multiple endpoints in order of preference
+    const endpoints = ['/video', '/videofeed', '/video?submenu=mjpg'];
+    
+    let connected = false;
+    for (const endpoint of endpoints) {
+      const url = baseUrl + endpoint;
+      try {
+        // Try direct access first
+        setStreamUrl(url);
+        setUseIframe(false);
+        connected = true;
+        break;
+      } catch (error) {
+        console.log(`Failed to connect to ${url}:`, error);
+      }
+    }
+    
+    if (connected) {
       setIsStreamActive(true);
       onIpSave(ipAddress);
       setConnectionError('');
-    } catch (error) {
-      setConnectionError('Unable to connect to camera. Check IP address and ensure IP Webcam is running.');
-      setIsStreamActive(false);
-    } finally {
-      setIsConnecting(false);
+    } else {
+      // Fallback to iframe method
+      setStreamUrl(baseUrl + '/video');
+      setUseIframe(true);
+      setIsStreamActive(true);
+      onIpSave(ipAddress);
+      setConnectionError('Stream loaded via iframe. If no video appears, ensure IP Webcam is running and accessible.');
     }
+    
+    setIsConnecting(false);
   };
 
   const handleImageError = () => {
@@ -150,22 +171,38 @@ export default function CameraViewModal({
                   <ol className="list-decimal list-inside space-y-1 pl-4">
                     <li>Install "IP Webcam" app on your phone</li>
                     <li>Open the app and tap "Start server"</li>
-                    <li>Note the IP address shown (e.g., 192.168.1.100)</li>
+                    <li>Note the IP address shown (e.g., 192.168.1.100:8080)</li>
+                    <li>Ensure your phone and computer are on the same Wi-Fi network</li>
                     <li>Enter that IP address above and click Connect</li>
                   </ol>
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                    <p className="text-amber-800 text-xs">
+                      <strong>Note:</strong> Due to browser security, the stream may load in a frame. 
+                      If you see a black screen, try accessing the IP directly in a new browser tab first.
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <div className="relative bg-black rounded-lg overflow-hidden" 
                      style={{ aspectRatio: '16/9' }}>
-                  <img
-                    src={streamUrl}
-                    alt="Live camera stream"
-                    className="w-full h-full object-contain"
-                    onError={handleImageError}
-                    onLoad={() => setConnectionError('')}
-                  />
+                  {useIframe ? (
+                    <iframe
+                      src={streamUrl}
+                      className="w-full h-full"
+                      allow="camera"
+                      onLoad={() => setConnectionError('')}
+                    />
+                  ) : (
+                    <img
+                      src={streamUrl}
+                      alt="Live camera stream"
+                      className="w-full h-full object-contain"
+                      onError={handleImageError}
+                      onLoad={() => setConnectionError('')}
+                    />
+                  )}
                   
                   <div className="absolute top-4 right-4">
                     <div className="flex items-center gap-2 bg-green-500 text-white px-3 py-1 rounded-full text-sm">
