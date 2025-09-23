@@ -67,42 +67,22 @@ export default function CameraViewModal({
     const hasPort = ipAddress.includes(':');
     const baseUrl = hasPort ? `http://${ipAddress}` : `http://${ipAddress}:8080`;
     
-    // Try multiple endpoints in order of preference
-    const endpoints = ['/video', '/videofeed', '/video?submenu=mjpg'];
+    console.log('Attempting to connect to camera:', baseUrl);
     
-    let connected = false;
-    for (const endpoint of endpoints) {
-      const url = baseUrl + endpoint;
-      try {
-        // Try direct access first
-        setStreamUrl(url);
-        setUseIframe(false);
-        connected = true;
-        break;
-      } catch (error) {
-        console.log(`Failed to connect to ${url}:`, error);
-      }
-    }
-    
-    if (connected) {
-      setIsStreamActive(true);
-      onIpSave(ipAddress);
-      setConnectionError('');
-    } else {
-      // Fallback to iframe method
-      setStreamUrl(baseUrl + '/video');
-      setUseIframe(true);
-      setIsStreamActive(true);
-      onIpSave(ipAddress);
-      setConnectionError('Stream loaded via iframe. If no video appears, ensure IP Webcam is running and accessible.');
-    }
-    
+    // Set up the stream URL and save IP
+    setStreamUrl(baseUrl + '/video');
+    setUseIframe(false);
+    setIsStreamActive(true);
+    onIpSave(ipAddress);
     setIsConnecting(false);
+    
+    // Show initial connection message
+    setConnectionError('Loading stream... If nothing appears, browser security may be blocking HTTP content. Try opening the IP in a new tab first.');
   };
 
-  const handleImageError = () => {
-    setConnectionError('Stream failed to load. Check camera connection.');
-    setIsStreamActive(false);
+  const handleImageError = (error: any) => {
+    console.error('Camera stream failed to load:', error);
+    setConnectionError(`Stream failed to load. This is likely due to browser security blocking HTTP content on HTTPS sites. Try opening http://${ipAddress}${!ipAddress.includes(':') ? ':8080' : ''}/video in a new browser tab first.`);
   };
 
   const handleClose = () => {
@@ -175,10 +155,10 @@ export default function CameraViewModal({
                     <li>Ensure your phone and computer are on the same Wi-Fi network</li>
                     <li>Enter that IP address above and click Connect</li>
                   </ol>
-                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                    <p className="text-amber-800 text-xs">
-                      <strong>Note:</strong> Due to browser security, the stream may load in a frame. 
-                      If you see a black screen, try accessing the IP directly in a new browser tab first.
+                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-red-800 text-xs">
+                      <strong>Important:</strong> Browser security blocks HTTP camera streams on HTTPS sites. 
+                      If the stream doesn't work, you'll need to open the camera URL in a separate browser tab first to allow it.
                     </p>
                   </div>
                 </div>
@@ -215,17 +195,27 @@ export default function CameraViewModal({
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Wifi className="w-4 h-4 text-green-600" />
-                    Connected to: {ipAddress}{!ipAddress.includes(':') ? ':8080' : ''}
+                    Stream URL: {ipAddress}{!ipAddress.includes(':') ? ':8080' : ''}/video
                   </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsStreamActive(false);
-                      setStreamUrl('');
-                    }}
-                  >
-                    Change IP
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.open(`http://${ipAddress}${!ipAddress.includes(':') ? ':8080' : ''}/video`, '_blank')}
+                    >
+                      Open in Tab
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setIsStreamActive(false);
+                        setStreamUrl('');
+                      }}
+                    >
+                      Change IP
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
