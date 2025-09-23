@@ -26,6 +26,7 @@ interface RealtimePayload {
 
 export function useCameraSync(roomId: string) {
   const [issyncing, setSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<number>(0);
 
   useEffect(() => {
     if (!roomId) return;
@@ -45,6 +46,13 @@ export function useCameraSync(roomId: string) {
           const hasCamera = payload.new?.state?.camera_ip || payload.old?.state?.camera_ip;
           if (!hasCamera) return;
 
+          // Prevent infinite loops - only sync if enough time has passed
+          const now = Date.now();
+          if (now - lastSyncTime < 2000) {
+            deviceStateLogger.log('CAMERA_SYNC', 'Skipping sync - too soon since last sync');
+            return;
+          }
+
           deviceStateLogger.log('CAMERA_SYNC', 'Child device state changed', {
             event: payload.eventType,
             deviceId: payload.new?.id || payload.old?.id,
@@ -52,8 +60,10 @@ export function useCameraSync(roomId: string) {
             oldState: payload.old?.state
           });
 
-          // Sync camera state from backend to frontend
-          await syncCameraStatesFromBackend(roomId);
+          // Debounced sync to prevent infinite loops
+          setTimeout(() => {
+            syncCameraStatesFromBackend(roomId);
+          }, 500);
         }
       )
       .subscribe();
@@ -70,6 +80,7 @@ export function useCameraSync(roomId: string) {
     if (issyncing) return;
     
     setSyncing(true);
+    setLastSyncTime(Date.now());
     deviceStateLogger.log('CAMERA_SYNC', 'Starting camera state sync from backend', { roomId });
 
     try {

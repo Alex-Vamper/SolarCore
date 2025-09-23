@@ -52,6 +52,16 @@ export default function CameraSyncIndicator({ roomId, className = '' }: CameraSy
   useEffect(() => {
     if (issyncing) {
       setSyncStatus('syncing');
+      
+      // Timeout to prevent stuck syncing state
+      const timeout = setTimeout(() => {
+        if (issyncing) {
+          deviceStateLogger.log('CAMERA_SYNC_INDICATOR', 'Sync timeout - resetting status');
+          setSyncStatus('disconnected');
+        }
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeout);
     }
   }, [issyncing]);
 
