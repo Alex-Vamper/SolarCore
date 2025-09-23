@@ -78,6 +78,7 @@ import {
 import ApplianceControl from "../components/room/ApplianceControl";
 import AddDeviceModal from "../components/room/AddDeviceModal";
 import RoomSettingsTab from "../components/room/AutomationSettings";
+import CameraSyncIndicator from "../components/room/CameraSyncIndicator";
 
 const getRoomIcon = (roomName) => {
   const name = roomName.toLowerCase();
@@ -589,13 +590,16 @@ export default function RoomDetails() {
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
                     <RoomIcon className="w-8 h-8 text-white" />
                 </div>
-                <div>
+                <div className="flex-1">
                     <h1 className="text-3xl font-bold font-inter" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                         {room.name}
                     </h1>
                     <p className="text-lg font-inter opacity-90" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}>
                         {activeDevices.length} of {room.appliances?.length || 0} devices active
                     </p>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                    <CameraSyncIndicator roomId={roomId} />
                 </div>
             </div>
         </div>

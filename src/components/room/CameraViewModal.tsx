@@ -14,7 +14,9 @@ import {
   Minimize2, 
   AlertCircle, 
   Play,
-  Loader2
+  Loader2,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 
 interface CameraViewModalProps {
@@ -179,7 +181,8 @@ export default function CameraViewModal({
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Wifi className="w-4 h-4 text-green-600" />
                     Connected to: {ipAddress}:8080
                   </div>
                   <Button 
