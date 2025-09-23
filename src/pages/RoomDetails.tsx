@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { User, Room, UserSettings } from "@/entities/all";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useCameraSync } from "@/hooks/useCameraSync";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import { deviceCapabilitiesCache } from "@/lib/deviceCapabilitiesCache";
@@ -224,6 +225,13 @@ export default function RoomDetails() {
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false);
   const [activeTab, setActiveTab] = useState("devices");
 
+  // Get room ID from URL
+  const pathParts = window.location.pathname.split('/');
+  const roomId = pathParts[pathParts.length - 1];
+  
+  // Initialize camera sync for this room
+  const { syncCameraStatesFromBackend, issyncing } = useCameraSync(roomId);
+
   const loadRoom = async () => {
     const pathParts = window.location.pathname.split('/');
     const roomId = pathParts[pathParts.length - 1];
@@ -251,6 +259,10 @@ export default function RoomDetails() {
 
       // Sync room with backend to ensure consistent state
       const syncResult = await deviceStateService.syncRoomWithBackend(roomId);
+      
+      // Also sync camera states
+      await syncCameraStatesFromBackend();
+      
       if (syncResult.success && syncResult.appliancesUpdated > 0) {
         deviceStateLogger.log('ROOM_DETAILS', `Synced ${syncResult.appliancesUpdated} appliances from backend`);
         // Reload room data after sync
@@ -275,8 +287,30 @@ export default function RoomDetails() {
     loadRoom();
   }, []);
 
-  // Auto-refresh when voice commands change room/device states
-  useAutoRefresh(loadRoom, ['roomStateChanged', 'applianceStateChanged', 'deviceStateChanged']);
+  // Auto-refresh when voice commands change room/device states or camera states change
+  useAutoRefresh(loadRoom, [
+    'roomStateChanged', 
+    'applianceStateChanged', 
+    'deviceStateChanged', 
+    'cameraStateChanged',
+    'roomUpdated'
+  ]);
+
+  // Listen for camera-specific state changes
+  useEffect(() => {
+    const handleCameraStateChange = (event) => {
+      deviceStateLogger.log('ROOM_DETAILS', 'Camera state change event received', event.detail);
+      if (event.detail.roomId === roomId) {
+        // Reload room to reflect camera state changes
+        loadRoom();
+      }
+    };
+
+    window.addEventListener('cameraStateChanged', handleCameraStateChange);
+    return () => {
+      window.removeEventListener('cameraStateChanged', handleCameraStateChange);
+    };
+  }, [roomId]);
 
   const handleBack = () => {
     navigate(createPageUrl("Automation"));

@@ -35,6 +35,7 @@ import {
   Eye
 } from "lucide-react";
 import CameraViewModal from "./CameraViewModal";
+import { useCameraSync } from "@/hooks/useCameraSync";
 
 const getApplianceIcon = (type, name = '') => {
   // Check by type first - exact match to device catalog types
@@ -92,6 +93,8 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
   const [isUpdating, setIsUpdating] = useState(false);
   const [optimisticState, setOptimisticState] = useState(appliance);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  
+  const { syncCameraStateToBackend } = useCameraSync(roomId);
 
   const handleUpdate = async (updates) => {
     if (isUpdating) {
@@ -135,13 +138,21 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
 
   const handleCameraIpSave = async (ip: string) => {
     try {
-      const updates = {
-        camera_ip: ip
-      };
-      await handleUpdate(updates);
-      deviceStateLogger.log('APPLIANCE_CONTROL', 'Camera IP saved', { applianceId: appliance.id, ip });
+      deviceStateLogger.log('APPLIANCE_CONTROL', 'Saving camera IP', { applianceId: appliance.id, ip });
+      
+      // Use the camera sync service for backend synchronization
+      const result = await syncCameraStateToBackend(roomId, appliance.id, { camera_ip: ip });
+      
+      if (result.success) {
+        // Update optimistic state immediately
+        setOptimisticState(prev => ({ ...prev, camera_ip: ip }));
+        deviceStateLogger.log('APPLIANCE_CONTROL', 'Camera IP saved successfully', { applianceId: appliance.id, ip });
+      } else {
+        throw new Error(result.error || 'Failed to save camera IP');
+      }
     } catch (error) {
       deviceStateLogger.logError('APPLIANCE_CONTROL', 'Failed to save camera IP', error);
+      throw error; // Re-throw so CameraViewModal can handle the error
     }
   };
 
