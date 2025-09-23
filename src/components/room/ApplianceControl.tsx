@@ -31,8 +31,10 @@ import {
   Move,
   GripVertical,
   Power,
-  Lock
+  Lock,
+  Eye
 } from "lucide-react";
+import CameraViewModal from "./CameraViewModal";
 
 const getApplianceIcon = (type, name = '') => {
   // Check by type first - exact match to device catalog types
@@ -89,6 +91,7 @@ const getMoodsForSeries = (series) => {
 export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHandleProps, roomId }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [optimisticState, setOptimisticState] = useState(appliance);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
 
   const handleUpdate = async (updates) => {
     if (isUpdating) {
@@ -129,6 +132,100 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
 
   // Use optimistic state for immediate UI updates, fall back to appliance prop
   const displayState = isUpdating ? optimisticState : appliance;
+
+  const handleCameraIpSave = async (ip: string) => {
+    try {
+      const updates = {
+        camera_ip: ip
+      };
+      await handleUpdate(updates);
+      deviceStateLogger.log('APPLIANCE_CONTROL', 'Camera IP saved', { applianceId: appliance.id, ip });
+    } catch (error) {
+      deviceStateLogger.logError('APPLIANCE_CONTROL', 'Failed to save camera IP', error);
+    }
+  };
+
+  const renderSmartCamera = () => {
+    const ApplianceIcon = getApplianceIcon(displayState.type, displayState.name);
+    return (
+      <>
+        <Card className="glass-card border-0 shadow-lg">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                  <GripVertical className="w-5 h-5 text-gray-400" />
+                </div>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  displayState.status ? 'bg-blue-100' : 'bg-gray-200'
+                }`}>
+                  <ApplianceIcon className={`w-5 h-5 ${displayState.status ? 'text-blue-600' : 'text-gray-500'}`} />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900 font-inter">{displayState.name}</div>
+                  {displayState.series && (
+                    <div className="text-xs text-gray-500 font-inter">
+                      {displayState.series}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-500 hover:bg-red-50">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Camera</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{displayState.name}"? This action cannot be undone.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => onDelete(displayState.id)} className="bg-red-600 hover:bg-red-700">
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button
+                  size="icon"
+                  onClick={() => setIsCameraModalOpen(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white transition-all duration-300 rounded-full w-10 h-10"
+                >
+                  <Eye className="w-5 h-5" />
+                </Button>
+                <Button
+                  size="icon"
+                  onClick={() => handleUpdate({ status: !displayState.status })}
+                  className={`transition-all duration-300 rounded-full w-10 h-10 ${
+                    displayState.status
+                      ? 'bg-yellow-400 text-white shadow-lg shadow-yellow-400/50'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={isUpdating}
+                >
+                  <Power className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <CameraViewModal
+          isOpen={isCameraModalOpen}
+          onClose={() => setIsCameraModalOpen(false)}
+          cameraName={displayState.name}
+          savedIp={displayState.camera_ip || ''}
+          onIpSave={handleCameraIpSave}
+        />
+      </>
+    );
+  };
 
   const renderStandardDevice = () => {
     const ApplianceIcon = getApplianceIcon(displayState.type, displayState.name);
@@ -290,6 +387,11 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
     );
   };
 
+  // Check if it's a smart camera first
+  if (displayState.type === 'smart_camera') {
+    return renderSmartCamera();
+  }
+  
   return SIMPLIFIED_LIGHT_SERIES.includes(displayState.series)
     ? renderSimplifiedLight()
     : renderStandardDevice();

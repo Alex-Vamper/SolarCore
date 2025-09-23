@@ -14,6 +14,7 @@ export interface Appliance {
   color_tint?: 'white' | 'warm' | 'cool';
   auto_mode?: boolean;
   ldr_status?: 'bright' | 'dim' | 'dark';
+  camera_ip?: string;
 }
 
 export interface Room {

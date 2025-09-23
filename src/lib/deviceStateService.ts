@@ -9,6 +9,7 @@ interface DeviceState {
   color_tint?: 'white' | 'warm' | 'cool';
   auto_mode?: boolean;
   power_usage?: number;
+  camera_ip?: string;
 }
 
 interface SyncResult {
@@ -67,6 +68,7 @@ class DeviceStateService {
           color_tint: newAppliance.color_tint, 
           auto_mode: newAppliance.auto_mode,
           power_usage: newAppliance.power_usage,
+          camera_ip: newAppliance.camera_ip,
           last_updated: new Date().toISOString()
         };
 
@@ -156,7 +158,8 @@ class DeviceStateService {
               intensity: state.intensity ?? oldAppliance.intensity,
               color_tint: state.color_tint ?? oldAppliance.color_tint,
               auto_mode: state.auto_mode ?? oldAppliance.auto_mode,
-              power_usage: state.power_usage ?? oldAppliance.power_usage
+              power_usage: state.power_usage ?? oldAppliance.power_usage,
+              camera_ip: state.camera_ip ?? oldAppliance.camera_ip
             };
 
             // Check if there are actual changes
@@ -248,6 +251,7 @@ class DeviceStateService {
                   color_tint: newAppliance.color_tint,
                   auto_mode: newAppliance.auto_mode,
                   power_usage: newAppliance.power_usage,
+                  camera_ip: newAppliance.camera_ip,
                   last_updated: new Date().toISOString()
                 }
               });
