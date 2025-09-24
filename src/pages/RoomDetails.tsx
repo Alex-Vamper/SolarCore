@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { deviceCapabilitiesCache } from "@/lib/deviceCapabilitiesCache";
 import { deviceStateService } from "@/lib/deviceStateService";
 import { deviceStateLogger } from "@/lib/deviceStateLogger";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -564,15 +565,24 @@ export default function RoomDetails() {
   const allOn = room.appliances?.length > 0 && room.appliances.every(app => app.status);
 
   return (
-    <div className="space-y-6 pb-24">
-      {/* Header Banner - Increased size to match landing page */}
-      <div className="relative h-80 bg-gradient-to-br from-blue-400 to-purple-500 rounded-none flex flex-col justify-between text-white shadow-lg">
-        <div className="absolute inset-0 rounded-none">
-          <img 
-            src={roomImage} 
-            alt={`${room.name} interior`} 
-            className="w-full h-full object-cover rounded-none" 
-          />
+    <ErrorBoundary fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold mb-2">Room temporarily unavailable</h1>
+          <p className="text-muted-foreground mb-4">Please try refreshing the page</p>
+          <Button onClick={() => window.location.reload()}>Refresh</Button>
+        </div>
+      </div>
+    }>
+      <div className="space-y-6 pb-24">
+        {/* Header Banner - Increased size to match landing page */}
+        <div className="relative h-80 bg-gradient-to-br from-blue-400 to-purple-500 rounded-none flex flex-col justify-between text-white shadow-lg">
+          <div className="absolute inset-0 rounded-none">
+            <img 
+              src={roomImage} 
+              alt={`${room.name} interior`} 
+              className="w-full h-full object-cover rounded-none" 
+            />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent rounded-none"></div>
         </div>
         
@@ -691,5 +701,6 @@ export default function RoomDetails() {
         </div>
       </div>
     </div>
+    </ErrorBoundary>
   );
 }

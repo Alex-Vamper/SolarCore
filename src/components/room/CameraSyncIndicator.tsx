@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Wifi, WifiOff, Camera, Loader2 } from 'lucide-react';
 import { useCameraSync } from '@/hooks/useCameraSync';
 import { deviceStateLogger } from '@/lib/deviceStateLogger';
+import { cameraSyncManager } from '@/lib/cameraSyncManager';
 
 interface CameraSyncIndicatorProps {
   roomId: string;
@@ -13,57 +14,46 @@ export default function CameraSyncIndicator({ roomId, className = '' }: CameraSy
   const [syncStatus, setSyncStatus] = useState<'connected' | 'disconnected' | 'syncing'>('disconnected');
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const { issyncing } = useCameraSync(roomId);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    // Listen for camera state change events
-    const handleCameraStateChange = (event: CustomEvent) => {
-      const { success, source } = event.detail;
+    mountedRef.current = true;
+
+    // Listen for camera IP updates (simplified, non-triggering events)
+    const handleCameraIpUpdate = (event: CustomEvent) => {
+      if (!mountedRef.current || event.detail.roomId !== roomId) return;
       
-      if (success) {
+      const { cameraIp, source } = event.detail;
+      
+      if (cameraIp) {
         setSyncStatus('connected');
         setLastSyncTime(new Date());
         
-        deviceStateLogger.log('CAMERA_SYNC_INDICATOR', 'Camera state synced', {
+        deviceStateLogger.log('CAMERA_SYNC_INDICATOR', 'Camera IP updated', {
           source,
+          cameraIp,
           timestamp: new Date().toISOString()
         });
-      } else {
-        setSyncStatus('disconnected');
       }
     };
 
-    // Listen for room updates
-    const handleRoomUpdate = (event: CustomEvent) => {
-      if (event.detail.source === 'camera_sync') {
-        setSyncStatus('connected');
-        setLastSyncTime(new Date());
-      }
-    };
-
-    window.addEventListener('cameraStateChanged', handleCameraStateChange as EventListener);
-    window.addEventListener('roomUpdated', handleRoomUpdate as EventListener);
+    window.addEventListener('cameraIpUpdated', handleCameraIpUpdate as EventListener);
 
     return () => {
-      window.removeEventListener('cameraStateChanged', handleCameraStateChange as EventListener);
-      window.removeEventListener('roomUpdated', handleRoomUpdate as EventListener);
+      mountedRef.current = false;
+      window.removeEventListener('cameraIpUpdated', handleCameraIpUpdate as EventListener);
     };
-  }, []);
+  }, [roomId]);
 
   useEffect(() => {
+    if (!mountedRef.current) return;
+
     if (issyncing) {
       setSyncStatus('syncing');
-      
-      // Timeout to prevent stuck syncing state
-      const timeout = setTimeout(() => {
-        if (issyncing) {
-          deviceStateLogger.log('CAMERA_SYNC_INDICATOR', 'Sync timeout - resetting status');
-          setSyncStatus('disconnected');
-        }
-      }, 10000); // 10 second timeout
-
-      return () => clearTimeout(timeout);
+    } else if (cameraSyncManager.isActive(roomId)) {
+      setSyncStatus('syncing');
     }
-  }, [issyncing]);
+  }, [issyncing, roomId]);
 
   const getSyncStatusBadge = () => {
     switch (syncStatus) {

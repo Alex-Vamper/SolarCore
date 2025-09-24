@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { deviceStateService } from '@/lib/deviceStateService';
 import { deviceStateLogger } from '@/lib/deviceStateLogger';
+import { cameraSyncManager } from '@/lib/cameraSyncManager';
 import { Room } from '@/entities/Room';
 
 interface CameraState {
@@ -27,73 +28,95 @@ interface RealtimePayload {
 export function useCameraSync(roomId: string) {
   const [issyncing, setSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<number>(0);
+  const channelRef = useRef<any>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     if (!roomId) return;
+    
+    mountedRef.current = true;
 
-    // Set up real-time subscription for child device state changes
-    const channel = supabase
-      .channel('camera-sync')
+    // Clean up any existing channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+
+    // Set up a minimal real-time subscription that doesn't trigger syncs
+    // Only listen for camera-specific changes and avoid triggering loops
+    channelRef.current = supabase
+      .channel(`camera-${roomId}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
-          table: 'child_devices'
+          table: 'child_devices',
+          filter: `state->>camera_ip.neq.null`
         },
         async (payload: any) => {
-          // Only process if this change involves camera IP
-          const hasCamera = payload.new?.state?.camera_ip || payload.old?.state?.camera_ip;
-          if (!hasCamera) return;
+          if (!mountedRef.current) return;
+          
+          // Only process camera IP changes from external sources
+          const oldCameraIp = payload.old?.state?.camera_ip;
+          const newCameraIp = payload.new?.state?.camera_ip;
+          
+          if (oldCameraIp !== newCameraIp) {
+            deviceStateLogger.log('CAMERA_SYNC', 'Camera IP changed externally', {
+              deviceId: payload.new?.id,
+              oldIp: oldCameraIp,
+              newIp: newCameraIp
+            });
 
-          // Prevent infinite loops - only sync if enough time has passed
-          const now = Date.now();
-          if (now - lastSyncTime < 2000) {
-            deviceStateLogger.log('CAMERA_SYNC', 'Skipping sync - too soon since last sync');
-            return;
+            // Dispatch event for UI updates without triggering sync
+            if (newCameraIp) {
+              window.dispatchEvent(new CustomEvent('cameraIpUpdated', {
+                detail: {
+                  roomId,
+                  deviceId: payload.new?.id,
+                  cameraIp: newCameraIp,
+                  source: 'external'
+                }
+              }));
+            }
           }
-
-          deviceStateLogger.log('CAMERA_SYNC', 'Child device state changed', {
-            event: payload.eventType,
-            deviceId: payload.new?.id || payload.old?.id,
-            newState: payload.new?.state,
-            oldState: payload.old?.state
-          });
-
-          // Debounced sync to prevent infinite loops
-          setTimeout(() => {
-            syncCameraStatesFromBackend(roomId);
-          }, 500);
         }
       )
       .subscribe();
 
-    // Initial sync when component mounts
-    syncCameraStatesFromBackend(roomId);
-
     return () => {
-      supabase.removeChannel(channel);
+      mountedRef.current = false;
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      cameraSyncManager.endSync(roomId);
     };
   }, [roomId]);
 
   const syncCameraStatesFromBackend = async (roomId: string) => {
-    if (issyncing) return;
+    if (!mountedRef.current) return;
+    
+    // Use sync manager to prevent infinite loops
+    if (!cameraSyncManager.startSync(roomId)) {
+      deviceStateLogger.log('CAMERA_SYNC', 'Sync prevented by manager', { roomId });
+      return;
+    }
     
     setSyncing(true);
     setLastSyncTime(Date.now());
-    deviceStateLogger.log('CAMERA_SYNC', 'Starting camera state sync from backend', { roomId });
+    deviceStateLogger.log('CAMERA_SYNC', 'Starting controlled camera sync', { roomId });
 
     try {
       const room = await Room.get(roomId);
-      if (!room) {
-        deviceStateLogger.logError('CAMERA_SYNC', 'Room not found', { roomId });
+      if (!room || !mountedRef.current) {
+        deviceStateLogger.logError('CAMERA_SYNC', 'Room not found or component unmounted', { roomId });
         return;
       }
 
       const cameraAppliances = room.appliances?.filter(app => app.type === 'smart_camera') || [];
       
       if (cameraAppliances.length === 0) {
-        deviceStateLogger.log('CAMERA_SYNC', 'No camera appliances found in room');
+        deviceStateLogger.log('CAMERA_SYNC', 'No camera appliances found');
         return;
       }
 
@@ -111,80 +134,42 @@ export function useCameraSync(roomId: string) {
         .select('id, state')
         .in('id', childIds);
 
-      if (error) {
+      if (error || !mountedRef.current) {
         deviceStateLogger.logError('CAMERA_SYNC', 'Failed to fetch child devices', error);
         return;
       }
 
-      let updatedAppliances = [...room.appliances];
-      let hasChanges = false;
-
+      // Simple read-only sync - only update UI state, don't update database
       for (const appliance of appliancesWithChildIds) {
         const childDevice = childDevices?.find(cd => cd.id === appliance.child_device_id);
         
-        if (childDevice && childDevice.state) {
+        if (childDevice && childDevice.state && mountedRef.current) {
           const state = childDevice.state as CameraState;
-          const applianceIndex = updatedAppliances.findIndex(app => app.id === appliance.id);
           
-          if (applianceIndex !== -1) {
-            const oldAppliance = updatedAppliances[applianceIndex];
-            
-            // Check if camera IP or status changed
-            const cameraIpChanged = state.camera_ip !== oldAppliance.camera_ip;
-            const statusChanged = state.status !== oldAppliance.status;
-            
-            if (cameraIpChanged || statusChanged) {
-              const newAppliance = {
-                ...oldAppliance,
-                camera_ip: state.camera_ip || oldAppliance.camera_ip,
-                status: state.status ?? oldAppliance.status
-              };
-              
-              updatedAppliances[applianceIndex] = newAppliance;
-              hasChanges = true;
-              
-              deviceStateLogger.logStateChange(
-                'CAMERA_SYNC',
-                'backend_sync',
-                appliance.id,
-                oldAppliance,
-                newAppliance
-              );
-
-              // Dispatch camera-specific event
-              window.dispatchEvent(new CustomEvent('cameraStateChanged', {
-                detail: {
-                  roomId,
-                  applianceId: appliance.id,
-                  cameraIp: state.camera_ip,
-                  status: state.status,
-                  source: 'backend'
-                }
-              }));
-            }
+          // Only dispatch UI events, don't update database
+          if (state.camera_ip && state.camera_ip !== appliance.camera_ip) {
+            window.dispatchEvent(new CustomEvent('cameraIpUpdated', {
+              detail: {
+                roomId,
+                applianceId: appliance.id,
+                cameraIp: state.camera_ip,
+                status: state.status,
+                source: 'sync'
+              }
+            }));
           }
         }
       }
 
-      if (hasChanges) {
-        await Room.update(roomId, { appliances: updatedAppliances });
-        deviceStateLogger.log('CAMERA_SYNC', 'Camera states synced from backend', {
-          roomId,
-          updatedCount: cameraAppliances.length
-        });
-
-        // Dispatch general room update event
-        window.dispatchEvent(new CustomEvent('roomUpdated', {
-          detail: { roomId, source: 'camera_sync' }
-        }));
-      } else {
-        deviceStateLogger.log('CAMERA_SYNC', 'No camera state changes needed');
-      }
+      deviceStateLogger.log('CAMERA_SYNC', 'Camera sync completed (read-only)', { roomId });
 
     } catch (error) {
       deviceStateLogger.logError('CAMERA_SYNC', 'Camera sync failed', error);
     } finally {
-      setSyncing(false);
+      if (mountedRef.current) {
+        setSyncing(false);
+      }
+      cameraSyncManager.endSync(roomId);
     }
   };
 
@@ -226,9 +211,17 @@ export function useCameraSync(roomId: string) {
     }
   };
 
+  const triggerManualSync = async () => {
+    if (!cameraSyncManager.canSync(roomId)) {
+      deviceStateLogger.log('CAMERA_SYNC', 'Manual sync blocked by manager');
+      return;
+    }
+    await syncCameraStatesFromBackend(roomId);
+  };
+
   return {
-    syncCameraStatesFromBackend: () => syncCameraStatesFromBackend(roomId),
+    syncCameraStatesFromBackend: triggerManualSync,
     syncCameraStateToBackend,
-    issyncing
+    issyncing: issyncing || cameraSyncManager.isActive(roomId)
   };
 }
