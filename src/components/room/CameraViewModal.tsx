@@ -65,22 +65,37 @@ export default function CameraViewModal({
     
     try {
       // Handle IP with or without port
-      const hasPort = ipAddress.includes(':');
-      const baseUrl = hasPort ? `http://${ipAddress}` : `http://${ipAddress}:8080`;
+      const port = ipAddress.includes(':') ? ipAddress.split(':')[1] : '8080';
+      const ip = ipAddress.includes(':') ? ipAddress.split(':')[0] : ipAddress;
       
-      console.log('Attempting to connect to camera:', baseUrl);
+      // Use our camera proxy to handle HTTP to HTTPS conversion
+      const proxyUrl = `https://kqlvmmvtskdevdsvzqiw.supabase.co/functions/v1/camera-proxy?ip=${encodeURIComponent(ip)}&port=${port}&path=/video`;
       
-      // Set up the stream URL and save IP
-      setStreamUrl(baseUrl + '/video');
+      console.log('Connecting through camera proxy:', proxyUrl);
+      
+      // Test the camera connection through our proxy
+      const response = await fetch(proxyUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Connection failed: ${response.status}`);
+      }
+
+      // If we get here, the connection is successful
+      setStreamUrl(proxyUrl);
       setUseIframe(false);
       setIsStreamActive(true);
       onIpSave(ipAddress);
+      setConnectionError('');
       
-      // Show initial connection message
-      setConnectionError('Loading stream... If nothing appears, browser security may be blocking HTTP content. Try opening the IP in a new tab first.');
     } catch (error) {
       console.error('Error in handleConnect:', error);
-      setConnectionError('Failed to connect. Please check the IP address and try again.');
+      setConnectionError(`Failed to connect: ${error.message}`);
     } finally {
       setIsConnecting(false);
     }
@@ -194,6 +209,7 @@ export default function CameraViewModal({
                       className="w-full h-full object-contain"
                       onError={handleImageError}
                       onLoad={() => setConnectionError('')}
+                      crossOrigin="anonymous"
                     />
                   )}
                   
@@ -208,7 +224,7 @@ export default function CameraViewModal({
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Wifi className="w-4 h-4 text-green-600" />
-                    Stream URL: {ipAddress}{!ipAddress.includes(':') ? ':8080' : ''}/video
+                    Camera IP: {ipAddress}{!ipAddress.includes(':') ? ':8080' : ''}
                   </div>
                   <div className="flex gap-2">
                     <Button 
