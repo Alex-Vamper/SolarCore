@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -18,11 +18,15 @@ import {
   Wifi,
   WifiOff
 } from "lucide-react";
+import { UnifiedDeviceStateService } from "@/services/UnifiedDeviceStateService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CameraViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   cameraName: string;
+  applianceId: string;
+  roomId: string;
   savedIp?: string;
   onIpSave: (ip: string) => void;
 }
@@ -31,6 +35,8 @@ export default function CameraViewModal({
   isOpen, 
   onClose, 
   cameraName, 
+  applianceId,
+  roomId,
   savedIp = '',
   onIpSave 
 }: CameraViewModalProps) {
@@ -65,29 +71,36 @@ export default function CameraViewModal({
     
     try {
       // Handle IP with or without port
-      const port = ipAddress.includes(':') ? ipAddress.split(':')[1] : '8080';
+      const port = ipAddress.includes(':') ? parseInt(ipAddress.split(':')[1]) : 8080;
       const ip = ipAddress.includes(':') ? ipAddress.split(':')[0] : ipAddress;
       
-      // Use our camera proxy to handle HTTP to HTTPS conversion
-      const proxyUrl = `https://kqlvmmvtskdevdsvzqiw.supabase.co/functions/v1/camera-proxy?ip=${encodeURIComponent(ip)}&port=${port}&path=/video`;
-      
-      console.log('Connecting through camera proxy:', proxyUrl);
-      
-      // Test the camera connection through our proxy
-      const response = await fetch(proxyUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
+      // Use the unified device state service for camera connection
+      const result = await UnifiedDeviceStateService.updateDeviceState({
+        deviceType: 'camera',
+        deviceId: applianceId,
+        state: {
+          camera_ip: ip,
+          camera_port: port,
+          camera_path: '/video'
         },
+        metadata: { roomId }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || `Connection failed: ${response.status}`);
+      if (!result.success) {
+        throw new Error(result.error || 'Connection failed');
+      }
+
+      // Get the camera proxy URL
+      const { data, error } = await supabase.functions.invoke('camera-proxy', {
+        body: { cameraIp: ip, port, path: '/video' }
+      });
+
+      if (error) {
+        throw new Error(error.message);
       }
 
       // If we get here, the connection is successful
-      setStreamUrl(proxyUrl);
+      setStreamUrl(data.proxyUrl);
       setUseIframe(false);
       setIsStreamActive(true);
       onIpSave(ipAddress);
@@ -119,6 +132,36 @@ export default function CameraViewModal({
     setConnectionError('');
     onClose();
   };
+
+  // Load camera configuration when modal opens
+  useEffect(() => {
+    if (isOpen && applianceId) {
+      const loadCameraConfig = async () => {
+        try {
+          const config = await UnifiedDeviceStateService.getCameraConfiguration(applianceId);
+          if (config && config.camera_ip) {
+            const fullIp = config.camera_port && config.camera_port !== 8080 
+              ? `${config.camera_ip}:${config.camera_port}` 
+              : config.camera_ip;
+            setIpAddress(fullIp);
+            
+            if (config.status === 'connected') {
+              // Auto-connect if already configured and connected
+              handleConnect();
+            }
+          } else if (savedIp) {
+            setIpAddress(savedIp);
+          }
+        } catch (error) {
+          console.error('Failed to load camera configuration:', error);
+          if (savedIp) {
+            setIpAddress(savedIp);
+          }
+        }
+      };
+      loadCameraConfig();
+    }
+  }, [isOpen, applianceId, savedIp]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

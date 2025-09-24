@@ -350,6 +350,63 @@ export type Database = {
         }
         Relationships: []
       }
+      camera_configurations: {
+        Row: {
+          appliance_id: string
+          camera_capabilities: Json | null
+          camera_ip: string
+          camera_name: string
+          camera_path: string | null
+          camera_port: number | null
+          connection_quality: string | null
+          created_at: string
+          id: string
+          last_connected_at: string | null
+          last_error: string | null
+          retry_count: number | null
+          room_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          appliance_id: string
+          camera_capabilities?: Json | null
+          camera_ip: string
+          camera_name: string
+          camera_path?: string | null
+          camera_port?: number | null
+          connection_quality?: string | null
+          created_at?: string
+          id?: string
+          last_connected_at?: string | null
+          last_error?: string | null
+          retry_count?: number | null
+          room_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          appliance_id?: string
+          camera_capabilities?: Json | null
+          camera_ip?: string
+          camera_name?: string
+          camera_path?: string | null
+          camera_port?: number | null
+          connection_quality?: string | null
+          created_at?: string
+          id?: string
+          last_connected_at?: string | null
+          last_error?: string | null
+          retry_count?: number | null
+          room_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       child_devices: {
         Row: {
           created_at: string | null
@@ -418,6 +475,48 @@ export type Database = {
           entity_type?: string
           id?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      device_state_sync: {
+        Row: {
+          created_at: string
+          device_id: string
+          device_type: string
+          error_count: number | null
+          id: string
+          last_error: string | null
+          last_sync_at: string | null
+          metadata: Json | null
+          sync_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          device_type: string
+          error_count?: number | null
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          metadata?: Json | null
+          sync_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          device_type?: string
+          error_count?: number | null
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          metadata?: Json | null
+          sync_status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

@@ -231,6 +231,8 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
           isOpen={isCameraModalOpen}
           onClose={() => setIsCameraModalOpen(false)}
           cameraName={displayState.name}
+          applianceId={appliance.id}
+          roomId={roomId}
           savedIp={displayState.camera_ip || ''}
           onIpSave={handleCameraIpSave}
         />

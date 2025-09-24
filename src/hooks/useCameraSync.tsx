@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { deviceStateService } from '@/lib/deviceStateService';
 import { deviceStateLogger } from '@/lib/deviceStateLogger';
 import { cameraSyncManager } from '@/lib/cameraSyncManager';
-import { Room } from '@/entities/Room';
+import { UnifiedDeviceStateService } from '@/services/UnifiedDeviceStateService';
+import { CameraConfiguration } from '@/entities/CameraConfiguration';
 
 interface CameraState {
   camera_ip?: string;
@@ -104,64 +104,39 @@ export function useCameraSync(roomId: string) {
     
     setSyncing(true);
     setLastSyncTime(Date.now());
-    deviceStateLogger.log('CAMERA_SYNC', 'Starting controlled camera sync', { roomId });
+    deviceStateLogger.log('CAMERA_SYNC', 'Starting unified camera sync', { roomId });
 
     try {
-      const room = await Room.get(roomId);
-      if (!room || !mountedRef.current) {
-        deviceStateLogger.logError('CAMERA_SYNC', 'Room not found or component unmounted', { roomId });
+      // Get camera configurations from the new dedicated table
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
+
+      const { data: cameraConfigs, error } = await supabase
+        .from('camera_configurations')
+        .select('*')
+        .eq('user_id', user.user.id)
+        .eq('room_id', roomId);
+
+      if (error) {
+        deviceStateLogger.logError('CAMERA_SYNC', 'Failed to fetch camera configurations', error);
         return;
       }
 
-      const cameraAppliances = room.appliances?.filter(app => app.type === 'smart_camera') || [];
-      
-      if (cameraAppliances.length === 0) {
-        deviceStateLogger.log('CAMERA_SYNC', 'No camera appliances found');
-        return;
-      }
-
-      const appliancesWithChildIds = cameraAppliances.filter(app => app.child_device_id);
-      
-      if (appliancesWithChildIds.length === 0) {
-        deviceStateLogger.log('CAMERA_SYNC', 'No camera appliances with child device IDs');
-        return;
-      }
-
-      const childIds = appliancesWithChildIds.map(app => app.child_device_id);
-      
-      const { data: childDevices, error } = await supabase
-        .from('child_devices')
-        .select('id, state')
-        .in('id', childIds);
-
-      if (error || !mountedRef.current) {
-        deviceStateLogger.logError('CAMERA_SYNC', 'Failed to fetch child devices', error);
-        return;
-      }
-
-      // Simple read-only sync - only update UI state, don't update database
-      for (const appliance of appliancesWithChildIds) {
-        const childDevice = childDevices?.find(cd => cd.id === appliance.child_device_id);
-        
-        if (childDevice && childDevice.state && mountedRef.current) {
-          const state = childDevice.state as CameraState;
-          
-          // Only dispatch UI events, don't update database
-          if (state.camera_ip && state.camera_ip !== appliance.camera_ip) {
-            window.dispatchEvent(new CustomEvent('cameraIpUpdated', {
-              detail: {
-                roomId,
-                applianceId: appliance.id,
-                cameraIp: state.camera_ip,
-                status: state.status,
-                source: 'sync'
-              }
-            }));
-          }
+      // Dispatch events for UI updates without triggering database writes
+      for (const config of cameraConfigs || []) {
+        if (mountedRef.current) {
+          window.dispatchEvent(new CustomEvent('cameraConfigUpdated', {
+            detail: {
+              roomId,
+              applianceId: config.appliance_id,
+              config,
+              source: 'sync'
+            }
+          }));
         }
       }
 
-      deviceStateLogger.log('CAMERA_SYNC', 'Camera sync completed (read-only)', { roomId });
+      deviceStateLogger.log('CAMERA_SYNC', 'Unified camera sync completed', { roomId, count: cameraConfigs?.length || 0 });
 
     } catch (error) {
       deviceStateLogger.logError('CAMERA_SYNC', 'Camera sync failed', error);
@@ -178,17 +153,22 @@ export function useCameraSync(roomId: string) {
     applianceId: string, 
     cameraState: Partial<CameraState>
   ) => {
-    deviceStateLogger.log('CAMERA_SYNC', 'Syncing camera state to backend', {
+    deviceStateLogger.log('CAMERA_SYNC', 'Syncing camera state using unified service', {
       roomId,
       applianceId,
       cameraState
     });
 
     try {
-      const result = await deviceStateService.updateDeviceState(roomId, applianceId, cameraState);
+      const result = await UnifiedDeviceStateService.updateDeviceState({
+        deviceType: 'camera',
+        deviceId: applianceId,
+        state: cameraState,
+        metadata: { roomId }
+      });
       
       if (result.success) {
-        deviceStateLogger.log('CAMERA_SYNC', 'Camera state synced to backend successfully');
+        deviceStateLogger.log('CAMERA_SYNC', 'Camera state synced successfully via unified service');
         
         // Dispatch success event
         window.dispatchEvent(new CustomEvent('cameraStateChanged', {
@@ -196,18 +176,18 @@ export function useCameraSync(roomId: string) {
             roomId,
             applianceId,
             ...cameraState,
-            source: 'frontend',
+            source: 'unified_service',
             success: true
           }
         }));
       } else {
-        deviceStateLogger.logError('CAMERA_SYNC', 'Failed to sync camera state to backend', result.error);
+        deviceStateLogger.logError('CAMERA_SYNC', 'Failed to sync camera state', result.error);
       }
 
       return result;
     } catch (error) {
-      deviceStateLogger.logError('CAMERA_SYNC', 'Camera backend sync error', error);
-      return { success: false, error: error.message };
+      deviceStateLogger.logError('CAMERA_SYNC', 'Camera sync error', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   };
 
