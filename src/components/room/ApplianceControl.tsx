@@ -136,22 +136,29 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
   // Use optimistic state for immediate UI updates, fall back to appliance prop
   const displayState = isUpdating ? optimisticState : appliance;
 
-  const handleCameraIpSave = async (ip: string) => {
+  const handleCameraIpSave = async (ip: string, port?: number) => {
     try {
-      deviceStateLogger.log('APPLIANCE_CONTROL', 'Saving camera IP', { applianceId: appliance.id, ip });
+      deviceStateLogger.log('APPLIANCE_CONTROL', 'Saving camera settings', { applianceId: appliance.id, ip, port });
       
       // Use the camera sync service for backend synchronization
-      const result = await syncCameraStateToBackend(roomId, appliance.id, { camera_ip: ip });
+      const result = await syncCameraStateToBackend(roomId, appliance.id, { 
+        camera_ip: ip, 
+        camera_port: port || 8080 
+      });
       
       if (result.success) {
         // Update optimistic state immediately
-        setOptimisticState(prev => ({ ...prev, camera_ip: ip }));
-        deviceStateLogger.log('APPLIANCE_CONTROL', 'Camera IP saved successfully', { applianceId: appliance.id, ip });
+        setOptimisticState(prev => ({ 
+          ...prev, 
+          camera_ip: ip, 
+          camera_port: port || 8080 
+        }));
+        deviceStateLogger.log('APPLIANCE_CONTROL', 'Camera settings saved successfully', { applianceId: appliance.id, ip, port });
       } else {
-        throw new Error(result.error || 'Failed to save camera IP');
+        throw new Error(result.error || 'Failed to save camera settings');
       }
     } catch (error) {
-      deviceStateLogger.logError('APPLIANCE_CONTROL', 'Failed to save camera IP', error);
+      deviceStateLogger.logError('APPLIANCE_CONTROL', 'Failed to save camera settings', error);
       throw error; // Re-throw so CameraViewModal can handle the error
     }
   };
@@ -234,6 +241,7 @@ export default function ApplianceControl({ appliance, onUpdate, onDelete, dragHa
           applianceId={appliance.id}
           roomId={roomId}
           savedIp={displayState.camera_ip || ''}
+          savedPort={displayState.camera_port || 8080}
           onIpSave={handleCameraIpSave}
         />
       </>

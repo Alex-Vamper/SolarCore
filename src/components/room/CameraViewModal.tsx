@@ -28,7 +28,8 @@ interface CameraViewModalProps {
   applianceId: string;
   roomId: string;
   savedIp?: string;
-  onIpSave: (ip: string) => void;
+  savedPort?: number;
+  onIpSave: (ip: string, port?: number) => void;
 }
 
 export default function CameraViewModal({ 
@@ -38,9 +39,11 @@ export default function CameraViewModal({
   applianceId,
   roomId,
   savedIp = '',
+  savedPort = 8080,
   onIpSave 
 }: CameraViewModalProps) {
   const [ipAddress, setIpAddress] = useState(savedIp);
+  const [port, setPort] = useState(savedPort);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState('');
@@ -49,10 +52,12 @@ export default function CameraViewModal({
   const [useIframe, setUseIframe] = useState(false);
 
   const validateIpFormat = (input: string) => {
-    // Remove port if present for IP validation
-    const ipOnly = input.includes(':') ? input.split(':')[0] : input;
     const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-    return ipRegex.test(ipOnly) && ipOnly.split('.').every(octet => parseInt(octet) <= 255);
+    return ipRegex.test(input) && input.split('.').every(octet => parseInt(octet) <= 255);
+  };
+
+  const validatePort = (portNum: number) => {
+    return portNum >= 1024 && portNum <= 65535;
   };
 
   const handleConnect = async () => {
@@ -62,7 +67,12 @@ export default function CameraViewModal({
     }
 
     if (!validateIpFormat(ipAddress)) {
-      setConnectionError('Please enter a valid IP address (e.g., 192.168.1.100 or 192.168.1.100:8080)');
+      setConnectionError('Please enter a valid IP address (e.g., 192.168.1.100)');
+      return;
+    }
+
+    if (!validatePort(port)) {
+      setConnectionError('Please enter a valid port between 1024 and 65535');
       return;
     }
 
@@ -70,16 +80,12 @@ export default function CameraViewModal({
     setConnectionError('');
     
     try {
-      // Handle IP with or without port
-      const port = ipAddress.includes(':') ? parseInt(ipAddress.split(':')[1]) : 8080;
-      const ip = ipAddress.includes(':') ? ipAddress.split(':')[0] : ipAddress;
-      
       // Use the unified device state service for camera connection
       const result = await UnifiedDeviceStateService.updateDeviceState({
         deviceType: 'camera',
         deviceId: applianceId,
         state: {
-          camera_ip: ip,
+          camera_ip: ipAddress,
           camera_port: port,
           camera_path: '/video'
         },
@@ -92,7 +98,7 @@ export default function CameraViewModal({
 
       // Get the camera proxy URL
       const { data, error } = await supabase.functions.invoke('camera-proxy', {
-        body: { cameraIp: ip, port, path: '/video' }
+        body: { cameraIp: ipAddress, port, path: '/video' }
       });
 
       if (error) {
@@ -103,7 +109,7 @@ export default function CameraViewModal({
       setStreamUrl(data.proxyUrl);
       setUseIframe(false);
       setIsStreamActive(true);
-      onIpSave(ipAddress);
+      onIpSave(ipAddress, port);
       setConnectionError('');
       
     } catch (error) {
@@ -117,8 +123,7 @@ export default function CameraViewModal({
   const handleImageError = (error: any) => {
     console.error('Camera stream failed to load:', error);
     try {
-      const port = ipAddress && ipAddress.includes(':') ? '' : ':8080';
-      const fullUrl = `http://${ipAddress || 'IP_ADDRESS'}${port}/video`;
+      const fullUrl = `http://${ipAddress || 'IP_ADDRESS'}:${port}/video`;
       setConnectionError(`Stream failed to load. This is likely due to browser security blocking HTTP content on HTTPS sites. Try opening ${fullUrl} in a new browser tab first.`);
     } catch (err) {
       console.error('Error in handleImageError:', err);
@@ -140,10 +145,8 @@ export default function CameraViewModal({
         try {
           const config = await UnifiedDeviceStateService.getCameraConfiguration(applianceId);
           if (config && config.camera_ip) {
-            const fullIp = config.camera_port && config.camera_port !== 8080 
-              ? `${config.camera_ip}:${config.camera_port}` 
-              : config.camera_ip;
-            setIpAddress(fullIp);
+            setIpAddress(config.camera_ip);
+            setPort(config.camera_port || 8080);
             
             if (config.status === 'connected') {
               // Auto-connect if already configured and connected
@@ -151,17 +154,19 @@ export default function CameraViewModal({
             }
           } else if (savedIp) {
             setIpAddress(savedIp);
+            setPort(savedPort);
           }
         } catch (error) {
           console.error('Failed to load camera configuration:', error);
           if (savedIp) {
             setIpAddress(savedIp);
+            setPort(savedPort);
           }
         }
       };
       loadCameraConfig();
     }
-  }, [isOpen, applianceId, savedIp]);
+  }, [isOpen, applianceId, savedIp, savedPort]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -185,29 +190,44 @@ export default function CameraViewModal({
           <div className="flex-1 p-6">
             {!isStreamActive ? (
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="ip-address">Camera IP Address</Label>
-                  <div className="flex gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ip-address">Camera IP Address</Label>
                     <Input
                       id="ip-address"
-                      placeholder="192.168.1.100 or 192.168.1.100:8080"
+                      placeholder="192.168.1.100"
                       value={ipAddress}
                       onChange={(e) => setIpAddress(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
                     />
-                    <Button 
-                      onClick={handleConnect}
-                      disabled={isConnecting}
-                      className="px-6"
-                    >
-                      {isConnecting ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Play className="w-4 h-4" />
-                      )}
-                      Connect
-                    </Button>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="port">Port</Label>
+                    <Input
+                      id="port"
+                      type="number"
+                      placeholder="8080"
+                      value={port}
+                      onChange={(e) => setPort(parseInt(e.target.value) || 8080)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
+                      min="1024"
+                      max="65535"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={handleConnect}
+                    disabled={isConnecting}
+                    className="px-6"
+                  >
+                    {isConnecting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Play className="w-4 h-4" />
+                    )}
+                    Connect
+                  </Button>
                 </div>
 
                 {connectionError && (
@@ -218,13 +238,20 @@ export default function CameraViewModal({
                 )}
 
                 <div className="text-sm text-muted-foreground space-y-2">
-                  <p><strong>Setup Instructions:</strong></p>
+                  <p><strong>Setup Instructions for Multiple Cameras:</strong></p>
                   <ol className="list-decimal list-inside space-y-1 pl-4">
-                    <li>Install "IP Webcam" app on your phone</li>
-                    <li>Open the app and tap "Start server"</li>
-                    <li>Note the IP address shown (e.g., 192.168.1.100:8080)</li>
-                    <li>Ensure your phone and computer are on the same Wi-Fi network</li>
-                    <li>Enter that IP address above and click Connect</li>
+                    <li>Install "IP Webcam" app on each phone/camera device</li>
+                    <li>Configure each camera with a different port:
+                      <ul className="list-disc list-inside ml-4 mt-1 text-xs">
+                        <li>Camera 1: Port 8080 (default)</li>
+                        <li>Camera 2: Port 8081</li>
+                        <li>Camera 3: Port 8082</li>
+                      </ul>
+                    </li>
+                    <li>Start server on each device</li>
+                    <li>Note the IP address (same for all devices on same network)</li>
+                    <li>Ensure all devices are on the same Wi-Fi network</li>
+                    <li>Enter the IP address and unique port for each camera</li>
                   </ol>
                   <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
                     <p className="text-red-800 text-xs">
@@ -267,13 +294,13 @@ export default function CameraViewModal({
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
                     <Wifi className="w-4 h-4 text-green-600" />
-                    Camera IP: {ipAddress}{!ipAddress.includes(':') ? ':8080' : ''}
+                    Camera: {ipAddress}:{port}
                   </div>
                   <div className="flex gap-2">
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => window.open(`http://${ipAddress}${!ipAddress.includes(':') ? ':8080' : ''}/video`, '_blank')}
+                      onClick={() => window.open(`http://${ipAddress}:${port}/video`, '_blank')}
                     >
                       Open in Tab
                     </Button>
@@ -285,7 +312,7 @@ export default function CameraViewModal({
                         setStreamUrl('');
                       }}
                     >
-                      Change IP
+                      Change Settings
                     </Button>
                   </div>
                 </div>

@@ -7,6 +7,7 @@ import { CameraConfiguration } from '@/entities/CameraConfiguration';
 
 interface CameraState {
   camera_ip?: string;
+  camera_port?: number;
   status?: boolean;
   last_updated?: string;
 }
