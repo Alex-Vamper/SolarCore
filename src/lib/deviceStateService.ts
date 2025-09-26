@@ -332,3 +332,23 @@ class DeviceStateService {
 }
 
 export const deviceStateService = new DeviceStateService();
+
+// MQTT-first device state update (simplified for new architecture)
+export const updateDeviceState = async (deviceId: string, newState: any) => {
+  try {
+    console.log('Updating device state via MQTT:', { deviceId, newState });
+    
+    // Update database first - this will trigger MQTT message automatically via trigger
+    const { data, error } = await supabase
+      .from('child_devices')
+      .update({ state: newState })
+      .eq('id', deviceId);
+
+    if (error) throw error;
+    
+    return { success: true, message: 'Device state updated successfully' };
+  } catch (error) {
+    console.error('Error updating device state:', error);
+    throw error;
+  }
+};

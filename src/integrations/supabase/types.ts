@@ -411,7 +411,9 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          device_class: string | null
           device_name: string | null
+          device_series: string | null
           device_type_id: string
           id: string
           parent_id: string | null
@@ -421,7 +423,9 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          device_class?: string | null
           device_name?: string | null
+          device_series?: string | null
           device_type_id: string
           id?: string
           parent_id?: string | null
@@ -431,7 +435,9 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
+          device_class?: string | null
           device_name?: string | null
+          device_series?: string | null
           device_type_id?: string
           id?: string
           parent_id?: string | null

@@ -13,6 +13,8 @@ export interface ChildDevice {
   parent_id?: string;
   device_type_id?: string;
   device_name?: string;
+  device_class?: string;
+  device_series?: string;
   state?: any;
   created_by?: string;
   created_at?: string;
@@ -139,6 +141,8 @@ export class ChildDeviceService {
         parent_id: childDevice.parent_id,
         device_type_id: childDevice.device_type_id!,
         device_name: childDevice.device_name,
+        device_class: childDevice.device_class,
+        device_series: childDevice.device_series,
         state: childDevice.state as Json,
         created_by: user.id
       };

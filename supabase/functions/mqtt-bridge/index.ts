@@ -20,7 +20,20 @@ serve(async (req) => {
   }
 
   try {
-    const { action, data } = await req.json();
+    // Handle both direct calls and database notifications
+    let action, data;
+    
+    if (req.method === 'POST') {
+      const body = await req.json();
+      action = body.action;
+      data = body.data;
+    } else {
+      // Handle database notifications (these would come from triggers)
+      // For now, we'll process them as direct calls
+      const body = await req.json();
+      action = body.action;
+      data = body;
+    }
     console.log('MQTT Bridge received action:', action, 'with data:', data);
 
     switch (action) {
@@ -318,6 +331,90 @@ serve(async (req) => {
             success: true, 
             message: 'WiFi networks configured successfully',
             configurations: wifiConfigMessages
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'register_esp_device': {
+        // Register ESP32 device and claim it for user
+        const { esp_id, user_id } = data;
+        
+        // Use the existing claim_parent_device function
+        const { data: claimResult, error: claimError } = await supabase.rpc('claim_parent_device', {
+          p_esp_id: esp_id
+        });
+
+        if (claimError) {
+          throw new Error(`Failed to register ESP device: ${claimError.message}`);
+        }
+
+        const result = claimResult as { success: boolean; parent_id?: string; message?: string; code?: string };
+        
+        if (!result.success) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: result.message,
+              code: result.code
+            }),
+            { 
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            parent_id: result.parent_id,
+            message: result.message
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'get_esp_sync_data': {
+        // Get all device configurations for ESP32 sync
+        const { esp_id } = data;
+        
+        // Get parent device
+        const { data: parentDevice, error: parentError } = await supabase
+          .from('parent_devices')
+          .select('id')
+          .eq('esp_id', esp_id)
+          .single();
+
+        if (parentError || !parentDevice) {
+          throw new Error(`ESP32 ${esp_id} not found or not claimed`);
+        }
+
+        // Get all child devices for this ESP32 with device type info
+        const { data: childDevices, error: childError } = await supabase
+          .from('child_devices')
+          .select(`
+            id, 
+            device_name, 
+            device_class,
+            device_series,
+            state, 
+            created_at,
+            updated_at
+          `)
+          .eq('parent_id', parentDevice.id);
+
+        if (childError) {
+          throw new Error(`Failed to get child devices: ${childError.message}`);
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            esp_id,
+            parent_id: parentDevice.id,
+            devices: childDevices || [],
+            sync_timestamp: new Date().toISOString()
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
