@@ -60,31 +60,56 @@ class DeviceStateService {
       await Room.update(roomId, { appliances: updatedAppliances });
       deviceStateLogger.log('DEVICE_STATE_SERVICE', 'Room appliances updated successfully');
 
-      // 4. Update child_devices table if child_device_id exists
+      // 4. Send MQTT command if child_device_id exists (get ESP info from database)
       if (appliance.child_device_id) {
-        const childState = {
-          status: newAppliance.status,
-          intensity: newAppliance.intensity,
-          color_tint: newAppliance.color_tint, 
-          auto_mode: newAppliance.auto_mode,
-          power_usage: newAppliance.power_usage,
-          camera_ip: newAppliance.camera_ip,
-          last_updated: new Date().toISOString()
-        };
+        try {
+          // Get child device with parent info for MQTT
+          const { data: childDevice, error: childError } = await supabase
+            .from('child_devices')
+            .select(`
+              id,
+              parent_devices!inner(esp_id),
+              device_types!inner(device_class, device_series)
+            `)
+            .eq('id', appliance.child_device_id)
+            .single();
 
-        const { error: childError } = await supabase
-          .from('child_devices')
-          .update({ state: childState })
-          .eq('id', appliance.child_device_id);
+          if (childError || !childDevice) {
+            deviceStateLogger.logError('DEVICE_STATE_SERVICE', 'Failed to get child device info', childError);
+          } else {
+            // Send state update via MQTT bridge
+            const { error: mqttError } = await supabase.functions.invoke('mqtt-bridge', {
+              body: {
+                action: 'publish_command',
+                data: {
+                  esp_id: (childDevice.parent_devices as any).esp_id,
+                  child_id: appliance.child_device_id,
+                  device_class: (childDevice.device_types as any).device_class,
+                  device_series: (childDevice.device_types as any).device_series,
+                  new_state: {
+                    status: newAppliance.status,
+                    intensity: newAppliance.intensity,
+                    color_tint: newAppliance.color_tint,
+                    auto_mode: newAppliance.auto_mode,
+                    power_usage: newAppliance.power_usage,
+                    camera_ip: newAppliance.camera_ip,
+                    last_updated: new Date().toISOString()
+                  }
+                }
+              }
+            });
 
-        if (childError) {
-          deviceStateLogger.logError('DEVICE_STATE_SERVICE', 'Failed to update child device', childError);
-          // Continue anyway - at least room.appliances is updated
-        } else {
-          deviceStateLogger.log('DEVICE_STATE_SERVICE', 'Child device updated successfully', {
-            child_device_id: appliance.child_device_id,
-            state: childState
-          });
+            if (mqttError) {
+              deviceStateLogger.logError('DEVICE_STATE_SERVICE', 'Failed to send MQTT command', mqttError);
+            } else {
+              deviceStateLogger.log('DEVICE_STATE_SERVICE', 'MQTT command sent successfully', {
+                esp_id: (childDevice.parent_devices as any).esp_id,
+                child_device_id: appliance.child_device_id
+              });
+            }
+          }
+        } catch (error) {
+          deviceStateLogger.logError('DEVICE_STATE_SERVICE', 'MQTT command failed', error);
         }
       }
 

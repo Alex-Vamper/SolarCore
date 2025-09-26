@@ -23,12 +23,16 @@ export interface SafetySystem {
 
 // Convert ChildDevice to SafetySystem format for backwards compatibility
 const mapChildDeviceToSafetySystem = (device: ChildDevice): SafetySystem => {
+  // Use device_series for system_type and create descriptive system_id
+  const systemType = device.device_type?.device_series as 'fire_detection' | 'rain_detection' | 'gas_leak' | 'water_overflow';
+  const roomName = device.state?.room_name || 'Unknown Room';
+  
   return {
     id: device.id,
     user_id: device.created_by,
-    system_id: device.device_name || '',
-    system_type: device.device_type?.device_series as 'fire_detection' | 'rain_detection' | 'gas_leak' | 'water_overflow',
-    room_name: device.state?.room_name || '',
+    system_id: `${systemType}_${roomName}`.replace(/\s+/g, '_').toLowerCase(),
+    system_type: systemType,
+    room_name: roomName,
     status: device.state?.status || 'safe',
     flame_status: device.state?.flame_status || 'clear',
     temperature_value: device.state?.temperature || 25,

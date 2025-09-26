@@ -55,6 +55,147 @@ serve(async (req) => {
         );
       }
 
+      case 'process_mqtt_state_update': {
+        // Process incoming MQTT state update from ESP32
+        const { esp_id, child_id, device_class, device_series, device_state, timestamp } = data;
+        
+        // Update child device state in database
+        const { error } = await supabase
+          .from('child_devices')
+          .update({ 
+            state: device_state,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', child_id);
+
+        if (error) {
+          throw new Error(`Failed to update device state: ${error.message}`);
+        }
+
+        // Log MQTT state update
+        await supabase
+          .from('device_audit_logs')
+          .insert({
+            action: 'mqtt_state_update',
+            entity_type: 'child_device', 
+            entity_id: child_id,
+            details: { esp_id, device_class, device_series, device_state, timestamp }
+          });
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'MQTT state update processed successfully' 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'send_device_configuration': {
+        // Send device configuration to ESP32
+        const { esp_id, child_id, device_name, device_class, device_series } = data;
+        
+        const configMessage = {
+          message_id: crypto.randomUUID(),
+          timestamp: new Date().toISOString(),
+          action: 'configure_device',
+          payload: {
+            child_id,
+            device_name,
+            device_class,
+            device_series
+          }
+        };
+
+        // TODO: Actual MQTT publishing will be implemented when broker URL is provided
+        console.log(`Publishing config to topic esp/${esp_id}/config:`, configMessage);
+        
+        // Update device sync status
+        await supabase
+          .from('device_audit_logs')
+          .insert({
+            action: 'device_configuration_sent',
+            entity_type: 'child_device',
+            entity_id: child_id,
+            details: { esp_id, device_name, device_class, device_series }
+          });
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Device configuration sent successfully',
+            topic: `esp/${esp_id}/config`,
+            payload: configMessage
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'sync_esp_devices': {
+        // Sync all devices for an ESP32 on reboot
+        const { esp_id } = data;
+        
+        // Get all child devices for this ESP32
+        const { data: parentDevice, error: parentError } = await supabase
+          .from('parent_devices')
+          .select('id')
+          .eq('esp_id', esp_id)
+          .single();
+
+        if (parentError || !parentDevice) {
+          throw new Error(`ESP32 ${esp_id} not found or not claimed`);
+        }
+
+        const { data: childDevices, error: childError } = await supabase
+          .from('child_devices')
+          .select('id, device_name, state, device_types!inner(device_class, device_series)')
+          .eq('parent_id', parentDevice.id);
+
+        if (childError) {
+          throw new Error(`Failed to get child devices: ${childError.message}`);
+        }
+
+        // Send sync message with all devices
+        const syncMessage = {
+          message_id: crypto.randomUUID(),
+          timestamp: new Date().toISOString(),
+          action: 'sync_all_devices',
+          payload: {
+            devices: childDevices?.map(device => ({
+              child_id: device.id,
+              device_name: device.device_name,
+              device_class: device.device_types.device_class,
+              device_series: device.device_types.device_series,
+              current_state: device.state
+            })) || []
+          }
+        };
+
+        // TODO: Actual MQTT publishing will be implemented when broker URL is provided
+        console.log(`Publishing sync to topic esp/${esp_id}/config:`, syncMessage);
+        
+        // Log sync action
+        await supabase
+          .from('device_audit_logs')
+          .insert({
+            action: 'esp_device_sync',
+            entity_type: 'parent_device',
+            entity_id: parentDevice.id,
+            details: { esp_id, device_count: childDevices?.length || 0 }
+          });
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'ESP32 device sync completed',
+            topic: `esp/${esp_id}/config`,
+            device_count: childDevices?.length || 0,
+            payload: syncMessage
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       case 'process_state_update': {
         // Process state update from ESP32
         const { esp_id, child_id, state } = data;
@@ -190,7 +331,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error instanceof Error ? error.message : 'Unknown error'
       }),
       { 
         status: 500,

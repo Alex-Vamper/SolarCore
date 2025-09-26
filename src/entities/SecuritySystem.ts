@@ -15,10 +15,14 @@ export interface SecuritySystem {
 
 // Convert ChildDevice to SecuritySystem format
 const mapChildDeviceToSecuritySystem = (device: ChildDevice): SecuritySystem => {
+  // Use device_series for system_id and create descriptive name
+  const deviceSeries = device.device_type?.device_series || 'door_control';
+  const roomName = device.state?.room_name || 'Unknown Room';
+  
   return {
     id: device.id,
     user_id: device.created_by,
-    system_id: device.device_name || '',
+    system_id: `${deviceSeries}_${roomName}`.replace(/\s+/g, '_').toLowerCase(),
     system_type: 'door_control',
     lock_status: device.state?.lock_status || 'unlocked',
     security_mode: device.state?.security_mode || 'home',
