@@ -158,7 +158,7 @@ serve(async (req) => {
     console.error('Error deleting account:', error)
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to delete account' 
+        error: (error as Error).message || 'Failed to delete account' 
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

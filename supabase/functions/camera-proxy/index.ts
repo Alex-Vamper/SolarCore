@@ -178,9 +178,9 @@ async function validateCamera(cameraIp: string, port: number, path: string) {
     });
 
   } catch (error) {
-    const errorMessage = error.name === 'TimeoutError' 
+    const errorMessage = (error as Error).name === 'TimeoutError' 
       ? 'Connection timeout' 
-      : error.message || 'Connection failed';
+      : (error as Error).message || 'Connection failed';
 
     return new Response(JSON.stringify({
       isValid: false,

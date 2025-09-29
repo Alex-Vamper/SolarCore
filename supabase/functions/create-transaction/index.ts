@@ -101,7 +101,7 @@ serve(async (req) => {
     console.log('Creating transaction for email:', userEmail);
 
     // Premium plan pricing (in kobo - multiply NGN by 100)
-    const priceInKobo = 50000; // NGN 500 = 50,000 kobo
+    const priceInKobo = 800000; // NGN 8000 = 800,000 kobo
 
     const paystackSecret = Deno.env.get('PAYSTACK_SECRET_KEY');
     if (!paystackSecret) {
@@ -155,8 +155,8 @@ serve(async (req) => {
       paystackData = await paystackResponse.json();
     } catch (fetchError) {
       console.error('Fetch error when calling Paystack API:', fetchError);
-      console.error('Error details:', fetchError.message);
-      if (fetchError.message.includes('ByteString') || fetchError.message.includes('headers')) {
+      console.error('Error details:', (fetchError as Error).message);
+      if ((fetchError as Error).message.includes('ByteString') || (fetchError as Error).message.includes('headers')) {
         console.error('Header validation error - likely invalid characters in PAYSTACK_SECRET_KEY');
         return new Response('Payment configuration error - please contact support', { status: 500, headers: corsHeaders });
       }
